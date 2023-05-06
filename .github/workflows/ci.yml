@@ -19,9 +19,10 @@ on: [push, pull_request]
 
 jobs:
   build:
-    matrix:
-      os: [ubuntu-latest]
-      java: [11, 17]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        java: [11, 17]
     runs-on: ${{ matrix.os }}
 
     steps:
