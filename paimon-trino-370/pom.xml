@@ -28,11 +28,11 @@ under the License.
         <version>0.4-SNAPSHOT</version>
     </parent>
 
-    <artifactId>paimon-trino-385</artifactId>
-    <name>Paimon : Trino : 385</name>
+    <artifactId>paimon-trino-370</artifactId>
+    <name>Paimon : Trino : 370</name>
 
     <properties>
-        <trino.version>385</trino.version>
+        <trino.version>370</trino.version>
         <hadoop.version>2.8.5</hadoop.version>
         <configuration.version>216</configuration.version>
         <slice.version>0.42</slice.version>

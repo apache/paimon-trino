@@ -59,20 +59,20 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-/** Trino type from Flink Type. */
+/** Trino type from Paimon Type. */
 public class TrinoTypeUtils {
 
-    public static Type fromFlinkType(DataType type) {
-        return type.accept(FlinkToTrinoTypeVistor.INSTANCE);
+    public static Type fromPaimonType(DataType type) {
+        return type.accept(PaimonToTrinoTypeVistor.INSTANCE);
     }
 
     public static DataType toPaimonType(Type trinoType) {
         return TrinoToPaimonTypeVistor.INSTANCE.visit(trinoType);
     }
 
-    private static class FlinkToTrinoTypeVistor extends DataTypeDefaultVisitor<Type> {
+    private static class PaimonToTrinoTypeVistor extends DataTypeDefaultVisitor<Type> {
 
-        private static final FlinkToTrinoTypeVistor INSTANCE = new FlinkToTrinoTypeVistor();
+        private static final PaimonToTrinoTypeVistor INSTANCE = new PaimonToTrinoTypeVistor();
 
         @Override
         public Type visit(CharType charType) {
@@ -204,10 +204,10 @@ public class TrinoTypeUtils {
         private final AtomicInteger currentIndex = new AtomicInteger(0);
 
         public DataType visit(Type trinoType) {
-            if (trinoType instanceof CharType) {
+            if (trinoType instanceof io.trino.spi.type.CharType) {
                 return DataTypes.CHAR(
                         Math.min(
-                                CharType.MAX_LENGTH,
+                                io.trino.spi.type.CharType.MAX_LENGTH,
                                 ((io.trino.spi.type.CharType) trinoType).getLength()));
             } else if (trinoType instanceof VarcharType) {
                 Optional<Integer> length = ((VarcharType) trinoType).getLength();

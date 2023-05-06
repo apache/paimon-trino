@@ -49,7 +49,7 @@ public final class TrinoColumnHandle implements ColumnHandle {
         return new TrinoColumnHandle(
                 columnName,
                 JsonSerdeUtil.toJson(columnType),
-                TrinoTypeUtils.fromFlinkType(columnType));
+                TrinoTypeUtils.fromPaimonType(columnType));
     }
 
     @JsonProperty

@@ -24,9 +24,11 @@ under the License.
     <modules>
         <module>paimon-trino-common</module>
         <module>paimon-trino-388</module>
-        <module>paimon-trino-385</module>
         <module>paimon-trino-358</module>
         <module>paimon-trino-393</module>
+        <module>paimon-trino-368</module>
+        <module>paimon-trino-369</module>
+        <module>paimon-trino-370</module>
     </modules>
 
     <parent>
@@ -125,12 +127,6 @@ under the License.
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
-            <version>${log4j.version}</version>
         </dependency>
 
         <dependency>

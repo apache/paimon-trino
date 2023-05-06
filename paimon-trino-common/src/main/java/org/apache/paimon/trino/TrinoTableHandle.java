@@ -152,7 +152,7 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
                         column ->
                                 ColumnMetadata.builder()
                                         .setName(column.name())
-                                        .setType(TrinoTypeUtils.fromFlinkType(column.type()))
+                                        .setType(TrinoTypeUtils.fromPaimonType(column.type()))
                                         .setNullable(column.type().isNullable())
                                         .setComment(Optional.ofNullable(column.description()))
                                         .build())
