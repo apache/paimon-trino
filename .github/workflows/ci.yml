@@ -43,7 +43,8 @@ jobs:
         with:
           java-version: 17
           distribution: adopt
-          javaHomeEnvironmentVariable: TOOLCHAIN_JDK
+          env:
+            TOOLCHAIN_JDK: $RUNNER_TOOL_CACHE/Java/17
       - name: Set up Toolchain
         if: ${{ matrix.java == '17' }}
         shell: bash
