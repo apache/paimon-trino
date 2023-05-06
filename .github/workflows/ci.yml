@@ -23,6 +23,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         java: [11, 17]
+      fail-fast: false
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -37,13 +38,14 @@ jobs:
             maven-${{ matrix.os }}-java${{ matrix.java }}-
             maven-${{ matrix.os }}-
       - name: Install Toolchain JDK
-        if: ${{ matrix.java == '17' }}
-        uses: battila7/jdk-via-jabba@v1
+        if: ${{ matrix.java == '11' }}
+        uses: actions/setup-java@v2
         with:
-          jdk: adopt-openj9@1.11.0-7
+          java-version: 17
+          distribution: adopt
           javaHomeEnvironmentVariable: TOOLCHAIN_JDK
       - name: Set up Toolchain
-        if: ${{ matrix.java == '17' }}
+        if: ${{ matrix.java == '11' }}
         shell: bash
         run: |
             mkdir -p $HOME/.m2 \
