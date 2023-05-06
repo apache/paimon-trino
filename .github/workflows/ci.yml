@@ -13,21 +13,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Java 8 Build
+name: Java CI
 
 on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    matrix:
+      os: [ubuntu-latest]
+      java: [11, 17]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Set up JDK 11
+      - name: Set up cache for ~./m2/repository
+        uses: actions/cache@v2.1.1
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ matrix.os }}-java${{ matrix.java }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-${{ matrix.os }}-java${{ matrix.java }}-
+            maven-${{ matrix.os }}-
+      - name: Install Toolchain JDK
+        if: ${{ matrix.java == '17' }}
+        uses: battila7/jdk-via-jabba@v1
+        with:
+          jdk: adopt-openj9@1.11.0-7
+          javaHomeEnvironmentVariable: TOOLCHAIN_JDK
+      - name: Set up Toolchain
+        if: ${{ matrix.java == '17' }}
+        shell: bash
+        run: |
+            mkdir -p $HOME/.m2 \
+            && cat << EOF > $HOME/.m2/toolchains.xml
+            <?xml version="1.0" encoding="UTF8"?>
+            <toolchains>
+            <toolchain>
+             <type>jdk</type>
+               <provides>
+                 <version>17</version>
+                 <vendor>adopt</vendor>
+               </provides>
+               <configuration>
+                 <jdkHome>${{ env.TOOLCHAIN_JDK }}</jdkHome>
+               </configuration>
+            </toolchain>
+            </toolchains>
+            EOF
+      - name: Set up JDK
         uses: actions/setup-java@v1
         with:
-          java-version: 11
+          java-version: ${{ matrix.java }}
       - name: Build
         run: |
           mvn clean install

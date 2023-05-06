@@ -25,7 +25,7 @@ on:
   workflow_dispatch:
 
 env:
-  JDK_VERSION: 8
+  JDK_VERSION: 11
 
 concurrency:
   group: ps-${{ github.event.pull_request.number || github.ref }}
