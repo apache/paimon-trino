@@ -58,7 +58,7 @@ jobs:
                  <vendor>adopt</vendor>
                </provides>
                <configuration>
-                 <jdkHome>$RUNNER_TOOL_CACHE/Java/17</jdkHome>
+                 <jdkHome>${{ runner.toolCache }}/Java/17.x </jdkHome>
                </configuration>
             </toolchain>
             </toolchains>
