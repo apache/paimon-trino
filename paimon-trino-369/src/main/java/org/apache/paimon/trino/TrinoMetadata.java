@@ -33,7 +33,6 @@ import io.trino.spi.connector.ConnectorTableHandle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
@@ -57,14 +56,14 @@ public class TrinoMetadata extends TrinoMetadataBase {
     public void setTableProperties(
             ConnectorSession session,
             ConnectorTableHandle tableHandle,
-            Map<String, Optional<Object>> properties) {
+            Map<String, Object> properties) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Identifier identifier =
                 new Identifier(trinoTableHandle.getSchemaName(), trinoTableHandle.getTableName());
         List<SchemaChange> changes = new ArrayList<>();
         Map<String, String> options =
                 properties.entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> (String) e.getValue().get()));
+                        .collect(toMap(Map.Entry::getKey, e -> (String) e.getValue()));
         options.forEach((key, value) -> changes.add(SchemaChange.setOption(key, value)));
         // TODO: remove options, SET PROPERTIES x = DEFAULT
         try {

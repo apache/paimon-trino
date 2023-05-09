@@ -243,17 +243,17 @@ public class TestTrinoITCase extends AbstractTestQueryFramework {
     public void testCreateTable() {
         sql(
                 "CREATE TABLE orders ("
-                        + "  orderkey bigint,"
-                        + "  orderstatus varchar,"
-                        + "  totalprice double,"
-                        + "  orderdate date"
+                        + "  order_key bigint,"
+                        + "  order_status varchar,"
+                        + "  total_price double,"
+                        + "  order_date date"
                         + ")"
                         + "WITH ("
                         + "file_format = 'ORC',"
-                        + "primary_key = ARRAY['orderkey','orderdate'],"
-                        + "partitioned_by = ARRAY['orderdate'],"
+                        + "primary_key = ARRAY['order_key','order_date'],"
+                        + "partitioned_by = ARRAY['order_date'],"
                         + "bucket = '2',"
-                        + "bucket_key = 'orderkey',"
+                        + "bucket_key = 'order_key',"
                         + "changelog_producer = 'input'"
                         + ")");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
@@ -265,17 +265,17 @@ public class TestTrinoITCase extends AbstractTestQueryFramework {
     public void testRenameTable() {
         sql(
                 "CREATE TABLE t5 ("
-                        + "  orderkey bigint,"
-                        + "  orderstatus varchar,"
-                        + "  totalprice double,"
-                        + "  orderdate date"
+                        + "  order_key bigint,"
+                        + "  order_status varchar,"
+                        + "  total_price double,"
+                        + "  order_date date"
                         + ")"
                         + "WITH ("
                         + "file_format = 'ORC',"
-                        + "primary_key = ARRAY['orderkey','orderdate'],"
-                        + "partitioned_by = ARRAY['orderdate'],"
+                        + "primary_key = ARRAY['order_key','order_date'],"
+                        + "partitioned_by = ARRAY['order_date'],"
                         + "bucket = '2',"
-                        + "bucket_key = 'orderkey',"
+                        + "bucket_key = 'order_key',"
                         + "changelog_producer = 'input'"
                         + ")");
         sql("ALTER TABLE paimon.default.t5 RENAME TO t6");
@@ -288,17 +288,17 @@ public class TestTrinoITCase extends AbstractTestQueryFramework {
     public void testDropTable() {
         sql(
                 "CREATE TABLE t5 ("
-                        + "  orderkey bigint,"
-                        + "  orderstatus varchar,"
-                        + "  totalprice double,"
-                        + "  orderdate date"
+                        + "  order_key bigint,"
+                        + "  order_status varchar,"
+                        + "  total_price double,"
+                        + "  order_date date"
                         + ")"
                         + "WITH ("
                         + "file_format = 'ORC',"
-                        + "primary_key = ARRAY['orderkey','orderdate'],"
-                        + "partitioned_by = ARRAY['orderdate'],"
+                        + "primary_key = ARRAY['order_key','order_date'],"
+                        + "partitioned_by = ARRAY['order_date'],"
                         + "bucket = '2',"
-                        + "bucket_key = 'orderkey',"
+                        + "bucket_key = 'order_key',"
                         + "changelog_producer = 'input'"
                         + ")");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
@@ -309,23 +309,23 @@ public class TestTrinoITCase extends AbstractTestQueryFramework {
     public void testAddColumn() {
         sql(
                 "CREATE TABLE t5 ("
-                        + "  orderkey bigint,"
-                        + "  orderstatus varchar,"
-                        + "  totalprice double,"
-                        + "  orderdate date"
+                        + "  order_key bigint,"
+                        + "  order_status varchar,"
+                        + "  total_price double,"
+                        + "  order_date date"
                         + ")"
                         + "WITH ("
                         + "file_format = 'ORC',"
-                        + "primary_key = ARRAY['orderkey','orderdate'],"
-                        + "partitioned_by = ARRAY['orderdate'],"
+                        + "primary_key = ARRAY['order_key','order_date'],"
+                        + "partitioned_by = ARRAY['order_date'],"
                         + "bucket = '2',"
-                        + "bucket_key = 'orderkey',"
+                        + "bucket_key = 'order_key',"
                         + "changelog_producer = 'input'"
                         + ")");
         sql("ALTER TABLE paimon.default.t5 ADD COLUMN zip varchar");
         assertThat(sql("SHOW COLUMNS FROM paimon.default.t5"))
                 .isEqualTo(
-                        "[[orderkey, bigint, , ], [orderstatus, varchar(2147483646), , ], [totalprice, double, , ], [orderdate, date, , ], [zip, varchar(2147483646), , ]]");
+                        "[[order_key, bigint, , ], [order_status, varchar(2147483646), , ], [total_price, double, , ], [order_date, date, , ], [zip, varchar(2147483646), , ]]");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
     }
 
@@ -333,23 +333,23 @@ public class TestTrinoITCase extends AbstractTestQueryFramework {
     public void testRenameColumn() {
         sql(
                 "CREATE TABLE t5 ("
-                        + "  orderkey bigint,"
-                        + "  orderstatus varchar,"
-                        + "  totalprice double,"
-                        + "  orderdate date"
+                        + "  order_key bigint,"
+                        + "  order_status varchar,"
+                        + "  total_price double,"
+                        + "  order_date date"
                         + ")"
                         + "WITH ("
                         + "file_format = 'ORC',"
-                        + "primary_key = ARRAY['orderkey','orderdate'],"
-                        + "partitioned_by = ARRAY['orderdate'],"
+                        + "primary_key = ARRAY['order_key','order_date'],"
+                        + "partitioned_by = ARRAY['order_date'],"
                         + "bucket = '2',"
-                        + "bucket_key = 'orderkey',"
+                        + "bucket_key = 'order_key',"
                         + "changelog_producer = 'input'"
                         + ")");
-        sql("ALTER TABLE paimon.default.t5 RENAME COLUMN orderstatus to g");
+        sql("ALTER TABLE paimon.default.t5 RENAME COLUMN order_status to g");
         assertThat(sql("SHOW COLUMNS FROM paimon.default.t5"))
                 .isEqualTo(
-                        "[[orderkey, bigint, , ], [g, varchar(2147483646), , ], [totalprice, double, , ], [orderdate, date, , ]]");
+                        "[[order_key, bigint, , ], [g, varchar(2147483646), , ], [total_price, double, , ], [order_date, date, , ]]");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
     }
 
@@ -357,23 +357,23 @@ public class TestTrinoITCase extends AbstractTestQueryFramework {
     public void testDropColumn() {
         sql(
                 "CREATE TABLE t5 ("
-                        + "  orderkey bigint,"
-                        + "  orderstatus varchar,"
-                        + "  totalprice double,"
-                        + "  orderdate date"
+                        + "  order_key bigint,"
+                        + "  order_status varchar,"
+                        + "  total_price double,"
+                        + "  order_date date"
                         + ")"
                         + "WITH ("
                         + "file_format = 'ORC',"
-                        + "primary_key = ARRAY['orderkey','orderdate'],"
-                        + "partitioned_by = ARRAY['orderdate'],"
+                        + "primary_key = ARRAY['order_key','order_date'],"
+                        + "partitioned_by = ARRAY['order_date'],"
                         + "bucket = '2',"
-                        + "bucket_key = 'orderkey',"
+                        + "bucket_key = 'order_key',"
                         + "changelog_producer = 'input'"
                         + ")");
-        sql("ALTER TABLE paimon.default.t5 DROP COLUMN orderstatus");
+        sql("ALTER TABLE paimon.default.t5 DROP COLUMN order_status");
         assertThat(sql("SHOW COLUMNS FROM paimon.default.t5"))
                 .isEqualTo(
-                        "[[orderkey, bigint, , ], [totalprice, double, , ], [orderdate, date, , ]]");
+                        "[[order_key, bigint, , ], [total_price, double, , ], [order_date, date, , ]]");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
     }
 
