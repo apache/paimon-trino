@@ -40,7 +40,7 @@ under the License.
     <groupId>org.apache.paimon</groupId>
     <artifactId>paimon-trino</artifactId>
     <name>Paimon : Trino</name>
-    <version>0.4-SNAPSHOT</version>
+    <version>0.5-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
