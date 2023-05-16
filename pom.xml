@@ -29,6 +29,8 @@ under the License.
         <module>paimon-trino-368</module>
         <module>paimon-trino-369</module>
         <module>paimon-trino-370</module>
+        <module>paimon-prestosql-common</module>
+        <module>paimon-prestosql-332</module>
     </modules>
 
     <parent>
