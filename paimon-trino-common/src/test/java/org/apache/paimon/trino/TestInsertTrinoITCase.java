@@ -70,7 +70,6 @@ public class TestInsertTrinoITCase extends AbstractTestQueryFramework {
         String createTable =
                 "CREATE TABLE "
                         + tableName
-                        + "\n"
                         + "(\n"
                         + "    boolean_column boolean, \n"
                         + "    integer_column integer, \n"
@@ -81,6 +80,7 @@ public class TestInsertTrinoITCase extends AbstractTestQueryFramework {
                         + "    bounded_varchar_column varchar(5), \n"
                         + "    unbounded_varchar_column varchar, \n"
                         + "    date_column date,\n"
+                        + "    time_column time(3),\n"
                         + "    timestamp_column timestamp(3),\n"
                         + "    timestamp_tz_column timestamp(3) with time zone\n"
                         + ")\n";
@@ -141,19 +141,19 @@ public class TestInsertTrinoITCase extends AbstractTestQueryFramework {
                 "INSERT INTO "
                         + tableName
                         + " "
-                        + "(integer_column, date_column, timestamp_column, timestamp_tz_column) "
-                        + "VALUES (4, TIMESTAMP '2023-05-24 19:54:40',  "
+                        + "(integer_column, date_column, time_column, timestamp_column, timestamp_tz_column) "
+                        + "VALUES (4, TIMESTAMP '2023-05-24 19:54:40',  TIME '23:59:59.123', "
                         + "TIMESTAMP '2023-05-24 19:54:40', TIMESTAMP '2023-05-24 19:54:40.321 UTC')",
                 1L);
         result =
                 sql(
-                        "SELECT integer_column, date_column, timestamp_column, timestamp_tz_column"
+                        "SELECT integer_column, date_column, time_column, timestamp_column, timestamp_tz_column"
                                 + " FROM "
                                 + tableName
                                 + " where integer_column = 4");
         assertThat(
                 result.equals(
-                        "[[4, 2023-05-24, 2023-05-24T19:54:40, 2023-05-24T19:54:40.321Z[UTC]]]"));
+                        "[[4, 2023-05-24, 23:59:59.123, 2023-05-24T19:54:40, 2023-05-24T19:54:40.321Z[UTC]]]"));
 
         // query fails
         super.assertQueryFails(

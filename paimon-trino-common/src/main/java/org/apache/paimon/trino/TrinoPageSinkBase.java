@@ -59,9 +59,11 @@ import java.util.concurrent.CompletableFuture;
 
 import static io.trino.spi.type.DateTimeEncoding.unpackMillisUtc;
 import static io.trino.spi.type.Decimals.readBigDecimal;
+import static io.trino.spi.type.TimeType.TIME_MILLIS;
 import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
 import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
 import static io.trino.spi.type.Timestamps.MICROSECONDS_PER_MILLISECOND;
+import static io.trino.spi.type.Timestamps.PICOSECONDS_PER_MILLISECOND;
 import static java.lang.Float.intBitsToFloat;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
@@ -176,6 +178,10 @@ public class TrinoPageSinkBase implements ConnectorPageSink {
 
         if (type instanceof DateType) {
             return toIntExact(type.getLong(block, position));
+        }
+
+        if (type.equals(TIME_MILLIS)) {
+            return toIntExact(type.getLong(block, position) / PICOSECONDS_PER_MILLISECOND);
         }
 
         if (type.equals(TIMESTAMP_MILLIS)) {

@@ -63,14 +63,17 @@ import static io.trino.spi.type.DateType.DATE;
 import static io.trino.spi.type.Decimals.encodeShortScaledValue;
 import static io.trino.spi.type.IntegerType.INTEGER;
 import static io.trino.spi.type.LongTimestampWithTimeZone.fromEpochMillisAndFraction;
-import static io.trino.spi.type.TimeType.TIME_MICROS;
+import static io.trino.spi.type.TimeType.TIME_MILLIS;
 import static io.trino.spi.type.TimeZoneKey.UTC_KEY;
 import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
 import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
 import static io.trino.spi.type.Timestamps.MICROSECONDS_PER_MILLISECOND;
+import static io.trino.spi.type.Timestamps.PICOSECONDS_PER_MILLISECOND;
 import static java.lang.String.format;
 
-/** Trino {@link ConnectorPageSource}. */
+/**
+ * Trino {@link ConnectorPageSource}.
+ */
 public abstract class TrinoPageSourceBase implements ConnectorPageSource {
 
     private final RecordReader<InternalRow> reader;
@@ -179,8 +182,9 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
                 type.writeLong(
                         output,
                         packDateTimeWithZone(((Timestamp) value).getMillisecond(), UTC_KEY));
-            } else if (type.equals(TIME_MICROS)) {
-                type.writeLong(output, (int) value * MICROSECONDS_PER_MILLISECOND);
+            } else if (type.equals(TIME_MILLIS)) {
+                long valTmp = ((Integer) value).longValue() * PICOSECONDS_PER_MILLISECOND;
+                type.writeLong(output, valTmp);
             } else {
                 throw new TrinoException(
                         GENERIC_INTERNAL_ERROR,
