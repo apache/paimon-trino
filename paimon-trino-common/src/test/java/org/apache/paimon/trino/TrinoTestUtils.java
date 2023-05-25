@@ -37,6 +37,7 @@ import org.apache.paimon.utils.InstantiationUtil;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -45,7 +46,18 @@ import static org.apache.paimon.data.BinaryString.fromString;
 /** presto test util. */
 public class TrinoTestUtils {
 
+    public static final List<DataField> DATA_FIELD_LIST =  Arrays.asList(
+            new DataField(0, "a", new IntType()),
+            new DataField(1, "b", new BigIntType()),
+            // test field name has upper case
+            new DataField(2, "aCa", new VarCharType()),
+            new DataField(3, "d", new CharType(1)));
+
     public static byte[] getSerializedTable() throws Exception {
+       return getSerializedTable(false);
+    }
+
+    public static byte[] getSerializedTable(boolean appendOnly) throws Exception {
         String warehouse =
                 Files.createTempDirectory(UUID.randomUUID().toString()).toUri().toString();
         Path tablePath = new Path(warehouse, "test.db/user");
@@ -53,8 +65,10 @@ public class TrinoTestUtils {
         testHelper.write(GenericRow.of(1, 2L, fromString("1"), fromString("1")));
         testHelper.write(GenericRow.of(3, 4L, fromString("2"), fromString("2")));
         testHelper.write(GenericRow.of(5, 6L, fromString("3"), fromString("3")));
-        testHelper.write(
-                GenericRow.ofKind(RowKind.DELETE, 3, 4L, fromString("2"), fromString("2")));
+        if (!appendOnly){
+            testHelper.write(
+                    GenericRow.ofKind(RowKind.DELETE, 3, 4L, fromString("2"), fromString("2")));
+        }
         testHelper.commit();
         Map<String, String> config = new HashMap<>();
         config.put("warehouse", warehouse);
@@ -65,14 +79,7 @@ public class TrinoTestUtils {
     }
 
     private static SimpleTableTestHelper createTestHelper(Path tablePath) throws Exception {
-        RowType rowType =
-                new RowType(
-                        Arrays.asList(
-                                new DataField(0, "a", new IntType()),
-                                new DataField(1, "b", new BigIntType()),
-                                // test field name has upper case
-                                new DataField(2, "aCa", new VarCharType()),
-                                new DataField(3, "d", new CharType(1))));
+        RowType rowType = new RowType(DATA_FIELD_LIST);
         return new SimpleTableTestHelper(tablePath, rowType);
     }
 }

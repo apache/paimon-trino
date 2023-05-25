@@ -29,10 +29,13 @@ import org.apache.paimon.security.SecurityContext;
 import org.apache.paimon.utils.InstantiationUtil;
 import org.apache.paimon.utils.StringUtils;
 
+import io.airlift.slice.Slice;
 import io.trino.spi.connector.Assignment;
 import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ColumnMetadata;
+import io.trino.spi.connector.ConnectorInsertTableHandle;
 import io.trino.spi.connector.ConnectorMetadata;
+import io.trino.spi.connector.ConnectorOutputMetadata;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTableMetadata;
@@ -40,15 +43,19 @@ import io.trino.spi.connector.ConnectorTableProperties;
 import io.trino.spi.connector.Constraint;
 import io.trino.spi.connector.ConstraintApplicationResult;
 import io.trino.spi.connector.ProjectionApplicationResult;
+import io.trino.spi.connector.RetryMode;
 import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.connector.SchemaTablePrefix;
 import io.trino.spi.expression.ConnectorExpression;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.security.TrinoPrincipal;
+import io.trino.spi.statistics.ComputedStatistics;
+import io.trino.spi.type.Type;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
@@ -382,5 +390,49 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
     private static boolean containSameElements(
             List<? extends ColumnHandle> first, List<? extends ColumnHandle> second) {
         return new HashSet<>(first).equals(new HashSet<>(second));
+    }
+
+    @Override
+    public ConnectorInsertTableHandle beginInsert(
+            ConnectorSession session,
+            ConnectorTableHandle tableHandle,
+            List<ColumnHandle> columns,
+            RetryMode retryMode) {
+        TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
+        String schema = trinoTableHandle.getSchemaName();
+        String tableName = trinoTableHandle.getTableName();
+        Identifier tablePath = new Identifier(schema, tableName);
+
+        byte[] serializedTable;
+        try {
+            serializedTable = InstantiationUtil.serializeObject(catalog.getTable(tablePath));
+        } catch (Catalog.TableNotExistException e) {
+            return null;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        List<String> columnNames =
+                columns.stream()
+                        .map(TrinoColumnHandle.class::cast)
+                        .map(TrinoColumnHandle::getColumnName)
+                        .collect(Collectors.toList());
+        List<Type> columnTypes =
+                columns.stream()
+                        .map(TrinoColumnHandle.class::cast)
+                        .map(TrinoColumnHandle::getTrinoType)
+                        .collect(Collectors.toList());
+
+        return new TrinoInsertTableHandle(
+                schema, tableName, columnNames, columnTypes, serializedTable);
+    }
+
+    @Override
+    public Optional<ConnectorOutputMetadata> finishInsert(
+            ConnectorSession session,
+            ConnectorInsertTableHandle insertHandle,
+            Collection<Slice> fragments,
+            Collection<ComputedStatistics> computedStatistics) {
+        return Optional.empty();
     }
 }

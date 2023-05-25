@@ -39,13 +39,15 @@ public class SimpleTableTestHelper {
     private final InnerTableCommit commit;
 
     public SimpleTableTestHelper(Path path, RowType rowType) throws Exception {
+        HashMap options = new HashMap();
+        options.put("write-mode", "change-log");
         new SchemaManager(LocalFileIO.create(), path)
                 .createTable(
                         new Schema(
                                 rowType.getFields(),
                                 Collections.emptyList(),
                                 Collections.emptyList(),
-                                new HashMap<>(),
+                                options,
                                 ""));
         FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), path);
         String user = "user";

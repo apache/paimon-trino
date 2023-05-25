@@ -58,6 +58,7 @@ import static com.google.common.base.Verify.verify;
 import static io.airlift.slice.Slices.wrappedBuffer;
 import static io.trino.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static io.trino.spi.type.BigintType.BIGINT;
+import static io.trino.spi.type.DateTimeEncoding.packDateTimeWithZone;
 import static io.trino.spi.type.DateType.DATE;
 import static io.trino.spi.type.Decimals.encodeShortScaledValue;
 import static io.trino.spi.type.IntegerType.INTEGER;
@@ -174,6 +175,10 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
                 type.writeLong(
                         output,
                         ((Timestamp) value).getMillisecond() * MICROSECONDS_PER_MILLISECOND);
+            } else if (type.equals(TIMESTAMP_TZ_MILLIS)) {
+                type.writeLong(
+                        output,
+                        packDateTimeWithZone(((Timestamp) value).getMillisecond(), UTC_KEY));
             } else if (type.equals(TIME_MICROS)) {
                 type.writeLong(output, (int) value * MICROSECONDS_PER_MILLISECOND);
             } else {

@@ -19,6 +19,7 @@
 package org.apache.paimon.trino;
 
 import io.trino.spi.connector.Connector;
+import io.trino.spi.connector.ConnectorPageSinkProvider;
 import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.session.PropertyMetadata;
 import io.trino.spi.transaction.IsolationLevel;
@@ -88,5 +89,10 @@ public class TrinoConnector implements Connector {
     @Override
     public List<PropertyMetadata<?>> getTableProperties() {
         return tableProperties;
+    }
+
+    @Override
+    public ConnectorPageSinkProvider getPageSinkProvider() {
+        return new TrinoPageSinkProvider();
     }
 }
