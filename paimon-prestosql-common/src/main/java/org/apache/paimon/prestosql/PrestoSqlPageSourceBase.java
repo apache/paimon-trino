@@ -171,8 +171,9 @@ public abstract class PrestoSqlPageSourceBase implements ConnectorPageSource {
             } else if (type.equals(TIME)) {
                 type.writeLong(output, (int) value);
             } else if (type.equals(TIMESTAMP_WITH_TIME_ZONE)) {
-                Long timestamp = ((Timestamp) value).getMillisecond();
-                type.writeLong(output, packDateTimeWithZone(timestamp, UTC_KEY));
+                type.writeLong(
+                        output,
+                        packDateTimeWithZone(((Timestamp) value).getMillisecond(), UTC_KEY));
             } else {
                 throw new PrestoSqlException(
                         GENERIC_INTERNAL_ERROR,

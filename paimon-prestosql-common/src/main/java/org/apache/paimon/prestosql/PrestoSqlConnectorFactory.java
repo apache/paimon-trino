@@ -19,6 +19,13 @@
 package org.apache.paimon.prestosql;
 
 import io.prestosql.spi.connector.ConnectorFactory;
+import io.prestosql.spi.connector.ConnectorHandleResolver;
 
 /** PrestoSql {@link ConnectorFactory}. */
-public class PrestoSqlConnectorFactory extends PrestoSqlConnectorFactoryBase {}
+public class PrestoSqlConnectorFactory extends PrestoSqlConnectorFactoryBase {
+
+    @Override
+    public ConnectorHandleResolver getHandleResolver() {
+        return new PrestoSqlHandleResolver();
+    }
+}
