@@ -76,8 +76,10 @@ public abstract class PrestoSqlMetadataBase implements ConnectorMetadata {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-        this.catalog = CatalogFactory.createCatalog(CatalogContext.create(catalogOptions));
+        this.catalog =
+                ClassLoaderUtils.runWithContextClassLoader(
+                        () -> CatalogFactory.createCatalog(CatalogContext.create(catalogOptions)),
+                        getClass().getClassLoader());
         this.typeManager = typeManager;
     }
 

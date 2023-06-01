@@ -15,7 +15,6 @@
     <name>Paimon : PrestoSql : Common</name>
 
     <properties>
-        <log4j.version>2.17.1</log4j.version>
         <prestosql.version>332</prestosql.version>
         <hadoop.version>2.8.5</hadoop.version>
         <configuration.version>0.195</configuration.version>
@@ -43,20 +42,15 @@
             <groupId>io.airlift</groupId>
             <artifactId>configuration</artifactId>
             <version>${configuration.version}</version>
-        </dependency>
-
-        <!--<dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>slice</artifactId>
-            <version>${dep.airlift.version}</version>
             <scope>provided</scope>
-        </dependency>-->
+        </dependency>
 
         <!-- for testing -->
         <dependency>
             <groupId>io.prestosql</groupId>
             <artifactId>presto-client</artifactId>
             <version>${prestosql.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

@@ -13,10 +13,9 @@
     <name>Paimon : PrestoSql : 332</name>
 
     <properties>
-        <log4j.version>2.17.1</log4j.version>
         <prestosql.version>332</prestosql.version>
-        <configuration.version>0.195</configuration.version>
         <hadoop.version>2.8.5</hadoop.version>
+        <configuration.version>0.195</configuration.version>
         <target.java.version>8</target.java.version>
         <jdk.test.version>8</jdk.test.version>
         <maven.toolchains.plugin.version>3.1.0</maven.toolchains.plugin.version>
@@ -47,6 +46,7 @@
             <groupId>io.airlift</groupId>
             <artifactId>configuration</artifactId>
             <version>${configuration.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- for testing -->
@@ -54,6 +54,7 @@
             <groupId>io.prestosql</groupId>
             <artifactId>presto-client</artifactId>
             <version>${prestosql.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -114,5 +115,49 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+                <version>${maven.toolchains.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>toolchain</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <toolchains>
+                        <jdk>
+                            <version>${jdk.test.version}</version>
+                        </jdk>
+                    </toolchains>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>shade-paimon</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <includes combine.children="append">
+                                    <include>org.apache.paimon:paimon-prestosql-common</include>
+                                </includes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
