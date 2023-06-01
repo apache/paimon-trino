@@ -69,14 +69,15 @@ import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-/** Trino {@link ConnectorPageSink}. */
+/**
+ * Trino {@link ConnectorPageSink}.
+ */
 public class TrinoPageSinkBase implements ConnectorPageSink {
 
     private final List<Type> columnTypes;
     private final Table table;
     private final BatchWriteBuilder writeBuilder;
     private final BatchTableWrite write;
-    private List<CommitMessage> messageList = new ArrayList<>();
 
     public TrinoPageSinkBase(List<Type> columnTypes, byte[] serializedTable) {
         this.columnTypes = ImmutableList.copyOf(requireNonNull(columnTypes, "columnTypes is null"));
@@ -86,27 +87,17 @@ public class TrinoPageSinkBase implements ConnectorPageSink {
                             serializedTable, this.getClass().getClassLoader());
             writeBuilder = table.newBatchWriteBuilder();
             write = writeBuilder.newWrite();
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
     public CompletableFuture<?> appendPage(Page page) {
-        writePage(page, write);
-        try {
-            messageList.addAll(write.prepareCommit());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return NOT_BLOCKED;
-    }
-
-    private void writePage(Page chunk, BatchTableWrite write) {
-        for (int position = 0; position < chunk.getPositionCount(); position++) {
-            GenericRow record = new GenericRow(chunk.getChannelCount());
-            for (int channel = 0; channel < chunk.getChannelCount(); channel++) {
-                Block block = chunk.getBlock(channel);
+        for (int position = 0; position < page.getPositionCount(); position++) {
+            GenericRow record = new GenericRow(page.getChannelCount());
+            for (int channel = 0; channel < page.getChannelCount(); channel++) {
+                Block block = page.getBlock(channel);
                 Type type = columnTypes.get(channel);
                 Object value = formatValue(block, type, position);
                 record.setField(channel, value);
@@ -117,17 +108,15 @@ public class TrinoPageSinkBase implements ConnectorPageSink {
                 throw new RuntimeException(e);
             }
         }
+        return NOT_BLOCKED;
     }
 
     @Override
     public CompletableFuture<Collection<Slice>> finish() {
         try {
-            if (!messageList.isEmpty()) {
-                BatchTableCommit commit = writeBuilder.newCommit();
-                commit.commit(messageList);
-            } else {
-                write.close();
-            }
+            List<CommitMessage> messageList = write.prepareCommit();
+            BatchTableCommit commit = writeBuilder.newCommit();
+            commit.commit(messageList);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
