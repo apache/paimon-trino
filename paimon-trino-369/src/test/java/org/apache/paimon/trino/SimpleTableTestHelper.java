@@ -45,7 +45,11 @@ public class SimpleTableTestHelper {
                                 rowType.getFields(),
                                 Collections.emptyList(),
                                 Collections.emptyList(),
-                                new HashMap<>(),
+                                new HashMap<>() {
+                                    {
+                                        put("write-mode", "change-log");
+                                    }
+                                },
                                 ""));
         FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), path);
         String user = "user";
