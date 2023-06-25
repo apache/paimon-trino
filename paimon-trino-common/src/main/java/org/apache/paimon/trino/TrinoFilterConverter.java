@@ -32,6 +32,7 @@ import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.type.ArrayType;
 import io.trino.spi.type.BigintType;
 import io.trino.spi.type.BooleanType;
+import io.trino.spi.type.CharType;
 import io.trino.spi.type.DateType;
 import io.trino.spi.type.DecimalType;
 import io.trino.spi.type.DoubleType;
@@ -42,6 +43,8 @@ import io.trino.spi.type.RealType;
 import io.trino.spi.type.Type;
 import io.trino.spi.type.VarbinaryType;
 import io.trino.spi.type.VarcharType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -61,6 +64,8 @@ import static org.apache.paimon.predicate.PredicateBuilder.or;
 
 /** Trino filter to flink predicate. */
 public class TrinoFilterConverter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(TrinoFilterConverter.class);
 
     private final RowType rowType;
     private final PredicateBuilder builder;
@@ -91,7 +96,10 @@ public class TrinoFilterConverter {
             if (index != -1) {
                 try {
                     conjuncts.add(toPredicate(index, columnHandle.getTrinoType(), domain));
-                } catch (UnsupportedOperationException ignored) {
+                } catch (UnsupportedOperationException exception) {
+                    LOG.warn(
+                            "Unsupported predicate, maybe the type of column is not supported yet.",
+                            exception);
                 }
             }
         }
@@ -230,7 +238,7 @@ public class TrinoFilterConverter {
                     ((LongTimestampWithTimeZone) trinoNativeValue).getEpochMillis());
         }
 
-        if (type instanceof VarcharType) {
+        if (type instanceof VarcharType || type instanceof CharType) {
             return BinaryString.fromBytes(((Slice) trinoNativeValue).getBytes());
         }
 

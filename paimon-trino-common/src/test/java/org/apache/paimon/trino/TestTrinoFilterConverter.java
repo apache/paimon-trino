@@ -18,6 +18,7 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.data.BinaryString;
 import org.apache.paimon.predicate.Predicate;
 import org.apache.paimon.predicate.PredicateBuilder;
 import org.apache.paimon.types.DataField;
@@ -25,10 +26,12 @@ import org.apache.paimon.types.IntType;
 import org.apache.paimon.types.RowType;
 
 import com.google.common.collect.ImmutableMap;
+import io.airlift.slice.Slices;
 import io.trino.spi.predicate.Domain;
 import io.trino.spi.predicate.Range;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.predicate.ValueSet;
+import io.trino.spi.type.CharType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -117,5 +120,28 @@ public class TestTrinoFilterConverter {
         Predicate expectedIn = builder.in(0, Arrays.asList(1, 2, 3));
         Predicate actualIn = converter.convert(in).get();
         assertThat(actualIn).isEqualTo(expectedIn);
+    }
+
+    @Test
+    public void testCharType() {
+        RowType rowType =
+                new RowType(
+                        Collections.singletonList(
+                                new DataField(
+                                        0, "date", new org.apache.paimon.types.CharType(10))));
+        TrinoFilterConverter converter = new TrinoFilterConverter(rowType);
+        PredicateBuilder builder = new PredicateBuilder(rowType);
+        TrinoColumnHandle idColumn =
+                TrinoColumnHandle.of("date", new org.apache.paimon.types.CharType(10));
+        TupleDomain<TrinoColumnHandle> eq =
+                TupleDomain.withColumnDomains(
+                        ImmutableMap.of(
+                                idColumn,
+                                Domain.singleValue(
+                                        CharType.createCharType(10),
+                                        Slices.utf8Slice("2020-11-11"))));
+        Predicate expectedEqq = builder.equal(0, BinaryString.fromString("2020-11-11"));
+        Predicate actualEqq = converter.convert(eq).get();
+        assertThat(actualEqq).isEqualTo(expectedEqq);
     }
 }
