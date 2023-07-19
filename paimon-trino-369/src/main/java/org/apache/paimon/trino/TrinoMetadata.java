@@ -68,9 +68,9 @@ public class TrinoMetadata extends TrinoMetadataBase {
         // TODO: remove options, SET PROPERTIES x = DEFAULT
         try {
             catalog.alterTable(identifier, changes, false);
-        } catch (Catalog.TableNotExistException e) {
+        } catch (Exception e) {
             throw new RuntimeException(
-                    format("table not exists: '%s'", trinoTableHandle.getTableName()));
+                    format("failed to alter table: '%s'", trinoTableHandle.getTableName()), e);
         }
     }
 }

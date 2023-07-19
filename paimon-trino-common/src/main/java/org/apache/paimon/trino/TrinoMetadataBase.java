@@ -286,9 +286,9 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
                         column.getName(), TrinoTypeUtils.toPaimonType(column.getType())));
         try {
             catalog.alterTable(identifier, changes, false);
-        } catch (Catalog.TableNotExistException e) {
+        } catch (Exception e) {
             throw new RuntimeException(
-                    format("table not exists: '%s'", trinoTableHandle.getTableName()));
+                    format("failed to alter table: '%s'", trinoTableHandle.getTableName()), e);
         }
     }
 
@@ -306,9 +306,9 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
         changes.add(SchemaChange.renameColumn(trinoColumnHandle.getColumnName(), target));
         try {
             catalog.alterTable(identifier, changes, false);
-        } catch (Catalog.TableNotExistException e) {
+        } catch (Exception e) {
             throw new RuntimeException(
-                    format("table not exists: '%s'", trinoTableHandle.getTableName()));
+                    format("failed to alter table: '%s'", trinoTableHandle.getTableName()), e);
         }
     }
 
@@ -323,9 +323,9 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
         changes.add(SchemaChange.dropColumn(trinoColumnHandle.getColumnName()));
         try {
             catalog.alterTable(identifier, changes, false);
-        } catch (Catalog.TableNotExistException e) {
+        } catch (Exception e) {
             throw new RuntimeException(
-                    format("table not exists: '%s'", trinoTableHandle.getTableName()));
+                    format("failed to alter table: '%s'", trinoTableHandle.getTableName()), e);
         }
     }
 
