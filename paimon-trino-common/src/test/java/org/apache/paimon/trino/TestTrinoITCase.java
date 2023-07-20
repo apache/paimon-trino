@@ -57,7 +57,7 @@ import static org.apache.paimon.data.BinaryString.fromString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** ITCase for trino connector. */
-public class TestTrinoITCase extends AbstractTestQueryFramework {
+public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
     private static final String CATALOG = "paimon";
     private static final String DB = "default";

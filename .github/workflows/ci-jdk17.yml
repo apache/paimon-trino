@@ -69,4 +69,4 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Build
         run: |
-          mvn clean install -DskipTests -pl paimon-trino-common,paimon-trino-393
+          mvn clean install -DskipTests -pl paimon-trino-common,paimon-trino-393,paimon-trino-422
