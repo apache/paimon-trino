@@ -62,11 +62,14 @@ import static io.trino.spi.type.DateType.DATE;
 import static io.trino.spi.type.Decimals.encodeShortScaledValue;
 import static io.trino.spi.type.IntegerType.INTEGER;
 import static io.trino.spi.type.LongTimestampWithTimeZone.fromEpochMillisAndFraction;
+import static io.trino.spi.type.RealType.REAL;
+import static io.trino.spi.type.SmallintType.SMALLINT;
 import static io.trino.spi.type.TimeType.TIME_MICROS;
 import static io.trino.spi.type.TimeZoneKey.UTC_KEY;
 import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
 import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
 import static io.trino.spi.type.Timestamps.MICROSECONDS_PER_MILLISECOND;
+import static io.trino.spi.type.TinyintType.TINYINT;
 import static java.lang.String.format;
 
 /** Trino {@link ConnectorPageSource}. */
@@ -160,16 +163,18 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
         if (javaType == boolean.class) {
             type.writeBoolean(output, (Boolean) value);
         } else if (javaType == long.class) {
-            if (type.equals(BIGINT)) {
+            if (type.equals(BIGINT)
+                    || type.equals(INTEGER)
+                    || type.equals(TINYINT)
+                    || type.equals(SMALLINT)
+                    || type.equals(DATE)) {
                 type.writeLong(output, ((Number) value).longValue());
-            } else if (type.equals(INTEGER)) {
-                type.writeLong(output, ((Number) value).intValue());
+            } else if (type.equals(REAL)) {
+                type.writeLong(output, Float.floatToIntBits((Float) value));
             } else if (type instanceof DecimalType) {
                 DecimalType decimalType = (DecimalType) type;
                 BigDecimal decimal = ((Decimal) value).toBigDecimal();
                 type.writeLong(output, encodeShortScaledValue(decimal, decimalType.getScale()));
-            } else if (type.equals(DATE)) {
-                type.writeLong(output, (int) value);
             } else if (type.equals(TIMESTAMP_MILLIS)) {
                 type.writeLong(
                         output,
