@@ -81,6 +81,6 @@ jobs:
           echo "<password>$ASF_PASSWORD</password>" >> $tmp_settings
           echo "</server></servers></settings>" >> $tmp_settings
           
-          mvn --settings $tmp_settings clean deploy -Dgpg.skip -Drat.skip -DskipTests -Papache-release -pl paimon-trino-common,paimon-trino-393
+          mvn --settings $tmp_settings clean deploy -Dgpg.skip -Drat.skip -DskipTests -Papache-release -pl paimon-trino-common,paimon-trino-393,paimon-trino-422
           
           rm $tmp_settings
