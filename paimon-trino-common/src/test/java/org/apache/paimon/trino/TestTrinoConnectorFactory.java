@@ -18,7 +18,8 @@
 
 package org.apache.paimon.trino;
 
-import com.google.common.collect.ImmutableMap;
+import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableMap;
+
 import io.trino.spi.connector.Connector;
 import io.trino.spi.connector.ConnectorFactory;
 import io.trino.testing.TestingConnectorContext;

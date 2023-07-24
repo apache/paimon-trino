@@ -18,7 +18,8 @@
 
 package org.apache.paimon.trino;
 
-import com.google.common.collect.ImmutableMap;
+import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableMap;
+
 import io.airlift.log.Logger;
 import io.trino.Session;
 import io.trino.plugin.tpch.TpchPlugin;

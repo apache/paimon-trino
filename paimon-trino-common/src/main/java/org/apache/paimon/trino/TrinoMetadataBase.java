@@ -57,11 +57,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.paimon.utils.Preconditions.checkArgument;
 
 /** Trino {@link ConnectorMetadata}. */
 public abstract class TrinoMetadataBase implements ConnectorMetadata {
