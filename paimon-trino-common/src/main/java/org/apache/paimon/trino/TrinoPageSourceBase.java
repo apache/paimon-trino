@@ -54,7 +54,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.base.Verify.verify;
 import static io.airlift.slice.Slices.wrappedBuffer;
 import static io.trino.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static io.trino.spi.type.BigintType.BIGINT;
@@ -71,6 +70,7 @@ import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
 import static io.trino.spi.type.Timestamps.MICROSECONDS_PER_MILLISECOND;
 import static io.trino.spi.type.TinyintType.TINYINT;
 import static java.lang.String.format;
+import static org.apache.paimon.utils.Preconditions.checkArgument;
 
 /** Trino {@link ConnectorPageSource}. */
 public abstract class TrinoPageSourceBase implements ConnectorPageSource {
@@ -193,7 +193,7 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
         } else if (javaType == Slice.class) {
             writeSlice(output, type, value);
         } else if (javaType == LongTimestampWithTimeZone.class) {
-            verify(type.equals(TIMESTAMP_TZ_MILLIS));
+            checkArgument(type.equals(TIMESTAMP_TZ_MILLIS));
             Timestamp timestamp = (org.apache.paimon.data.Timestamp) value;
             type.writeObject(
                     output, fromEpochMillisAndFraction(timestamp.getMillisecond(), 0, UTC_KEY));

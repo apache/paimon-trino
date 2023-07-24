@@ -26,12 +26,12 @@ import io.trino.spi.transaction.IsolationLevel;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.trino.spi.transaction.IsolationLevel.READ_COMMITTED;
 import static io.trino.spi.transaction.IsolationLevel.checkConnectorSupports;
 import static java.util.Objects.requireNonNull;
 import static org.apache.paimon.CoreOptions.SCAN_SNAPSHOT_ID;
 import static org.apache.paimon.CoreOptions.SCAN_TIMESTAMP_MILLIS;
+import static org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableList.toImmutableList;
 import static org.apache.paimon.trino.TrinoTableHandle.SCAN_SNAPSHOT;
 import static org.apache.paimon.trino.TrinoTableHandle.SCAN_TIMESTAMP;
 

@@ -18,7 +18,8 @@
 
 package org.apache.paimon.trino;
 
-import com.google.common.collect.ImmutableList;
+import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableList;
+
 import io.trino.spi.session.PropertyMetadata;
 import io.trino.spi.type.ArrayType;
 
