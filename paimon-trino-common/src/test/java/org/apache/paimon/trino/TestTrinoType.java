@@ -103,9 +103,14 @@ public class TestTrinoType {
         Type timeType = TrinoTypeUtils.fromPaimonType(new TimeType());
         assertThat(Objects.requireNonNull(timeType).getDisplayName()).isEqualTo("time(3)");
 
-        Type timestampType = TrinoTypeUtils.fromPaimonType(DataTypes.TIMESTAMP());
-        assertThat(Objects.requireNonNull(timestampType).getDisplayName())
-                .isEqualTo("timestamp(3)");
+        Type timestampType6 = TrinoTypeUtils.fromPaimonType(DataTypes.TIMESTAMP());
+        assertThat(Objects.requireNonNull(timestampType6).getDisplayName())
+                .isEqualTo("timestamp(6)");
+
+        Type timestampType0 =
+                TrinoTypeUtils.fromPaimonType(new org.apache.paimon.types.TimestampType(0));
+        assertThat(Objects.requireNonNull(timestampType0).getDisplayName())
+                .isEqualTo("timestamp(0)");
 
         Type localZonedTimestampType =
                 TrinoTypeUtils.fromPaimonType(DataTypes.TIMESTAMP_WITH_LOCAL_TIME_ZONE());
@@ -176,8 +181,14 @@ public class TestTrinoType {
         DataType timeType = TrinoTypeUtils.toPaimonType(io.trino.spi.type.TimeType.TIME_MILLIS);
         assertThat(timeType.asSQLString()).isEqualTo("TIME(0)");
 
-        DataType timestampType = TrinoTypeUtils.toPaimonType(TimestampType.TIMESTAMP_MILLIS);
-        assertThat(timestampType.asSQLString()).isEqualTo("TIMESTAMP(6)");
+        DataType timestampType0 = TrinoTypeUtils.toPaimonType(TimestampType.TIMESTAMP_SECONDS);
+        assertThat(timestampType0.asSQLString()).isEqualTo("TIMESTAMP(0)");
+
+        DataType timestampType3 = TrinoTypeUtils.toPaimonType(TimestampType.TIMESTAMP_MILLIS);
+        assertThat(timestampType3.asSQLString()).isEqualTo("TIMESTAMP(3)");
+
+        DataType timestampType6 = TrinoTypeUtils.toPaimonType(TimestampType.TIMESTAMP_MICROS);
+        assertThat(timestampType6.asSQLString()).isEqualTo("TIMESTAMP(6)");
 
         DataType timestampWithTimeZoneType =
                 TrinoTypeUtils.toPaimonType(TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS);
