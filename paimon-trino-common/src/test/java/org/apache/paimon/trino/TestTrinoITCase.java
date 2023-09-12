@@ -20,6 +20,7 @@ package org.apache.paimon.trino;
 
 import org.apache.paimon.data.GenericMap;
 import org.apache.paimon.data.GenericRow;
+import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.fs.Path;
 import org.apache.paimon.fs.local.LocalFileIO;
 import org.apache.paimon.schema.Schema;
@@ -36,6 +37,7 @@ import org.apache.paimon.types.IntType;
 import org.apache.paimon.types.MapType;
 import org.apache.paimon.types.RowKind;
 import org.apache.paimon.types.RowType;
+import org.apache.paimon.types.TimestampType;
 import org.apache.paimon.types.VarCharType;
 
 import io.trino.testing.AbstractTestQueryFramework;
@@ -144,6 +146,29 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                             put(fromString("1"), fromString("2"));
                                         }
                                     })));
+            commit.commit(0, writer.prepareCommit(true, 0));
+        }
+
+        {
+            Path tablePath6 = new Path(warehouse, "default.db/t6");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "i", new IntType()),
+                                    new DataField(1, "createdtime", new TimestampType(0)),
+                                    new DataField(2, "updatedtime", new TimestampType(3))));
+            new SchemaManager(LocalFileIO.create(), tablePath6)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    Collections.singletonList("i"),
+                                    new HashMap<>(),
+                                    ""));
+            FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath6);
+            InnerTableWrite writer = table.newWrite("user");
+            InnerTableCommit commit = table.newCommit("user");
+            writer.write(GenericRow.of(1, Timestamp.fromMicros(1694505288000000l), Timestamp.fromMicros(1694505288001000l)));
             commit.commit(0, writer.prepareCommit(true, 0));
         }
 
@@ -397,6 +422,11 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
         sql(
                 "ALTER TABLE paimon.default.t5 SET PROPERTIES bucket = '4',snapshot_time_retained = '4h'");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
+    }
+
+    @Test
+    public void testTimestamp0AndTimestamp3() {
+         assertThat(sql("SELECT * FROM paimon.default.t6")).isEqualTo("[[1, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001]]");
     }
 
     private String sql(String sql) {
