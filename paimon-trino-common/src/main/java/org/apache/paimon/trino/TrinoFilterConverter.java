@@ -234,6 +234,9 @@ public class TrinoFilterConverter {
         }
 
         if (type.equals(TIMESTAMP_TZ_MILLIS)) {
+            if (trinoNativeValue instanceof Long) {
+                return trinoNativeValue;
+            }
             return Timestamp.fromEpochMillis(
                     ((LongTimestampWithTimeZone) trinoNativeValue).getEpochMillis());
         }

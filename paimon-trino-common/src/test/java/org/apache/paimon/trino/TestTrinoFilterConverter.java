@@ -19,6 +19,7 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.data.BinaryString;
+import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.predicate.Predicate;
 import org.apache.paimon.predicate.PredicateBuilder;
 import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableMap;
@@ -32,12 +33,16 @@ import io.trino.spi.predicate.Range;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.predicate.ValueSet;
 import io.trino.spi.type.CharType;
+import io.trino.spi.type.TimeZoneKey;
+import io.trino.spi.type.TimestampType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 
 import static io.trino.spi.type.IntegerType.INTEGER;
+import static io.trino.spi.type.LongTimestampWithTimeZone.fromEpochMillisAndFraction;
+import static io.trino.spi.type.TimestampWithTimeZoneType.createTimestampWithTimeZoneType;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Test for {@link TrinoFilterConverter}. */
@@ -142,6 +147,69 @@ public class TestTrinoFilterConverter {
                                         Slices.utf8Slice("2020-11-11"))));
         Predicate expectedEqq = builder.equal(0, BinaryString.fromString("2020-11-11"));
         Predicate actualEqq = converter.convert(eq).get();
+        assertThat(actualEqq).isEqualTo(expectedEqq);
+    }
+
+    @Test
+    public void testTimeStamp() {
+        RowType rowType =
+                new RowType(
+                        Collections.singletonList(
+                                new DataField(
+                                        0, "ts", new org.apache.paimon.types.TimestampType(3))));
+        TrinoFilterConverter converter = new TrinoFilterConverter(rowType);
+        PredicateBuilder builder = new PredicateBuilder(rowType);
+        TrinoColumnHandle tsColumn =
+                TrinoColumnHandle.of("ts", new org.apache.paimon.types.TimestampType(3));
+        TupleDomain<TrinoColumnHandle> eq =
+                TupleDomain.withColumnDomains(
+                        ImmutableMap.of(
+                                tsColumn,
+                                Domain.singleValue(
+                                        TimestampType.createTimestampType(3), 1695645403000L)));
+        Predicate expectedEqq = builder.equal(0, Timestamp.fromEpochMillis(1695645403000L / 1000));
+        Predicate actualEqq = converter.convert(eq).get();
+        assertThat(actualEqq).isEqualTo(expectedEqq);
+    }
+
+    @Test
+    public void testTimeStampWithTimeZone() {
+        RowType rowType =
+                new RowType(
+                        Collections.singletonList(
+                                new DataField(
+                                        0,
+                                        "ts",
+                                        new org.apache.paimon.types.LocalZonedTimestampType(3))));
+        TrinoFilterConverter converter = new TrinoFilterConverter(rowType);
+        PredicateBuilder builder = new PredicateBuilder(rowType);
+        TrinoColumnHandle tsColumn =
+                TrinoColumnHandle.of("ts", new org.apache.paimon.types.LocalZonedTimestampType(3));
+        TupleDomain<TrinoColumnHandle> eq =
+                TupleDomain.withColumnDomains(
+                        ImmutableMap.of(
+                                tsColumn,
+                                Domain.singleValue(
+                                        createTimestampWithTimeZoneType(6),
+                                        fromEpochMillisAndFraction(
+                                                1695645403000L, 0, TimeZoneKey.UTC_KEY))));
+        Predicate expectedEqq =
+                builder.equal(
+                        0,
+                        Timestamp.fromEpochMillis(
+                                (fromEpochMillisAndFraction(1695645403000L, 0, TimeZoneKey.UTC_KEY))
+                                        .getEpochMillis()));
+        Predicate actualEqq = converter.convert(eq).get();
+        assertThat(actualEqq).isEqualTo(expectedEqq);
+
+        eq =
+                TupleDomain.withColumnDomains(
+                        ImmutableMap.of(
+                                tsColumn,
+                                Domain.singleValue(
+                                        createTimestampWithTimeZoneType(3), 1695645403000L)));
+        expectedEqq = builder.equal(0, 1695645403000L);
+        actualEqq = converter.convert(eq).get();
         assertThat(actualEqq).isEqualTo(expectedEqq);
     }
 }
