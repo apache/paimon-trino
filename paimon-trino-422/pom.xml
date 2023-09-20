@@ -36,8 +36,8 @@ under the License.
         <jdk.test.version>17</jdk.test.version>
         <trino.version>422</trino.version>
         <hadoop.version>2.8.5</hadoop.version>
-        <configuration.version>216</configuration.version>
-        <slice.version>0.42</slice.version>
+        <configuration.version>235</configuration.version>
+        <slice.version>0.45</slice.version>
         <maven.toolchains.plugin.version>3.1.0</maven.toolchains.plugin.version>
     </properties>
 

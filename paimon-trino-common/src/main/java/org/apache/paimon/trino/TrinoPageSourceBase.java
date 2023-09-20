@@ -154,7 +154,7 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
         this.reader.close();
     }
 
-    private void appendTo(Type type, DataType logicalType, Object value, BlockBuilder output) {
+    protected void appendTo(Type type, DataType logicalType, Object value, BlockBuilder output) {
         if (value == null) {
             output.appendNull();
             return;
@@ -230,7 +230,7 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
         }
     }
 
-    private void writeBlock(BlockBuilder output, Type type, DataType logicalType, Object value) {
+    protected void writeBlock(BlockBuilder output, Type type, DataType logicalType, Object value) {
         if (type instanceof ArrayType) {
             BlockBuilder builder = output.beginBlockEntry();
 
