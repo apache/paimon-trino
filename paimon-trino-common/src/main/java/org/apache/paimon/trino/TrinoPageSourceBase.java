@@ -66,6 +66,7 @@ import static io.trino.spi.type.SmallintType.SMALLINT;
 import static io.trino.spi.type.TimeType.TIME_MICROS;
 import static io.trino.spi.type.TimeZoneKey.UTC_KEY;
 import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
+import static io.trino.spi.type.TimestampType.TIMESTAMP_SECONDS;
 import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
 import static io.trino.spi.type.Timestamps.MICROSECONDS_PER_MILLISECOND;
 import static io.trino.spi.type.TinyintType.TINYINT;
@@ -153,7 +154,7 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
         this.reader.close();
     }
 
-    private void appendTo(Type type, DataType logicalType, Object value, BlockBuilder output) {
+    protected void appendTo(Type type, DataType logicalType, Object value, BlockBuilder output) {
         if (value == null) {
             output.appendNull();
             return;
@@ -175,7 +176,7 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
                 DecimalType decimalType = (DecimalType) type;
                 BigDecimal decimal = ((Decimal) value).toBigDecimal();
                 type.writeLong(output, encodeShortScaledValue(decimal, decimalType.getScale()));
-            } else if (type.equals(TIMESTAMP_MILLIS)) {
+            } else if (type.equals(TIMESTAMP_MILLIS) || type.equals(TIMESTAMP_SECONDS)) {
                 type.writeLong(
                         output,
                         ((Timestamp) value).getMillisecond() * MICROSECONDS_PER_MILLISECOND);
@@ -229,7 +230,7 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
         }
     }
 
-    private void writeBlock(BlockBuilder output, Type type, DataType logicalType, Object value) {
+    protected void writeBlock(BlockBuilder output, Type type, DataType logicalType, Object value) {
         if (type instanceof ArrayType) {
             BlockBuilder builder = output.beginBlockEntry();
 

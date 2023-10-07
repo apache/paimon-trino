@@ -18,8 +18,10 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.data.GenericArray;
 import org.apache.paimon.data.GenericMap;
 import org.apache.paimon.data.GenericRow;
+import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.fs.Path;
 import org.apache.paimon.fs.local.LocalFileIO;
 import org.apache.paimon.schema.Schema;
@@ -28,6 +30,7 @@ import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.FileStoreTableFactory;
 import org.apache.paimon.table.sink.InnerTableCommit;
 import org.apache.paimon.table.sink.InnerTableWrite;
+import org.apache.paimon.types.ArrayType;
 import org.apache.paimon.types.BigIntType;
 import org.apache.paimon.types.CharType;
 import org.apache.paimon.types.DataField;
@@ -36,6 +39,7 @@ import org.apache.paimon.types.IntType;
 import org.apache.paimon.types.MapType;
 import org.apache.paimon.types.RowKind;
 import org.apache.paimon.types.RowType;
+import org.apache.paimon.types.TimestampType;
 import org.apache.paimon.types.VarCharType;
 
 import io.trino.testing.AbstractTestQueryFramework;
@@ -45,9 +49,11 @@ import io.trino.testing.QueryRunner;
 import org.testng.annotations.Test;
 
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -114,6 +120,10 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
         {
             Path tablePath4 = new Path(warehouse, "default.db/t4");
+            List<DataField> innerRowFields = new ArrayList<>();
+            innerRowFields.add(new DataField(4, "innercol1", new IntType()));
+            innerRowFields.add(
+                    new DataField(5, "innercol2", new VarCharType(VarCharType.MAX_LENGTH)));
             RowType rowType =
                     new RowType(
                             Arrays.asList(
@@ -123,7 +133,9 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                             "map",
                                             new MapType(
                                                     new VarCharType(VarCharType.MAX_LENGTH),
-                                                    new VarCharType(VarCharType.MAX_LENGTH)))));
+                                                    new VarCharType(VarCharType.MAX_LENGTH))),
+                                    new DataField(2, "innerrow", new RowType(true, innerRowFields)),
+                                    new DataField(3, "array", new ArrayType(new IntType()))));
             new SchemaManager(LocalFileIO.create(), tablePath4)
                     .createTable(
                             new Schema(
@@ -143,7 +155,36 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                         {
                                             put(fromString("1"), fromString("2"));
                                         }
-                                    })));
+                                    }),
+                            GenericRow.of(2, fromString("male")),
+                            new GenericArray(new int[] {1, 2, 3})));
+            commit.commit(0, writer.prepareCommit(true, 0));
+        }
+
+        {
+            Path tablePath6 = new Path(warehouse, "default.db/t99");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "i", new IntType()),
+                                    new DataField(1, "createdtime", new TimestampType(0)),
+                                    new DataField(2, "updatedtime", new TimestampType(3))));
+            new SchemaManager(LocalFileIO.create(), tablePath6)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    Collections.singletonList("i"),
+                                    new HashMap<>(),
+                                    ""));
+            FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath6);
+            InnerTableWrite writer = table.newWrite("user");
+            InnerTableCommit commit = table.newCommit("user");
+            writer.write(
+                    GenericRow.of(
+                            1,
+                            Timestamp.fromMicros(1694505288000000L),
+                            Timestamp.fromMicros(1694505288001000L)));
             commit.commit(0, writer.prepareCommit(true, 0));
         }
 
@@ -178,7 +219,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
     @Test
     public void testComplexTypes() {
-        assertThat(sql("SELECT * FROM paimon.default.t4")).isEqualTo("[[1, {1=2}]]");
+        assertThat(sql("SELECT * FROM paimon.default.t4"))
+                .isEqualTo("[[1, {1=2}, [2, male], [1, 2, 3]]]");
     }
 
     @Test
@@ -257,7 +299,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "changelog_producer = 'input'"
                         + ")");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[orders], [t1], [t2], [t3], [t4]]");
+                .isEqualTo("[[orders], [t1], [t2], [t3], [t4], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.orders");
     }
 
@@ -280,7 +322,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("ALTER TABLE paimon.default.t5 RENAME TO t6");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[t1], [t2], [t3], [t4], [t6]]");
+                .isEqualTo("[[t1], [t2], [t3], [t4], [t6], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.t6");
     }
 
@@ -302,7 +344,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "changelog_producer = 'input'"
                         + ")");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
-        assertThat(sql("SHOW TABLES FROM paimon.default")).isEqualTo("[[t1], [t2], [t3], [t4]]");
+        assertThat(sql("SHOW TABLES FROM paimon.default"))
+                .isEqualTo("[[t1], [t2], [t3], [t4], [t99]]");
     }
 
     @Test
@@ -397,6 +440,12 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
         sql(
                 "ALTER TABLE paimon.default.t5 SET PROPERTIES bucket = '4',snapshot_time_retained = '4h'");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
+    }
+
+    @Test
+    public void testTimestamp0AndTimestamp3() {
+        assertThat(sql("SELECT * FROM paimon.default.t99"))
+                .isEqualTo("[[1, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001]]");
     }
 
     private String sql(String sql) {
