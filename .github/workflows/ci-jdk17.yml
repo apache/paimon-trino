@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Java CI
+name: Java 17 Build
 
 on: [push, pull_request]
 
@@ -69,4 +69,4 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Build
         run: |
-          mvn clean install -DskipTests -pl paimon-trino-common,paimon-trino-393,paimon-trino-422
+          mvn clean test -pl paimon-trino-common,paimon-trino-393,paimon-trino-422
