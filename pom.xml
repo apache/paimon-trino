@@ -33,9 +33,9 @@ under the License.
     </modules>
 
     <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>23</version>
+        <groupId>io.airlift</groupId>
+        <artifactId>airbase</artifactId>
+        <version>147</version>
     </parent>
 
     <groupId>org.apache.paimon</groupId>
@@ -93,7 +93,7 @@ under the License.
             * limitations under the License.
             */
         </spotless.license.header>
-        <air.test.jvm.additional-arguments>--add-opens=java.base/java.nio=ALL-UNNAMED</air.test.jvm.additional-arguments>
+        <air.test.jvm.additional-arguments>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED</air.test.jvm.additional-arguments>
     </properties>
 
     <dependencies>
