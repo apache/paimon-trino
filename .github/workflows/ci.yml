@@ -30,4 +30,4 @@ jobs:
           java-version: 11
       - name: Build
         run: |
-          mvn clean test -pl paimon-trino-common,paimon-trino-358,paimon-trino-368,paimon-trino-369,paimon-trino-370,paimon-trino-388
+          ./mvnw clean install -pl paimon-trino-common,paimon-trino-358,paimon-trino-368,paimon-trino-369,paimon-trino-370,paimon-trino-388
