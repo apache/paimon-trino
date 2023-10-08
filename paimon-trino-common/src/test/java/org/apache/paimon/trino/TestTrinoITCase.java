@@ -447,7 +447,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
     @Test
     public void testTimestamp0AndTimestamp3() {
         assertThat(sql("SELECT * FROM paimon.default.t99"))
-                .isEqualTo("[[1, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001]]");
+                .isEqualTo(
+                        "[[1, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001]]");
     }
 
     private String sql(String sql) {
