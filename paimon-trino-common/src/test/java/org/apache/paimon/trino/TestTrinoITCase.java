@@ -168,7 +168,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                             Arrays.asList(
                                     new DataField(0, "i", new IntType()),
                                     new DataField(1, "createdtime", new TimestampType(0)),
-                                    new DataField(2, "updatedtime", new TimestampType(3))));
+                                    new DataField(2, "updatedtime", new TimestampType(3)),
+                                    new DataField(3, "microtime", new TimestampType(6))));
             new SchemaManager(LocalFileIO.create(), tablePath6)
                     .createTable(
                             new Schema(
@@ -184,7 +185,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                     GenericRow.of(
                             1,
                             Timestamp.fromMicros(1694505288000000L),
-                            Timestamp.fromMicros(1694505288001000L)));
+                            Timestamp.fromMicros(1694505288001000L),
+                            Timestamp.fromMicros(1694505288001001L)));
             commit.commit(0, writer.prepareCommit(true, 0));
         }
 
@@ -445,7 +447,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
     @Test
     public void testTimestamp0AndTimestamp3() {
         assertThat(sql("SELECT * FROM paimon.default.t99"))
-                .isEqualTo("[[1, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001]]");
+                .isEqualTo("[[1, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001]]");
     }
 
     private String sql(String sql) {

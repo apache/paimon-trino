@@ -65,6 +65,7 @@ import static io.trino.spi.type.RealType.REAL;
 import static io.trino.spi.type.SmallintType.SMALLINT;
 import static io.trino.spi.type.TimeType.TIME_MICROS;
 import static io.trino.spi.type.TimeZoneKey.UTC_KEY;
+import static io.trino.spi.type.TimestampType.TIMESTAMP_MICROS;
 import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
 import static io.trino.spi.type.TimestampType.TIMESTAMP_SECONDS;
 import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
@@ -180,6 +181,8 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
                 type.writeLong(
                         output,
                         ((Timestamp) value).getMillisecond() * MICROSECONDS_PER_MILLISECOND);
+            } else if (type.equals(TIMESTAMP_MICROS)) {
+                type.writeLong(output, ((Timestamp) value).toMicros());
             } else if (type.equals(TIME_MICROS)) {
                 type.writeLong(output, (int) value * MICROSECONDS_PER_MILLISECOND);
             } else {
