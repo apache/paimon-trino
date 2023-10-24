@@ -19,7 +19,6 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.CoreOptions;
-import org.apache.paimon.WriteMode;
 import org.apache.paimon.options.ConfigOption;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.utils.StringUtils;
@@ -97,7 +96,6 @@ public class TrinoTableOptionUtils {
             case "FileFormatType":
             case "StartupMode":
             case "MergeEngine":
-            case "WriteMode":
             case "ChangelogProducer":
             case "LogConsistency":
             case "LogChangelogMode":
@@ -114,8 +112,6 @@ public class TrinoTableOptionUtils {
                 return CoreOptions.FileFormatType.class;
             case "MergeEngine":
                 return CoreOptions.MergeEngine.class;
-            case "WriteMode":
-                return WriteMode.class;
             case "ChangelogProducer":
                 return CoreOptions.ChangelogProducer.class;
             case "StartupMode":
