@@ -51,8 +51,11 @@ import static io.trino.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 /** Trino {@link ConnectorPageSource}. */
 public class TrinoPageSource extends TrinoPageSourceBase {
 
-    public TrinoPageSource(RecordReader<InternalRow> reader, List<ColumnHandle> projectedColumns) {
-        super(reader, projectedColumns);
+    public TrinoPageSource(
+            RecordReader<InternalRow> reader,
+            List<ColumnHandle> projectedColumns,
+            OptionalLong limit) {
+        super(reader, projectedColumns, limit);
     }
 
     protected void writeBlock(BlockBuilder output, Type type, DataType logicalType, Object value) {

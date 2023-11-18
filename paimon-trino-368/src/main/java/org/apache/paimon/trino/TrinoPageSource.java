@@ -25,12 +25,16 @@ import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ConnectorPageSource;
 
 import java.util.List;
+import java.util.OptionalLong;
 
 /** Trino {@link ConnectorPageSource}. */
 public class TrinoPageSource extends TrinoPageSourceBase {
 
-    public TrinoPageSource(RecordReader<InternalRow> reader, List<ColumnHandle> projectedColumns) {
-        super(reader, projectedColumns);
+    public TrinoPageSource(
+            RecordReader<InternalRow> reader,
+            List<ColumnHandle> projectedColumns,
+            OptionalLong limit) {
+        super(reader, projectedColumns, limit);
     }
 
     @Override

@@ -48,11 +48,14 @@ import io.trino.spi.type.Type;
 import io.trino.spi.type.VarbinaryType;
 import io.trino.spi.type.VarcharType;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalLong;
 
 import static io.airlift.slice.Slices.wrappedBuffer;
 import static io.trino.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
@@ -77,16 +80,24 @@ import static org.apache.paimon.utils.Preconditions.checkArgument;
 /** Trino {@link ConnectorPageSource}. */
 public abstract class TrinoPageSourceBase implements ConnectorPageSource {
 
+    private static final int ROWS_PER_REQUEST = 4096;
+
     private final RecordReader<InternalRow> reader;
+    private final OptionalLong limit;
     private final PageBuilder pageBuilder;
     private final List<Type> columnTypes;
     private final List<DataType> logicalTypes;
 
     private boolean isFinished = false;
+    private RecordIterator<InternalRow> currentIterator;
+    private long numReturn = 0;
 
     public TrinoPageSourceBase(
-            RecordReader<InternalRow> reader, List<ColumnHandle> projectedColumns) {
+            RecordReader<InternalRow> reader,
+            List<ColumnHandle> projectedColumns,
+            OptionalLong limit) {
         this.reader = reader;
+        this.limit = limit;
         this.columnTypes = new ArrayList<>();
         this.logicalTypes = new ArrayList<>();
         for (ColumnHandle handle : projectedColumns) {
@@ -126,15 +137,32 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
                 TrinoPageSourceBase.class.getClassLoader());
     }
 
+    @Nullable
     private Page nextPage() throws IOException {
-        RecordIterator<InternalRow> batch = reader.readBatch();
-        if (batch == null) {
-            isFinished = true;
-            return null;
-        }
-        InternalRow row;
-        while ((row = batch.next()) != null) {
+        int count = 0;
+        while (count < ROWS_PER_REQUEST && !pageBuilder.isFull()) {
+            if (limit.isPresent() && numReturn + count >= limit.getAsLong()) {
+                isFinished = true;
+                return returnPage(count);
+            }
+
+            if (currentIterator == null) {
+                currentIterator = reader.readBatch();
+            }
+            if (currentIterator == null) {
+                isFinished = true;
+                return returnPage(count);
+            }
+
+            InternalRow row = currentIterator.next();
+            if (row == null) {
+                currentIterator.releaseBatch();
+                currentIterator = null;
+                continue;
+            }
+
             pageBuilder.declarePosition();
+            count++;
             for (int i = 0; i < columnTypes.size(); i++) {
                 BlockBuilder output = pageBuilder.getBlockBuilder(i);
                 appendTo(
@@ -144,7 +172,15 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
                         output);
             }
         }
-        batch.releaseBatch();
+
+        return returnPage(count);
+    }
+
+    private Page returnPage(int count) {
+        if (count == 0) {
+            return null;
+        }
+        numReturn += count;
         Page page = pageBuilder.build();
         pageBuilder.reset();
         return page;
@@ -152,6 +188,10 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
 
     @Override
     public void close() throws IOException {
+        if (currentIterator != null) {
+            currentIterator.releaseBatch();
+            currentIterator = null;
+        }
         this.reader.close();
     }
 
