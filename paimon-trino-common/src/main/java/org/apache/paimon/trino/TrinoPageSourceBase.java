@@ -25,9 +25,9 @@ import org.apache.paimon.data.InternalMap;
 import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.reader.RecordReader;
-import org.apache.paimon.reader.RecordReader.RecordIterator;
 import org.apache.paimon.types.DataType;
 import org.apache.paimon.types.DataTypeChecks;
+import org.apache.paimon.utils.CloseableIterator;
 import org.apache.paimon.utils.InternalRowUtils;
 
 import io.airlift.slice.Slice;
@@ -82,21 +82,20 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
 
     private static final int ROWS_PER_REQUEST = 4096;
 
-    private final RecordReader<InternalRow> reader;
+    private final CloseableIterator<InternalRow> iterator;
     private final OptionalLong limit;
     private final PageBuilder pageBuilder;
     private final List<Type> columnTypes;
     private final List<DataType> logicalTypes;
 
     private boolean isFinished = false;
-    private RecordIterator<InternalRow> currentIterator;
     private long numReturn = 0;
 
     public TrinoPageSourceBase(
             RecordReader<InternalRow> reader,
             List<ColumnHandle> projectedColumns,
             OptionalLong limit) {
-        this.reader = reader;
+        this.iterator = reader.toCloseableIterator();
         this.limit = limit;
         this.columnTypes = new ArrayList<>();
         this.logicalTypes = new ArrayList<>();
@@ -146,21 +145,12 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
                 return returnPage(count);
             }
 
-            if (currentIterator == null) {
-                currentIterator = reader.readBatch();
-            }
-            if (currentIterator == null) {
+            if (!iterator.hasNext()) {
                 isFinished = true;
                 return returnPage(count);
             }
 
-            InternalRow row = currentIterator.next();
-            if (row == null) {
-                currentIterator.releaseBatch();
-                currentIterator = null;
-                continue;
-            }
-
+            InternalRow row = iterator.next();
             pageBuilder.declarePosition();
             count++;
             for (int i = 0; i < columnTypes.size(); i++) {
@@ -188,11 +178,11 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
 
     @Override
     public void close() throws IOException {
-        if (currentIterator != null) {
-            currentIterator.releaseBatch();
-            currentIterator = null;
+        try {
+            this.iterator.close();
+        } catch (Exception e) {
+            throw new IOException(e);
         }
-        this.reader.close();
     }
 
     protected void appendTo(Type type, DataType logicalType, Object value, BlockBuilder output) {
