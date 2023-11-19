@@ -44,7 +44,7 @@ public class SimpleTableTestHelper {
                         new Schema(
                                 rowType.getFields(),
                                 Collections.emptyList(),
-                                Collections.emptyList(),
+                                Collections.singletonList("a"),
                                 new HashMap<>() {
                                     {
                                         put("write-mode", "change-log");
