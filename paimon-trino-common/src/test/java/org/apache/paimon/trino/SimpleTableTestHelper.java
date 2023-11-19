@@ -30,7 +30,6 @@ import org.apache.paimon.table.sink.InnerTableWrite;
 import org.apache.paimon.types.RowType;
 
 import java.util.Collections;
-import java.util.HashMap;
 
 /** A simple table test helper to write and commit. */
 public class SimpleTableTestHelper {
