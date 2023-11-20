@@ -25,9 +25,9 @@ import org.apache.paimon.data.InternalMap;
 import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.reader.RecordReader;
-import org.apache.paimon.reader.RecordReader.RecordIterator;
 import org.apache.paimon.types.DataType;
 import org.apache.paimon.types.DataTypeChecks;
+import org.apache.paimon.utils.CloseableIterator;
 import org.apache.paimon.utils.InternalRowUtils;
 
 import io.airlift.slice.Slice;
@@ -48,11 +48,14 @@ import io.trino.spi.type.Type;
 import io.trino.spi.type.VarbinaryType;
 import io.trino.spi.type.VarcharType;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalLong;
 
 import static io.airlift.slice.Slices.wrappedBuffer;
 import static io.trino.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
@@ -77,16 +80,23 @@ import static org.apache.paimon.utils.Preconditions.checkArgument;
 /** Trino {@link ConnectorPageSource}. */
 public abstract class TrinoPageSourceBase implements ConnectorPageSource {
 
-    private final RecordReader<InternalRow> reader;
+    private static final int ROWS_PER_REQUEST = 4096;
+
+    private final CloseableIterator<InternalRow> iterator;
+    private final OptionalLong limit;
     private final PageBuilder pageBuilder;
     private final List<Type> columnTypes;
     private final List<DataType> logicalTypes;
 
     private boolean isFinished = false;
+    private long numReturn = 0;
 
     public TrinoPageSourceBase(
-            RecordReader<InternalRow> reader, List<ColumnHandle> projectedColumns) {
-        this.reader = reader;
+            RecordReader<InternalRow> reader,
+            List<ColumnHandle> projectedColumns,
+            OptionalLong limit) {
+        this.iterator = reader.toCloseableIterator();
+        this.limit = limit;
         this.columnTypes = new ArrayList<>();
         this.logicalTypes = new ArrayList<>();
         for (ColumnHandle handle : projectedColumns) {
@@ -126,15 +136,23 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
                 TrinoPageSourceBase.class.getClassLoader());
     }
 
+    @Nullable
     private Page nextPage() throws IOException {
-        RecordIterator<InternalRow> batch = reader.readBatch();
-        if (batch == null) {
-            isFinished = true;
-            return null;
-        }
-        InternalRow row;
-        while ((row = batch.next()) != null) {
+        int count = 0;
+        while (count < ROWS_PER_REQUEST && !pageBuilder.isFull()) {
+            if (limit.isPresent() && numReturn + count >= limit.getAsLong()) {
+                isFinished = true;
+                return returnPage(count);
+            }
+
+            if (!iterator.hasNext()) {
+                isFinished = true;
+                return returnPage(count);
+            }
+
+            InternalRow row = iterator.next();
             pageBuilder.declarePosition();
+            count++;
             for (int i = 0; i < columnTypes.size(); i++) {
                 BlockBuilder output = pageBuilder.getBlockBuilder(i);
                 appendTo(
@@ -144,7 +162,15 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
                         output);
             }
         }
-        batch.releaseBatch();
+
+        return returnPage(count);
+    }
+
+    private Page returnPage(int count) {
+        if (count == 0) {
+            return null;
+        }
+        numReturn += count;
         Page page = pageBuilder.build();
         pageBuilder.reset();
         return page;
@@ -152,7 +178,11 @@ public abstract class TrinoPageSourceBase implements ConnectorPageSource {
 
     @Override
     public void close() throws IOException {
-        this.reader.close();
+        try {
+            this.iterator.close();
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
     }
 
     protected void appendTo(Type type, DataType logicalType, Object value, BlockBuilder output) {

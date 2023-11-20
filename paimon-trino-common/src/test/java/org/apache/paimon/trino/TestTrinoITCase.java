@@ -234,6 +234,13 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
     }
 
     @Test
+    public void testLimit() {
+        assertThat(sql("SELECT * FROM paimon.default.t1 LIMIT 1")).isEqualTo("[[1, 2, 1, 1]]");
+        assertThat(sql("SELECT * FROM paimon.default.t1 WHERE a = 5 LIMIT 1"))
+                .isEqualTo("[[5, 6, 3, 3]]");
+    }
+
+    @Test
     public void testSystemTable() {
         assertThat(
                         sql(

@@ -39,6 +39,7 @@ import io.trino.spi.connector.ConnectorTableMetadata;
 import io.trino.spi.connector.ConnectorTableProperties;
 import io.trino.spi.connector.Constraint;
 import io.trino.spi.connector.ConstraintApplicationResult;
+import io.trino.spi.connector.LimitApplicationResult;
 import io.trino.spi.connector.ProjectionApplicationResult;
 import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.connector.SchemaTablePrefix;
@@ -55,6 +56,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Function;
 
 import static java.lang.String.format;
@@ -382,5 +384,23 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
     private static boolean containSameElements(
             List<? extends ColumnHandle> first, List<? extends ColumnHandle> second) {
         return new HashSet<>(first).equals(new HashSet<>(second));
+    }
+
+    @Override
+    public Optional<LimitApplicationResult<ConnectorTableHandle>> applyLimit(
+            ConnectorSession session, ConnectorTableHandle handle, long limit) {
+        TrinoTableHandle table = (TrinoTableHandle) handle;
+
+        if (table.getLimit().isPresent() && table.getLimit().getAsLong() <= limit) {
+            return Optional.empty();
+        }
+
+        if (!table.getFilter().isAll()) {
+            return Optional.empty();
+        }
+
+        table = table.copy(OptionalLong.of(limit));
+
+        return Optional.of(new LimitApplicationResult<>(table, false, false));
     }
 }

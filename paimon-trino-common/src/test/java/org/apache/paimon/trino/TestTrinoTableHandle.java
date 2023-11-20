@@ -23,6 +23,7 @@ import io.trino.spi.predicate.TupleDomain;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,7 +37,12 @@ public class TestTrinoTableHandle {
         byte[] serializedTable = TrinoTestUtils.getSerializedTable();
         TrinoTableHandle expected =
                 new TrinoTableHandle(
-                        "test", "user", serializedTable, TupleDomain.all(), Optional.empty());
+                        "test",
+                        "user",
+                        serializedTable,
+                        TupleDomain.all(),
+                        Optional.empty(),
+                        OptionalLong.empty());
         testRoundTrip(expected);
     }
 

@@ -34,6 +34,7 @@ import io.trino.spi.predicate.TupleDomain;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 import static org.apache.paimon.trino.ClassLoaderUtils.runWithContextClassLoader;
@@ -54,7 +55,11 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
         return runWithContextClassLoader(
                 () ->
                         createPageSource(
-                                table, trinoTableHandle.getFilter(), (TrinoSplit) split, columns),
+                                table,
+                                trinoTableHandle.getFilter(),
+                                (TrinoSplit) split,
+                                columns,
+                                trinoTableHandle.getLimit()),
                 TrinoPageSourceProvider.class.getClassLoader());
     }
 
@@ -62,7 +67,8 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             Table table,
             TupleDomain<TrinoColumnHandle> filter,
             TrinoSplit split,
-            List<ColumnHandle> columns) {
+            List<ColumnHandle> columns,
+            OptionalLong limit) {
         ReadBuilder read = table.newReadBuilder();
         RowType rowType = table.rowType();
         List<String> fieldNames = FieldNameUtils.fieldNames(rowType);
@@ -79,7 +85,8 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
         new TrinoFilterConverter(rowType).convert(filter).ifPresent(read::withFilter);
 
         try {
-            return new TrinoPageSource(read.newRead().createReader(split.decodeSplit()), columns);
+            return new TrinoPageSource(
+                    read.newRead().createReader(split.decodeSplit()), columns, limit);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

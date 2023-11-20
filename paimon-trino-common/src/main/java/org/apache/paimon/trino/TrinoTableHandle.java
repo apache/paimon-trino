@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 /** Trino {@link ConnectorTableHandle}. */
@@ -53,11 +54,18 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
     private final byte[] serializedTable;
     private final TupleDomain<TrinoColumnHandle> filter;
     private final Optional<List<ColumnHandle>> projectedColumns;
+    private final OptionalLong limit;
 
     private Table lazyTable;
 
     public TrinoTableHandle(String schemaName, String tableName, byte[] serializedTable) {
-        this(schemaName, tableName, serializedTable, TupleDomain.all(), Optional.empty());
+        this(
+                schemaName,
+                tableName,
+                serializedTable,
+                TupleDomain.all(),
+                Optional.empty(),
+                OptionalLong.empty());
     }
 
     @JsonCreator
@@ -66,12 +74,14 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
             @JsonProperty("tableName") String tableName,
             @JsonProperty("serializedTable") byte[] serializedTable,
             @JsonProperty("filter") TupleDomain<TrinoColumnHandle> filter,
-            @JsonProperty("projection") Optional<List<ColumnHandle>> projectedColumns) {
+            @JsonProperty("projection") Optional<List<ColumnHandle>> projectedColumns,
+            @JsonProperty("limit") OptionalLong limit) {
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.serializedTable = serializedTable;
         this.filter = filter;
         this.projectedColumns = projectedColumns;
+        this.limit = limit;
     }
 
     @JsonProperty
@@ -99,14 +109,23 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
         return projectedColumns;
     }
 
+    public OptionalLong getLimit() {
+        return limit;
+    }
+
     public TrinoTableHandle copy(TupleDomain<TrinoColumnHandle> filter) {
         return new TrinoTableHandle(
-                schemaName, tableName, serializedTable, filter, projectedColumns);
+                schemaName, tableName, serializedTable, filter, projectedColumns, limit);
     }
 
     public TrinoTableHandle copy(Optional<List<ColumnHandle>> projectedColumns) {
         return new TrinoTableHandle(
-                schemaName, tableName, serializedTable, filter, projectedColumns);
+                schemaName, tableName, serializedTable, filter, projectedColumns, limit);
+    }
+
+    public TrinoTableHandle copy(OptionalLong limit) {
+        return new TrinoTableHandle(
+                schemaName, tableName, serializedTable, filter, projectedColumns, limit);
     }
 
     public Table tableWithDynamicOptions(ConnectorSession session) {
