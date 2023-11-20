@@ -86,7 +86,9 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
 
         try {
             return new TrinoPageSource(
-                    read.newRead().createReader(split.decodeSplit()), columns, limit);
+                    read.newRead().executeFilter().createReader(split.decodeSplit()),
+                    columns,
+                    limit);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
