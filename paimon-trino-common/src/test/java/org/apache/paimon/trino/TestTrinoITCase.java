@@ -169,7 +169,12 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                     new DataField(0, "i", new IntType()),
                                     new DataField(1, "createdtime", new TimestampType(0)),
                                     new DataField(2, "updatedtime", new TimestampType(3)),
-                                    new DataField(3, "microtime", new TimestampType(6))));
+                                    new DataField(3, "microtime", new TimestampType(6)),
+                                    new DataField(
+                                            4,
+                                            "localzonedtime",
+                                            new org.apache.paimon.types.LocalZonedTimestampType(
+                                                    3))));
             new SchemaManager(LocalFileIO.create(), tablePath6)
                     .createTable(
                             new Schema(
@@ -186,7 +191,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                             1,
                             Timestamp.fromMicros(1694505288000000L),
                             Timestamp.fromMicros(1694505288001000L),
-                            Timestamp.fromMicros(1694505288001001L)));
+                            Timestamp.fromMicros(1694505288001001L),
+                            Timestamp.fromMicros(1694505288002001L)));
             commit.commit(0, writer.prepareCommit(true, 0));
         }
 
@@ -446,9 +452,15 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
     @Test
     public void testTimestamp0AndTimestamp3() {
-        assertThat(sql("SELECT * FROM paimon.default.t99"))
+        assertThat(sql("SELECT i, createdtime, updatedtime, microtime FROM paimon.default.t99"))
                 .isEqualTo(
                         "[[1, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001]]");
+    }
+
+    @Test
+    public void testTimestampWithTimeZone() {
+        assertThat(sql("SELECT localzonedtime FROM paimon.default.t99"))
+                .isEqualTo("[[2023-09-12T07:54:48.002Z[UTC]]]");
     }
 
     private String sql(String sql) {
