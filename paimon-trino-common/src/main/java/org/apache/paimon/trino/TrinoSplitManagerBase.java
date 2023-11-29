@@ -30,6 +30,8 @@ import io.trino.spi.connector.ConnectorTableHandle;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.apache.paimon.trino.TrinoTableOptions.getMinimumSplitWeight;
+
 /** Trino {@link ConnectorSplitManager}. */
 public abstract class TrinoSplitManagerBase implements ConnectorSplitManager {
 
@@ -45,7 +47,22 @@ public abstract class TrinoSplitManagerBase implements ConnectorSplitManager {
                 .convert(tableHandle.getFilter())
                 .ifPresent(readBuilder::withFilter);
         List<Split> splits = readBuilder.newScan().plan().splits();
+
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        long maxRowCount = splits.stream().mapToLong(Split::rowCount).max().getAsLong();
+        double minimumSplitWeight = getMinimumSplitWeight(session);
         return new TrinoSplitSource(
-                splits.stream().map(TrinoSplit::fromSplit).collect(Collectors.toList()));
+                splits.stream()
+                        .map(
+                                split ->
+                                        TrinoSplit.fromSplit(
+                                                split,
+                                                Math.min(
+                                                        Math.max(
+                                                                (double) split.rowCount()
+                                                                        / maxRowCount,
+                                                                minimumSplitWeight),
+                                                        1.0)))
+                        .collect(Collectors.toList()));
     }
 }

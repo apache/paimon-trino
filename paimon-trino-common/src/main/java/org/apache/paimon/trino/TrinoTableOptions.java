@@ -20,12 +20,14 @@ package org.apache.paimon.trino;
 
 import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableList;
 
+import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.session.PropertyMetadata;
 import io.trino.spi.type.ArrayType;
 
 import java.util.List;
 import java.util.Map;
 
+import static io.trino.spi.session.PropertyMetadata.doubleProperty;
 import static io.trino.spi.session.PropertyMetadata.enumProperty;
 import static io.trino.spi.session.PropertyMetadata.stringProperty;
 import static io.trino.spi.type.VarcharType.VARCHAR;
@@ -35,6 +37,8 @@ public class TrinoTableOptions {
 
     public static final String PRIMARY_KEY_IDENTIFIER = "primary_key";
     public static final String PARTITIONED_BY_PROPERTY = "partitioned_by";
+
+    public static final String MINIMUM_SPLIT_WEIGHT = "minimum_split_weight";
 
     private final List<PropertyMetadata<?>> tableProperties;
 
@@ -74,6 +78,8 @@ public class TrinoTableOptions {
                         value -> (List<?>) value,
                         value -> value));
 
+        builder.add(doubleProperty(MINIMUM_SPLIT_WEIGHT, "Minimum split weight", 0.05, false));
+
         tableProperties = builder.build();
     }
 
@@ -91,5 +97,9 @@ public class TrinoTableOptions {
     public static List<String> getPartitionedKeys(Map<String, Object> tableProperties) {
         List<String> partitionedKeys = (List<String>) tableProperties.get(PARTITIONED_BY_PROPERTY);
         return partitionedKeys == null ? ImmutableList.of() : ImmutableList.copyOf(partitionedKeys);
+    }
+
+    public static double getMinimumSplitWeight(ConnectorSession session) {
+        return session.getProperty(MINIMUM_SPLIT_WEIGHT, Double.class);
     }
 }
