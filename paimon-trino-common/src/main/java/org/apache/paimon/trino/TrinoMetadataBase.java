@@ -44,6 +44,7 @@ import io.trino.spi.connector.ProjectionApplicationResult;
 import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.connector.SchemaTablePrefix;
 import io.trino.spi.expression.ConnectorExpression;
+import io.trino.spi.predicate.Domain;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.security.TrinoPrincipal;
 
@@ -53,11 +54,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -345,9 +349,28 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
             return Optional.empty();
         }
 
+        LinkedHashMap<TrinoColumnHandle, Domain> acceptedDomains = new LinkedHashMap<>();
+        LinkedHashMap<TrinoColumnHandle, Domain> unsupportedDomains = new LinkedHashMap<>();
+        new TrinoFilterConverter(trinoTableHandle.table().rowType())
+                .convert(newFilter, acceptedDomains, unsupportedDomains);
+
+        List<String> partitionKeys = trinoTableHandle.table().partitionKeys();
+        LinkedHashMap<TrinoColumnHandle, Domain> unenforcedDomains = new LinkedHashMap<>();
+        acceptedDomains.forEach(
+                (columnHandle, domain) -> {
+                    if (!partitionKeys.contains(columnHandle.getColumnName())) {
+                        unenforcedDomains.put(columnHandle, domain);
+                    }
+                });
+
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        TupleDomain<ColumnHandle> remain =
+                (TupleDomain)
+                        TupleDomain.withColumnDomains(unsupportedDomains)
+                                .intersect(TupleDomain.withColumnDomains(unenforcedDomains));
+
         return Optional.of(
-                new ConstraintApplicationResult<>(
-                        trinoTableHandle.copy(newFilter), constraint.getSummary(), false));
+                new ConstraintApplicationResult<>(trinoTableHandle.copy(newFilter), remain, false));
     }
 
     @Override
@@ -396,7 +419,18 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
         }
 
         if (!table.getFilter().isAll()) {
-            return Optional.empty();
+            LinkedHashMap<TrinoColumnHandle, Domain> acceptedDomains = new LinkedHashMap<>();
+            LinkedHashMap<TrinoColumnHandle, Domain> unsupportedDomains = new LinkedHashMap<>();
+            new TrinoFilterConverter(table.table().rowType())
+                    .convert(table.getFilter(), acceptedDomains, unsupportedDomains);
+            Set<String> acceptedFields =
+                    acceptedDomains.keySet().stream()
+                            .map(TrinoColumnHandle::getColumnName)
+                            .collect(Collectors.toSet());
+            if (unsupportedDomains.size() > 0
+                    || !table.table().partitionKeys().containsAll(acceptedFields)) {
+                return Optional.empty();
+            }
         }
 
         table = table.copy(OptionalLong.of(limit));
