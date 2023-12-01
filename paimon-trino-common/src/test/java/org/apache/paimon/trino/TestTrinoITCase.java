@@ -269,6 +269,15 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
     }
 
     @Test
+    public void testLimitWithPartition() {
+        assertThat(sql("SELECT * FROM paimon.default.t3 WHERE pt = '1' LIMIT 1"))
+                .isEqualTo("[[1, 1, 1, 1, 1]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.t3 WHERE pt = '1' AND b = 2 LIMIT 1"))
+                .isEqualTo("[[1, 1, 2, 2, 2]]");
+    }
+
+    @Test
     public void testShowCreateTable() {
         assertThat(sql("SHOW CREATE TABLE paimon.default.t3"))
                 .isEqualTo(

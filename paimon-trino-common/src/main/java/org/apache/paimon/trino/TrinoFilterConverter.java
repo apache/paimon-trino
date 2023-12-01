@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,6 +77,13 @@ public class TrinoFilterConverter {
     }
 
     public Optional<Predicate> convert(TupleDomain<TrinoColumnHandle> tupleDomain) {
+        return convert(tupleDomain, new LinkedHashMap<>(), new LinkedHashMap<>());
+    }
+
+    public Optional<Predicate> convert(
+            TupleDomain<TrinoColumnHandle> tupleDomain,
+            LinkedHashMap<TrinoColumnHandle, Domain> acceptedDomains,
+            LinkedHashMap<TrinoColumnHandle, Domain> unsupportedDomains) {
         if (tupleDomain.isAll()) {
             // TODO alwaysTrue
             return Optional.empty();
@@ -92,16 +100,20 @@ public class TrinoFilterConverter {
         for (Map.Entry<TrinoColumnHandle, Domain> entry : domainMap.entrySet()) {
             TrinoColumnHandle columnHandle = entry.getKey();
             Domain domain = entry.getValue();
-            int index = fieldNames.indexOf(columnHandle.getColumnName());
+            String field = columnHandle.getColumnName();
+            int index = fieldNames.indexOf(field);
             if (index != -1) {
                 try {
                     conjuncts.add(toPredicate(index, columnHandle.getTrinoType(), domain));
+                    acceptedDomains.put(columnHandle, domain);
+                    continue;
                 } catch (UnsupportedOperationException exception) {
                     LOG.warn(
                             "Unsupported predicate, maybe the type of column is not supported yet.",
                             exception);
                 }
             }
+            unsupportedDomains.put(columnHandle, domain);
         }
 
         if (conjuncts.isEmpty()) {
