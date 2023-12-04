@@ -33,8 +33,10 @@ import io.trino.spi.predicate.Range;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.predicate.ValueSet;
 import io.trino.spi.type.CharType;
+import io.trino.spi.type.SmallintType;
 import io.trino.spi.type.TimeZoneKey;
 import io.trino.spi.type.TimestampType;
+import io.trino.spi.type.TinyintType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -210,6 +212,45 @@ public class TestTrinoFilterConverter {
                                         createTimestampWithTimeZoneType(3), 1695645403000L)));
         expectedEqq = builder.equal(0, 1695645403000L);
         actualEqq = converter.convert(eq).get();
+        assertThat(actualEqq).isEqualTo(expectedEqq);
+    }
+
+    @Test
+    public void testTinyint() {
+        RowType rowType =
+                new RowType(
+                        Collections.singletonList(
+                                new DataField(
+                                        0, "tiny", new org.apache.paimon.types.TinyIntType())));
+        TrinoFilterConverter converter = new TrinoFilterConverter(rowType);
+        PredicateBuilder builder = new PredicateBuilder(rowType);
+        TrinoColumnHandle idColumn =
+                TrinoColumnHandle.of("tiny", new org.apache.paimon.types.TinyIntType());
+        TupleDomain<TrinoColumnHandle> eq =
+                TupleDomain.withColumnDomains(
+                        ImmutableMap.of(idColumn, Domain.singleValue(TinyintType.TINYINT, 127L)));
+        Predicate expectedEqq = builder.equal(0, Byte.MAX_VALUE);
+        Predicate actualEqq = converter.convert(eq).get();
+        assertThat(actualEqq).isEqualTo(expectedEqq);
+    }
+
+    @Test
+    public void testSmallint() {
+        RowType rowType =
+                new RowType(
+                        Collections.singletonList(
+                                new DataField(
+                                        0, "small", new org.apache.paimon.types.SmallIntType())));
+        TrinoFilterConverter converter = new TrinoFilterConverter(rowType);
+        PredicateBuilder builder = new PredicateBuilder(rowType);
+        TrinoColumnHandle idColumn =
+                TrinoColumnHandle.of("small", new org.apache.paimon.types.SmallIntType());
+        TupleDomain<TrinoColumnHandle> eq =
+                TupleDomain.withColumnDomains(
+                        ImmutableMap.of(
+                                idColumn, Domain.singleValue(SmallintType.SMALLINT, 32767L)));
+        Predicate expectedEqq = builder.equal(0, Short.MAX_VALUE);
+        Predicate actualEqq = converter.convert(eq).get();
         assertThat(actualEqq).isEqualTo(expectedEqq);
     }
 }

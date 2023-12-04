@@ -40,6 +40,8 @@ import io.trino.spi.type.IntegerType;
 import io.trino.spi.type.LongTimestampWithTimeZone;
 import io.trino.spi.type.MapType;
 import io.trino.spi.type.RealType;
+import io.trino.spi.type.SmallintType;
+import io.trino.spi.type.TinyintType;
 import io.trino.spi.type.Type;
 import io.trino.spi.type.VarbinaryType;
 import io.trino.spi.type.VarcharType;
@@ -215,6 +217,14 @@ public class TrinoFilterConverter {
 
         if (type instanceof BooleanType) {
             return trinoNativeValue;
+        }
+
+        if (type instanceof TinyintType) {
+            return ((Long) trinoNativeValue).byteValue();
+        }
+
+        if (type instanceof SmallintType) {
+            return ((Long) trinoNativeValue).shortValue();
         }
 
         if (type instanceof IntegerType) {
