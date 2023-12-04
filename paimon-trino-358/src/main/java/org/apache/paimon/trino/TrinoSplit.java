@@ -36,8 +36,8 @@ public class TrinoSplit implements ConnectorSplit {
     @JsonCreator
     public TrinoSplit(
             @JsonProperty("splitSerialized") String splitSerialized,
-            // weight is not required,
-            // it's just to align the constructor parameters with other versions.
+            // weight is not required, it's just to align the constructor parameters with other
+            // versions.
             @JsonProperty("weight") Double weight) {
         this.splitSerialized = splitSerialized;
     }
