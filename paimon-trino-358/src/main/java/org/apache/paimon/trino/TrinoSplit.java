@@ -34,12 +34,16 @@ public class TrinoSplit implements ConnectorSplit {
     private final String splitSerialized;
 
     @JsonCreator
-    public TrinoSplit(@JsonProperty("splitSerialized") String splitSerialized) {
+    public TrinoSplit(
+            @JsonProperty("splitSerialized") String splitSerialized,
+            // weight is not required,
+            // it's just to align the constructor parameters with other versions.
+            @JsonProperty("weight") Double weight) {
         this.splitSerialized = splitSerialized;
     }
 
-    public static TrinoSplit fromSplit(Split split, double weight) {
-        return new TrinoSplit(EncodingUtils.encodeObjectToString(split));
+    public static TrinoSplit fromSplit(Split split, Double weight) {
+        return new TrinoSplit(EncodingUtils.encodeObjectToString(split), weight);
     }
 
     public Split decodeSplit() {

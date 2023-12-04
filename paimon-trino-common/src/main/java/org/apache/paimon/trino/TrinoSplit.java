@@ -34,19 +34,18 @@ public class TrinoSplit implements ConnectorSplit {
 
     private final String splitSerialized;
 
-    private final SplitWeight splitWeight;
+    private final Double weight;
 
     @JsonCreator
     public TrinoSplit(
             @JsonProperty("splitSerialized") String splitSerialized,
-            @JsonProperty("splitWeight") SplitWeight splitWeight) {
+            @JsonProperty("weight") Double weight) {
         this.splitSerialized = splitSerialized;
-        this.splitWeight = splitWeight;
+        this.weight = weight;
     }
 
-    public static TrinoSplit fromSplit(Split split, double weight) {
-        return new TrinoSplit(
-                EncodingUtils.encodeObjectToString(split), SplitWeight.fromProportion(weight));
+    public static TrinoSplit fromSplit(Split split, Double weight) {
+        return new TrinoSplit(EncodingUtils.encodeObjectToString(split), weight);
     }
 
     public Split decodeSplit() {
@@ -56,6 +55,11 @@ public class TrinoSplit implements ConnectorSplit {
     @JsonProperty
     public String getSplitSerialized() {
         return splitSerialized;
+    }
+
+    @JsonProperty
+    public Double getWeight() {
+        return weight;
     }
 
     @Override
@@ -75,6 +79,6 @@ public class TrinoSplit implements ConnectorSplit {
 
     @Override
     public SplitWeight getSplitWeight() {
-        return splitWeight;
+        return SplitWeight.fromProportion(weight);
     }
 }
