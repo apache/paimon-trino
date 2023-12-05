@@ -33,7 +33,7 @@ public class TestTrinoSplit {
     @Test
     public void testJsonRoundTrip() throws Exception {
         byte[] serializedTable = TrinoTestUtils.getSerializedTable();
-        TrinoSplit expected = new TrinoSplit(Arrays.toString(serializedTable));
+        TrinoSplit expected = new TrinoSplit(Arrays.toString(serializedTable), 0.1);
         String json = codec.toJson(expected);
         TrinoSplit actual = codec.fromJson(json);
         assertThat(actual.getSplitSerialized()).isEqualTo(expected.getSplitSerialized());

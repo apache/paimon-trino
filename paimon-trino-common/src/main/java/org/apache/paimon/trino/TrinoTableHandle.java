@@ -46,9 +46,6 @@ import java.util.stream.Collectors;
 /** Trino {@link ConnectorTableHandle}. */
 public final class TrinoTableHandle implements ConnectorTableHandle {
 
-    public static final String SCAN_TIMESTAMP = "scan_timestamp_millis";
-    public static final String SCAN_SNAPSHOT = "scan_snapshot_id";
-
     private final String schemaName;
     private final String tableName;
     private final byte[] serializedTable;
@@ -131,12 +128,12 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
     public Table tableWithDynamicOptions(ConnectorSession session) {
         // see TrinoConnector.getSessionProperties
         Map<String, String> dynamicOptions = new HashMap<>();
-        Long scanTimestampMills = session.getProperty(SCAN_TIMESTAMP, Long.class);
+        Long scanTimestampMills = TrinoSessionProperties.getScanTimestampMillis(session);
         if (scanTimestampMills != null) {
             dynamicOptions.put(
                     CoreOptions.SCAN_TIMESTAMP_MILLIS.key(), scanTimestampMills.toString());
         }
-        Long scanSnapshotId = session.getProperty(SCAN_SNAPSHOT, Long.class);
+        Long scanSnapshotId = TrinoSessionProperties.getScanSnapshotId(session);
         if (scanSnapshotId != null) {
             dynamicOptions.put(CoreOptions.SCAN_SNAPSHOT_ID.key(), scanSnapshotId.toString());
         }
