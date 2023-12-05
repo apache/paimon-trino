@@ -36,13 +36,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.trino.spi.type.TimeType.TIME_MILLIS;
+import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
+import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
+import static io.trino.spi.type.Timestamps.PICOSECONDS_PER_MILLISECOND;
+import static java.lang.Float.intBitsToFloat;
+import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 import static org.apache.paimon.predicate.PredicateBuilder.and;
 import static org.apache.paimon.predicate.PredicateBuilder.or;
-import static org.apache.paimon.trino.TrinoTypeUtils.convertTrinoValueToPaimon;
 
-/**
- * Trino filter to flink predicate.
- */
+/** Trino filter to flink predicate. */
 public class TrinoFilterConverter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TrinoFilterConverter.class);

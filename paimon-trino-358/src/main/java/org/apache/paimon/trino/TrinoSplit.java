@@ -23,7 +23,6 @@ import org.apache.paimon.table.source.Split;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.trino.spi.HostAddress;
-import io.trino.spi.SplitWeight;
 import io.trino.spi.connector.ConnectorSplit;
 
 import java.util.Collections;
@@ -34,14 +33,13 @@ public class TrinoSplit implements ConnectorSplit {
 
     private final String splitSerialized;
 
-    private final Double weight;
-
     @JsonCreator
     public TrinoSplit(
             @JsonProperty("splitSerialized") String splitSerialized,
+            // weight is not required, it's just to align the constructor parameters with other
+            // versions.
             @JsonProperty("weight") Double weight) {
         this.splitSerialized = splitSerialized;
-        this.weight = weight;
     }
 
     public static TrinoSplit fromSplit(Split split, Double weight) {
@@ -57,11 +55,6 @@ public class TrinoSplit implements ConnectorSplit {
         return splitSerialized;
     }
 
-    @JsonProperty
-    public Double getWeight() {
-        return weight;
-    }
-
     @Override
     public boolean isRemotelyAccessible() {
         return true;
@@ -75,10 +68,5 @@ public class TrinoSplit implements ConnectorSplit {
     @Override
     public Object getInfo() {
         return Collections.emptyMap();
-    }
-
-    @Override
-    public SplitWeight getSplitWeight() {
-        return SplitWeight.fromProportion(weight);
     }
 }

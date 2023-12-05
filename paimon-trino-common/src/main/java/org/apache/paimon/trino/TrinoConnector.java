@@ -23,17 +23,12 @@ import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.session.PropertyMetadata;
 import io.trino.spi.transaction.IsolationLevel;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static io.trino.spi.transaction.IsolationLevel.READ_COMMITTED;
 import static io.trino.spi.transaction.IsolationLevel.checkConnectorSupports;
 import static java.util.Objects.requireNonNull;
-import static org.apache.paimon.CoreOptions.SCAN_SNAPSHOT_ID;
-import static org.apache.paimon.CoreOptions.SCAN_TIMESTAMP_MILLIS;
 import static org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableList.toImmutableList;
-import static org.apache.paimon.trino.TrinoTableHandle.SCAN_SNAPSHOT;
-import static org.apache.paimon.trino.TrinoTableHandle.SCAN_TIMESTAMP;
 
 /** Trino {@link Connector}. */
 public class TrinoConnector implements Connector {
@@ -41,6 +36,7 @@ public class TrinoConnector implements Connector {
     private final TrinoSplitManagerBase trinoSplitManager;
     private final TrinoPageSourceProvider trinoPageSourceProvider;
     private final List<PropertyMetadata<?>> tableProperties;
+    private final List<PropertyMetadata<?>> sessionProperties;
 
     public TrinoConnector(
             TrinoMetadataBase trinoMetadata,
@@ -52,6 +48,7 @@ public class TrinoConnector implements Connector {
                 requireNonNull(trinoPageSourceProvider, "jmxRecordSetProvider is null");
         tableProperties =
                 new TrinoTableOptions().getTableProperties().stream().collect(toImmutableList());
+        sessionProperties = new TrinoSessionProperties().getSessionProperties();
     }
 
     @Override
@@ -78,11 +75,7 @@ public class TrinoConnector implements Connector {
 
     @Override
     public List<PropertyMetadata<?>> getSessionProperties() {
-        return Arrays.asList(
-                PropertyMetadata.longProperty(
-                        SCAN_TIMESTAMP, SCAN_TIMESTAMP_MILLIS.description().toString(), null, true),
-                PropertyMetadata.longProperty(
-                        SCAN_SNAPSHOT, SCAN_SNAPSHOT_ID.description().toString(), null, true));
+        return sessionProperties;
     }
 
     @Override
