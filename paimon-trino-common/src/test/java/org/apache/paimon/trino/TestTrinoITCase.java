@@ -49,6 +49,8 @@ import io.trino.testing.QueryRunner;
 import org.testng.annotations.Test;
 
 import java.nio.file.Files;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,6 +61,7 @@ import java.util.UUID;
 
 import static io.airlift.testing.Closeables.closeAllSuppress;
 import static io.trino.testing.TestingSession.testSessionBuilder;
+import static java.time.ZoneOffset.UTC;
 import static org.apache.paimon.data.BinaryString.fromString;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,6 +70,14 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
     private static final String CATALOG = "paimon";
     private static final String DB = "default";
+
+    protected long t2FirstCommitTimestamp;
+
+    private int trinoVersion;
+
+    public TestTrinoITCase(int trinoVersion) {
+        this.trinoVersion = trinoVersion;
+    }
 
     @Override
     protected QueryRunner createQueryRunner() throws Exception {
@@ -87,6 +98,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
         testHelper2.write(GenericRow.of(1, 2L, fromString("1"), fromString("1")));
         testHelper2.write(GenericRow.of(3, 4L, fromString("2"), fromString("2")));
         testHelper2.commit();
+        t2FirstCommitTimestamp = System.currentTimeMillis();
         testHelper2.write(GenericRow.of(5, 6L, fromString("3"), fromString("3")));
         testHelper2.write(GenericRow.of(7, 8L, fromString("4"), fromString("4")));
         testHelper2.commit();
@@ -479,8 +491,36 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                 .isEqualTo("[[2023-09-12T07:54:48.002Z[UTC]]]");
     }
 
-    private String sql(String sql) {
+    @Test
+    public void testTimeTravel() {
+        if (trinoVersion < 382) {
+            return;
+        }
+        assertThat(sql("SELECT * FROM paimon.default.t2 FOR VERSION AS OF 1"))
+                .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2]]");
+        assertThat(sql("SELECT * FROM paimon.default.t2 FOR VERSION AS OF 2"))
+                .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2], [5, 6, 3, 3], [7, 8, 4, 4]]");
+
+        assertThat(
+                        sql(
+                                "SELECT * FROM paimon.default.t2 FOR TIMESTAMP AS OF TIMESTAMP "
+                                        + timestampLiteral(t2FirstCommitTimestamp, 6)))
+                .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2]]");
+        assertThat(
+                        sql(
+                                "SELECT * FROM paimon.default.t2 FOR TIMESTAMP AS OF TIMESTAMP "
+                                        + timestampLiteral(System.currentTimeMillis(), 6)))
+                .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2], [5, 6, 3, 3], [7, 8, 4, 4]]");
+    }
+
+    protected String sql(String sql) {
         MaterializedResult result = getQueryRunner().execute(sql);
         return result.getMaterializedRows().toString();
+    }
+
+    protected static String timestampLiteral(long epochMilliSeconds, int precision) {
+        return DateTimeFormatter.ofPattern(
+                        "''yyyy-MM-dd HH:mm:ss." + "S".repeat(precision) + " VV''")
+                .format(Instant.ofEpochMilli(epochMilliSeconds).atZone(UTC));
     }
 }

@@ -26,6 +26,7 @@ import org.apache.paimon.options.Options;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
 import org.apache.paimon.security.SecurityContext;
+import org.apache.paimon.table.Table;
 import org.apache.paimon.utils.InstantiationUtil;
 import org.apache.paimon.utils.StringUtils;
 
@@ -125,7 +126,7 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
 
     @Override
     public TrinoTableHandle getTableHandle(ConnectorSession session, SchemaTableName tableName) {
-        return getTableHandle(tableName);
+        return getTableHandle(tableName, null);
     }
 
     @Override
@@ -134,11 +135,16 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
         return new ConnectorTableProperties();
     }
 
-    public TrinoTableHandle getTableHandle(SchemaTableName tableName) {
+    public TrinoTableHandle getTableHandle(
+            SchemaTableName tableName, Map<String, String> dynamicOptions) {
         Identifier tablePath = new Identifier(tableName.getSchemaName(), tableName.getTableName());
         byte[] serializedTable;
         try {
-            serializedTable = InstantiationUtil.serializeObject(catalog.getTable(tablePath));
+            Table table = catalog.getTable(tablePath);
+            if (dynamicOptions != null && !dynamicOptions.isEmpty()) {
+                table = table.copy(dynamicOptions);
+            }
+            serializedTable = InstantiationUtil.serializeObject(table);
         } catch (Catalog.TableNotExistException e) {
             return null;
         } catch (IOException e) {
