@@ -18,6 +18,13 @@
 
 package org.apache.paimon.trino;
 
+import io.airlift.slice.Slice;
+import io.airlift.slice.Slices;
+import io.trino.spi.type.Decimals;
+import io.trino.spi.type.LongTimestampWithTimeZone;
+import org.apache.paimon.data.BinaryString;
+import org.apache.paimon.data.Decimal;
+import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.types.ArrayType;
 import org.apache.paimon.types.BigIntType;
 import org.apache.paimon.types.BinaryType;
@@ -54,10 +61,30 @@ import io.trino.spi.type.TypeOperators;
 import io.trino.spi.type.VarbinaryType;
 import io.trino.spi.type.VarcharType;
 
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import static io.airlift.slice.Slices.utf8Slice;
+import static io.trino.spi.type.LongTimestampWithTimeZone.fromEpochMillisAndFraction;
+import static io.trino.spi.type.TimeType.TIME_MILLIS;
+import static io.trino.spi.type.TimeZoneKey.UTC_KEY;
+import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
+import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
+import static io.trino.spi.type.Timestamps.MICROSECONDS_PER_MILLISECOND;
+import static io.trino.spi.type.Timestamps.PICOSECONDS_PER_MICROSECOND;
+import static io.trino.spi.type.Timestamps.PICOSECONDS_PER_MILLISECOND;
+import static io.trino.spi.type.UuidType.javaUuidToTrinoUuid;
+import static java.lang.Float.floatToIntBits;
+import static java.lang.Float.intBitsToFloat;
+import static java.lang.Math.multiplyExact;
+import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 
 /** Trino type from Paimon Type. */
 public class TrinoTypeUtils {
@@ -68,6 +95,157 @@ public class TrinoTypeUtils {
 
     public static DataType toPaimonType(Type trinoType) {
         return TrinoToPaimonTypeVistor.INSTANCE.visit(trinoType);
+    }
+
+    public static Object convertTrinoValueToPaimon(Type type, Object trinoValue) {
+        requireNonNull(trinoValue, "trinoValue is null");
+
+        if (type instanceof io.trino.spi.type.BooleanType) {
+            return trinoValue;
+        }
+
+        if (type instanceof TinyintType) {
+            return ((Long) trinoValue).byteValue();
+        }
+
+        if (type instanceof SmallintType) {
+            return ((Long) trinoValue).shortValue();
+        }
+
+        if (type instanceof IntegerType) {
+            return toIntExact((long) trinoValue);
+        }
+
+        if (type instanceof BigintType) {
+            return trinoValue;
+        }
+
+        if (type instanceof RealType) {
+            return intBitsToFloat(toIntExact((long) trinoValue));
+        }
+
+        if (type instanceof io.trino.spi.type.DoubleType) {
+            return trinoValue;
+        }
+
+        if (type instanceof io.trino.spi.type.DateType) {
+            return toIntExact(((Long) trinoValue));
+        }
+
+        if (type.equals(TIME_MILLIS)) {
+            return (int) ((long) trinoValue / PICOSECONDS_PER_MILLISECOND);
+        }
+
+        if (type.equals(TIMESTAMP_MILLIS)) {
+            return Timestamp.fromEpochMillis((long) trinoValue / 1000);
+        }
+
+        if (type.equals(TIMESTAMP_TZ_MILLIS)) {
+            if (trinoValue instanceof Long) {
+                return trinoValue;
+            }
+            return Timestamp.fromEpochMillis(
+                    ((LongTimestampWithTimeZone) trinoValue).getEpochMillis());
+        }
+
+        if (type instanceof VarcharType || type instanceof io.trino.spi.type.CharType) {
+            return BinaryString.fromBytes(((Slice) trinoValue).getBytes());
+        }
+
+        if (type instanceof VarbinaryType) {
+            return ((Slice) trinoValue).getBytes();
+        }
+
+        if (type instanceof io.trino.spi.type.DecimalType) {
+            io.trino.spi.type.DecimalType decimalType = (io.trino.spi.type.DecimalType) type;
+            BigDecimal bigDecimal;
+            if (trinoValue instanceof Long) {
+                bigDecimal =
+                        BigDecimal.valueOf((long) trinoValue)
+                                .movePointLeft(decimalType.getScale());
+            } else {
+                bigDecimal =
+                        new BigDecimal(
+                                DecimalUtils.toBigInteger(trinoValue),
+                                decimalType.getScale());
+            }
+            return Decimal.fromBigDecimal(
+                    bigDecimal, decimalType.getPrecision(), decimalType.getScale());
+        }
+
+        throw new UnsupportedOperationException("Unsupported type: " + type);
+    }
+
+    public static Object convertPaimonValueToTrino(DataType paimonType, Object paimonValue)
+    {
+        if (paimonValue == null) {
+            return null;
+        }
+        if (paimonType instanceof BooleanType) {
+            //noinspection RedundantCast
+            return (boolean) paimonValue;
+        }
+        if (paimonType instanceof TinyIntType) {
+            //noinspection RedundantCast
+            return (long) paimonValue;
+        }
+        if (paimonType instanceof SmallIntType) {
+            //noinspection RedundantCast
+            return (long) paimonValue;
+        }
+        if (paimonType instanceof IntType) {
+            //noinspection RedundantCast
+            return (long) paimonValue;
+        }
+        if (paimonType instanceof BigIntType) {
+            //noinspection RedundantCast
+            return (long) paimonValue;
+        }
+        if (paimonType instanceof FloatType) {
+            return (long)floatToIntBits((float) paimonValue);
+        }
+        if (paimonType instanceof DoubleType) {
+            //noinspection RedundantCast
+            return (double) paimonValue;
+        }
+        if (paimonType instanceof DecimalType) {
+            DecimalType paimonDecimalType = (DecimalType) paimonType;
+            Decimal decimal = (Decimal) paimonValue;
+            io.trino.spi.type.DecimalType trinoDecimalType = io.trino.spi.type.DecimalType.createDecimalType(
+                    paimonDecimalType.getPrecision(), paimonDecimalType.getScale());
+            if (trinoDecimalType.isShort()) {
+                return Decimals.encodeShortScaledValue(decimal.toBigDecimal(), trinoDecimalType.getScale());
+            }
+            return Decimals.encodeScaledValue(decimal.toBigDecimal(), trinoDecimalType.getScale());
+        }
+        if (paimonType instanceof VarBinaryType) {
+            return Slices.wrappedBuffer(((byte[]) paimonValue).clone());
+        }
+        if (paimonType instanceof CharType || paimonType instanceof VarCharType) {
+            return Slices.utf8Slice(((BinaryString) paimonValue).toString());
+        }
+        if (paimonType instanceof DateType) {
+            //noinspection RedundantCast
+            return (long)  paimonValue;
+        }
+        if (paimonType instanceof TimeType) {
+            return multiplyExact((long) paimonValue, PICOSECONDS_PER_MICROSECOND);
+        }
+        if (paimonType instanceof TimestampType) {
+            TimestampType timestampType = (TimestampType) paimonType;
+            Timestamp timestamp = (Timestamp) paimonValue;
+            if (timestampType.getPrecision() == TimestampType.MIN_PRECISION
+                    || timestampType.getPrecision() == TimestampType.DEFAULT_PRECISION) {
+                return timestamp.getMillisecond() * MICROSECONDS_PER_MILLISECOND;
+            }
+            return timestamp.toMicros();
+        }
+        if (paimonType instanceof LocalZonedTimestampType) {
+            Timestamp timestamp = (Timestamp) paimonValue;
+            return fromEpochMillisAndFraction(timestamp.getMillisecond(), 0, UTC_KEY);
+        }
+
+        throw new UnsupportedOperationException("Unsupported iceberg type: " + paimonType);
     }
 
     private static class PaimonToTrinoTypeVistor extends DataTypeDefaultVisitor<Type> {
