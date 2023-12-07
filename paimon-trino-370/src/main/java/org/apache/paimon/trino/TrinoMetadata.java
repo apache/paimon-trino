@@ -32,6 +32,7 @@ import io.trino.spi.connector.ConnectorMetadata;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTableVersion;
+import io.trino.spi.connector.PointerType;
 import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.type.LongTimestampWithTimeZone;
 import io.trino.spi.type.TimestampWithTimeZoneType;
@@ -109,6 +110,15 @@ public class TrinoMetadata extends TrinoMetadataBase {
             }
         }
         return getTableHandle(tableName, dynamicOptions);
+    }
+
+    @Override
+    public boolean isSupportedVersionType(
+            ConnectorSession session,
+            SchemaTableName tableName,
+            PointerType pointerType,
+            Type versioning) {
+        return true;
     }
 
     @Override

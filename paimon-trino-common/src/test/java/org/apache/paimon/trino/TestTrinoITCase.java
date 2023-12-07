@@ -493,7 +493,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
     @Test
     public void testTimeTravel() {
-        if (trinoVersion < 382) {
+        if (trinoVersion < 368) {
             return;
         }
         assertThat(sql("SELECT * FROM paimon.default.t2 FOR VERSION AS OF 1"))
