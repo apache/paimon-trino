@@ -23,6 +23,10 @@ import org.testng.annotations.Test;
 /** {@link TestTrinoITCase} for Trino 358. */
 public class TestTrino358ITCase extends TestTrinoITCase {
 
+    public TestTrino358ITCase() {
+        super(358);
+    }
+
     @Override
     @Test
     public void testSetTableProperties() {
