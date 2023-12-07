@@ -37,6 +37,6 @@ public class TrinoSplitManager extends TrinoSplitManagerBase {
             SplitSchedulingStrategy splitSchedulingStrategy,
             DynamicFilter dynamicFilter,
             Constraint constraint) {
-        return getSplits(table, session);
+        return getSplits(table, session, constraint);
     }
 }

@@ -18,10 +18,6 @@
 
 package org.apache.paimon.trino;
 
-import io.airlift.slice.Slice;
-import io.airlift.slice.Slices;
-import io.trino.spi.type.Decimals;
-import io.trino.spi.type.LongTimestampWithTimeZone;
 import org.apache.paimon.data.BinaryString;
 import org.apache.paimon.data.Decimal;
 import org.apache.paimon.data.Timestamp;
@@ -50,8 +46,12 @@ import org.apache.paimon.types.TinyIntType;
 import org.apache.paimon.types.VarBinaryType;
 import org.apache.paimon.types.VarCharType;
 
+import io.airlift.slice.Slice;
+import io.airlift.slice.Slices;
 import io.trino.spi.type.BigintType;
+import io.trino.spi.type.Decimals;
 import io.trino.spi.type.IntegerType;
+import io.trino.spi.type.LongTimestampWithTimeZone;
 import io.trino.spi.type.RealType;
 import io.trino.spi.type.SmallintType;
 import io.trino.spi.type.TimestampWithTimeZoneType;
@@ -62,15 +62,12 @@ import io.trino.spi.type.VarbinaryType;
 import io.trino.spi.type.VarcharType;
 
 import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static io.airlift.slice.Slices.utf8Slice;
+import static io.trino.spi.type.DateTimeEncoding.packDateTimeWithZone;
 import static io.trino.spi.type.LongTimestampWithTimeZone.fromEpochMillisAndFraction;
 import static io.trino.spi.type.TimeType.TIME_MILLIS;
 import static io.trino.spi.type.TimeZoneKey.UTC_KEY;
@@ -79,7 +76,6 @@ import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
 import static io.trino.spi.type.Timestamps.MICROSECONDS_PER_MILLISECOND;
 import static io.trino.spi.type.Timestamps.PICOSECONDS_PER_MICROSECOND;
 import static io.trino.spi.type.Timestamps.PICOSECONDS_PER_MILLISECOND;
-import static io.trino.spi.type.UuidType.javaUuidToTrinoUuid;
 import static java.lang.Float.floatToIntBits;
 import static java.lang.Float.intBitsToFloat;
 import static java.lang.Math.multiplyExact;
@@ -161,13 +157,11 @@ public class TrinoTypeUtils {
             BigDecimal bigDecimal;
             if (trinoValue instanceof Long) {
                 bigDecimal =
-                        BigDecimal.valueOf((long) trinoValue)
-                                .movePointLeft(decimalType.getScale());
+                        BigDecimal.valueOf((long) trinoValue).movePointLeft(decimalType.getScale());
             } else {
                 bigDecimal =
                         new BigDecimal(
-                                DecimalUtils.toBigInteger(trinoValue),
-                                decimalType.getScale());
+                                DecimalUtils.toBigInteger(trinoValue), decimalType.getScale());
             }
             return Decimal.fromBigDecimal(
                     bigDecimal, decimalType.getPrecision(), decimalType.getScale());
@@ -176,8 +170,7 @@ public class TrinoTypeUtils {
         throw new UnsupportedOperationException("Unsupported type: " + type);
     }
 
-    public static Object convertPaimonValueToTrino(DataType paimonType, Object paimonValue)
-    {
+    public static Object convertPaimonValueToTrino(DataType paimonType, Object paimonValue) {
         if (paimonValue == null) {
             return null;
         }
@@ -186,35 +179,36 @@ public class TrinoTypeUtils {
             return (boolean) paimonValue;
         }
         if (paimonType instanceof TinyIntType) {
-            //noinspection RedundantCast
-            return (long) paimonValue;
+            return ((Number) paimonValue).longValue();
         }
         if (paimonType instanceof SmallIntType) {
             //noinspection RedundantCast
-            return (long) paimonValue;
+            return ((Number) paimonValue).longValue();
         }
         if (paimonType instanceof IntType) {
             //noinspection RedundantCast
-            return (long) paimonValue;
+            return ((Number) paimonValue).longValue();
         }
         if (paimonType instanceof BigIntType) {
             //noinspection RedundantCast
-            return (long) paimonValue;
+            return ((Number) paimonValue).longValue();
         }
         if (paimonType instanceof FloatType) {
-            return (long)floatToIntBits((float) paimonValue);
+            return (long) floatToIntBits((float) paimonValue);
         }
         if (paimonType instanceof DoubleType) {
             //noinspection RedundantCast
-            return (double) paimonValue;
+            return ((Number) paimonValue).doubleValue();
         }
         if (paimonType instanceof DecimalType) {
             DecimalType paimonDecimalType = (DecimalType) paimonType;
             Decimal decimal = (Decimal) paimonValue;
-            io.trino.spi.type.DecimalType trinoDecimalType = io.trino.spi.type.DecimalType.createDecimalType(
-                    paimonDecimalType.getPrecision(), paimonDecimalType.getScale());
+            io.trino.spi.type.DecimalType trinoDecimalType =
+                    io.trino.spi.type.DecimalType.createDecimalType(
+                            paimonDecimalType.getPrecision(), paimonDecimalType.getScale());
             if (trinoDecimalType.isShort()) {
-                return Decimals.encodeShortScaledValue(decimal.toBigDecimal(), trinoDecimalType.getScale());
+                return Decimals.encodeShortScaledValue(
+                        decimal.toBigDecimal(), trinoDecimalType.getScale());
             }
             return Decimals.encodeScaledValue(decimal.toBigDecimal(), trinoDecimalType.getScale());
         }
@@ -226,7 +220,7 @@ public class TrinoTypeUtils {
         }
         if (paimonType instanceof DateType) {
             //noinspection RedundantCast
-            return (long)  paimonValue;
+            return (long) paimonValue;
         }
         if (paimonType instanceof TimeType) {
             return multiplyExact((long) paimonValue, PICOSECONDS_PER_MICROSECOND);
@@ -241,7 +235,11 @@ public class TrinoTypeUtils {
             return timestamp.toMicros();
         }
         if (paimonType instanceof LocalZonedTimestampType) {
+            LocalZonedTimestampType timestampType = (LocalZonedTimestampType) paimonType;
             Timestamp timestamp = (Timestamp) paimonValue;
+            if (timestampType.getPrecision() <= 3) {
+                return packDateTimeWithZone(timestamp.getMillisecond(), UTC_KEY);
+            }
             return fromEpochMillisAndFraction(timestamp.getMillisecond(), 0, UTC_KEY);
         }
 

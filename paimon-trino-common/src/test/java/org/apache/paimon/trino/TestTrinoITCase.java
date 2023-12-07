@@ -18,6 +18,8 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.data.BinaryString;
+import org.apache.paimon.data.Decimal;
 import org.apache.paimon.data.GenericArray;
 import org.apache.paimon.data.GenericMap;
 import org.apache.paimon.data.GenericRow;
@@ -49,6 +51,7 @@ import io.trino.testing.QueryRunner;
 import org.testng.annotations.Test;
 
 import java.nio.file.Files;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,6 +59,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static io.airlift.testing.Closeables.closeAllSuppress;
 import static io.trino.testing.TestingSession.testSessionBuilder;
@@ -158,6 +162,66 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                     }),
                             GenericRow.of(2, fromString("male")),
                             new GenericArray(new int[] {1, 2, 3})));
+            commit.commit(0, writer.prepareCommit(true, 0));
+        }
+
+        {
+            Path tablePath = new Path(warehouse, "default.db/table_partition_filter");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "a", DataTypes.BOOLEAN()),
+                                    new DataField(1, "b", DataTypes.TINYINT()),
+                                    new DataField(2, "c", DataTypes.SMALLINT()),
+                                    new DataField(3, "d", DataTypes.INT()),
+                                    new DataField(4, "e", DataTypes.BIGINT()),
+                                    new DataField(5, "f", DataTypes.FLOAT()),
+                                    new DataField(6, "g", DataTypes.DOUBLE()),
+                                    new DataField(7, "h", DataTypes.VARCHAR(5)),
+                                    new DataField(8, "i", DataTypes.TIMESTAMP(6)),
+                                    new DataField(
+                                            9, "j", DataTypes.TIMESTAMP_WITH_LOCAL_TIME_ZONE(3)),
+                                    new DataField(10, "k", DataTypes.DECIMAL(10, 5))));
+            new SchemaManager(LocalFileIO.create(), tablePath)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    rowType.getFields().stream()
+                                            .map(DataField::name)
+                                            .collect(Collectors.toList()),
+                                    Collections.emptyList(),
+                                    new HashMap<>(),
+                                    ""));
+            FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath);
+            InnerTableWrite writer = table.newWrite("user");
+            InnerTableCommit commit = table.newCommit("user");
+            writer.write(
+                    GenericRow.of(
+                            true,
+                            (byte) 1,
+                            (short) 1,
+                            1,
+                            1L,
+                            1.0f,
+                            1.0d,
+                            BinaryString.fromString("abc"),
+                            Timestamp.fromLocalDateTime(LocalDateTime.of(2023, 1, 1, 0, 0, 0, 0)),
+                            Timestamp.fromLocalDateTime(LocalDateTime.of(2023, 1, 1, 0, 0, 0, 0)),
+                            Decimal.zero(10, 5)));
+
+            writer.write(
+                    GenericRow.of(
+                            false,
+                            (byte) 0,
+                            (short) 0,
+                            0,
+                            0L,
+                            0.0f,
+                            0.0d,
+                            BinaryString.fromString("abcd"),
+                            Timestamp.fromLocalDateTime(LocalDateTime.of(2022, 1, 1, 0, 0, 0, 0)),
+                            Timestamp.fromLocalDateTime(LocalDateTime.of(2022, 1, 1, 0, 0, 0, 0)),
+                            Decimal.fromUnscaledLong(10000, 10, 5)));
             commit.commit(0, writer.prepareCommit(true, 0));
         }
 
@@ -278,6 +342,57 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
     }
 
     @Test
+    public void testPartitionFilterWithFunction() {
+        assertThat(
+                        sql(
+                                "SELECT * FROM paimon.default.table_partition_filter where cast(a AS VARCHAR) = 'true'"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.table_partition_filter where b + 1 = 2"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.table_partition_filter where c + 1 = 2"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.table_partition_filter where d + 1 = 2"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.table_partition_filter where e + 1 = 2"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.table_partition_filter where f + 1 = 2"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.table_partition_filter where g + 1 = 2"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.table_partition_filter where length(h) = 3"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.table_partition_filter where year(i) = 2023"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(sql("SELECT * FROM paimon.default.table_partition_filter where year(j) = 2023"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+
+        assertThat(
+                        sql(
+                                "SELECT * FROM paimon.default.table_partition_filter where k + 1 = DECIMAL '1.0'"))
+                .isEqualTo(
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, abc, 2023-01-01T00:00, 2023-01-01T00:00Z[UTC], 0.00000]]");
+    }
+
+    @Test
     public void testShowCreateTable() {
         assertThat(sql("SHOW CREATE TABLE paimon.default.t3"))
                 .isEqualTo(
@@ -323,7 +438,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "changelog_producer = 'input'"
                         + ")");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[orders], [t1], [t2], [t3], [t4], [t99]]");
+                .isEqualTo("[[orders], [t1], [t2], [t3], [t4], [t99], [table_partition_filter]]");
         sql("DROP TABLE IF EXISTS paimon.default.orders");
     }
 
@@ -346,7 +461,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("ALTER TABLE paimon.default.t5 RENAME TO t6");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[t1], [t2], [t3], [t4], [t6], [t99]]");
+                .isEqualTo("[[t1], [t2], [t3], [t4], [t6], [t99], [table_partition_filter]]");
         sql("DROP TABLE IF EXISTS paimon.default.t6");
     }
 
@@ -369,7 +484,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[t1], [t2], [t3], [t4], [t99]]");
+                .isEqualTo("[[t1], [t2], [t3], [t4], [t99], [table_partition_filter]]");
     }
 
     @Test
