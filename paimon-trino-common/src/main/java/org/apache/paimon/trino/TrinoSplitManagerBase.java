@@ -47,8 +47,7 @@ public abstract class TrinoSplitManagerBase implements ConnectorSplitManager {
         tableHandle.getLimit().ifPresent(limit -> readBuilder.withLimit((int) limit));
         List<Split> splits = readBuilder.newScan().plan().splits();
 
-        @SuppressWarnings("OptionalGetWithoutIsPresent")
-        long maxRowCount = splits.stream().mapToLong(Split::rowCount).max().getAsLong();
+        long maxRowCount = splits.stream().mapToLong(Split::rowCount).max().orElse(0L);
         double minimumSplitWeight = TrinoSessionProperties.getMinimumSplitWeight(session);
         return new TrinoSplitSource(
                 splits.stream()

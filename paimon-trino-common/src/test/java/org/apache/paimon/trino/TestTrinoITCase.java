@@ -131,6 +131,23 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
         }
 
         {
+            Path tablePath = new Path(warehouse, "default.db/empty_t");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(1, "a", new IntType()),
+                                    new DataField(2, "b", new BigIntType())));
+            new SchemaManager(LocalFileIO.create(), tablePath)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    Collections.emptyList(),
+                                    new HashMap<>(),
+                                    ""));
+        }
+
+        {
             Path tablePath4 = new Path(warehouse, "default.db/t4");
             List<DataField> innerRowFields = new ArrayList<>();
             innerRowFields.add(new DataField(4, "innercol1", new IntType()));
@@ -241,6 +258,11 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
     public void testComplexTypes() {
         assertThat(sql("SELECT * FROM paimon.default.t4"))
                 .isEqualTo("[[1, {1=2}, [2, male], [1, 2, 3]]]");
+    }
+
+    @Test
+    public void testEmptyTable() {
+        assertThat(sql("SELECT * FROM paimon.default.empty_t")).isEqualTo("[]");
     }
 
     @Test
