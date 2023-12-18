@@ -51,13 +51,13 @@ public abstract class TrinoConnectorBase implements Connector {
         sessionProperties = new TrinoSessionProperties().getSessionProperties();
     }
 
-    public ConnectorTransactionHandle beginTransaction(
+    protected ConnectorTransactionHandle beginTransactionBase(
             IsolationLevel isolationLevel, boolean readOnly) {
         checkConnectorSupports(READ_COMMITTED, isolationLevel);
         return TrinoTransactionHandle.INSTANCE;
     }
 
-    public TrinoMetadataBase getMetadata(ConnectorTransactionHandle transactionHandle) {
+    protected TrinoMetadataBase getMetadataBase(ConnectorTransactionHandle transactionHandle) {
         return trinoMetadata;
     }
 

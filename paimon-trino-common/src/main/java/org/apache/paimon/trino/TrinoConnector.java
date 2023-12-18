@@ -35,11 +35,11 @@ public class TrinoConnector extends TrinoConnectorBase {
     @Override
     public ConnectorTransactionHandle beginTransaction(
             IsolationLevel isolationLevel, boolean readOnly) {
-        return super.beginTransaction(isolationLevel, readOnly);
+        return beginTransactionBase(isolationLevel, readOnly);
     }
 
     @Override
     public TrinoMetadataBase getMetadata(ConnectorTransactionHandle transactionHandle) {
-        return super.getMetadata(transactionHandle);
+        return getMetadataBase(transactionHandle);
     }
 }
