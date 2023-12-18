@@ -20,8 +20,6 @@ package org.apache.paimon.trino;
 
 import org.testng.annotations.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /** {@link TestTrinoITCase} for Trino 358. */
 public class TestTrino358ITCase extends TestTrinoITCase {
 
@@ -33,14 +31,5 @@ public class TestTrino358ITCase extends TestTrinoITCase {
     @Test
     public void testSetTableProperties() {
         // not supported
-    }
-
-    @Test
-    public void testAllType() {
-        assertThat(sql("SELECT * FROM paimon.default.t99"))
-                .isEqualTo(
-                        "[[true, 1, 1, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, "
-                                + "2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 2023-09-12T07:54:48.002Z[UTC], "
-                                + "0.10000, java.nio.HeapByteBuffer[pos=0 lim=3 cap=3], [1, 1, 1], {1=1}, [1, 1]]]");
     }
 }

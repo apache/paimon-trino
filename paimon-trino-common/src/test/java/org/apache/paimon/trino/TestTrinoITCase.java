@@ -571,11 +571,14 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
     @Test
     public void testAllType() {
-        assertThat(sql("SELECT * FROM paimon.default.t99"))
+        assertThat(
+                        sql(
+                                "SELECT boolean, tinyint, smallint,int,bigint,float,double,char,varchar, date,timestamp_0, "
+                                        + "timestamp_3, timestamp_6, timestamp_tz, decimal, to_hex(varbinary), array, map, row FROM paimon.default.t99"))
                 .isEqualTo(
                         "[[true, 1, 1, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, "
                                 + "2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, "
-                                + "2023-09-12T07:54:48.002Z[UTC], 0.10000, X'01 02 03', [1, 1, 1], {1=1}, [1, 1]]]");
+                                + "2023-09-12T07:54:48.002Z[UTC], 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]]]");
     }
 
     @Test
