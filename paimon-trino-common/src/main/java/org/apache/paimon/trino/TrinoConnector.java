@@ -31,7 +31,12 @@ public class TrinoConnector extends TrinoConnectorBase {
             TrinoPageSourceProvider trinoPageSourceProvider,
             TrinoTableOptions trinoTableOptions,
             TrinoSessionProperties trinoSessionProperties) {
-        super(trinoMetadata, trinoSplitManager, trinoPageSourceProvider, trinoTableOptions, trinoSessionProperties);
+        super(
+                trinoMetadata,
+                trinoSplitManager,
+                trinoPageSourceProvider,
+                trinoTableOptions,
+                trinoSessionProperties);
     }
 
     @Override
