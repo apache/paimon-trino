@@ -19,6 +19,8 @@
 package org.apache.paimon.trino;
 
 import io.trino.spi.connector.Connector;
+import io.trino.spi.connector.ConnectorMetadata;
+import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.transaction.IsolationLevel;
 
@@ -28,20 +30,19 @@ public class TrinoConnector extends TrinoConnectorBase {
     public TrinoConnector(
             TrinoMetadataBase trinoMetadata,
             TrinoSplitManagerBase trinoSplitManager,
-            TrinoPageSourceProvider trinoPageSourceProvider,
-            TrinoTableOptions trinoTableOptions,
-            TrinoSessionProperties trinoSessionProperties) {
-        super(trinoMetadata, trinoSplitManager, trinoPageSourceProvider, trinoTableOptions, trinoSessionProperties);
+            TrinoPageSourceProvider trinoPageSourceProvider) {
+        super(trinoMetadata, trinoSplitManager, trinoPageSourceProvider);
     }
 
     @Override
     public ConnectorTransactionHandle beginTransaction(
-            IsolationLevel isolationLevel, boolean readOnly) {
+            IsolationLevel isolationLevel, boolean readOnly, boolean autoCommit) {
         return beginTransactionBase(isolationLevel, readOnly);
     }
 
     @Override
-    public TrinoMetadataBase getMetadata(ConnectorTransactionHandle transactionHandle) {
+    public ConnectorMetadata getMetadata(
+            ConnectorSession session, ConnectorTransactionHandle transactionHandle) {
         return getMetadataBase(transactionHandle);
     }
 }
