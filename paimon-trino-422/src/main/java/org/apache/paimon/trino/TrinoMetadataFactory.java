@@ -21,19 +21,26 @@ package org.apache.paimon.trino;
 import org.apache.paimon.options.Options;
 
 import com.google.inject.Inject;
-import io.trino.spi.connector.ConnectorMetadata;
+import io.trino.hdfs.ConfigurationUtils;
+import io.trino.hdfs.HdfsConfigurationInitializer;
 import org.apache.hadoop.conf.Configuration;
 
-/** Trino {@link ConnectorMetadata}. */
-public class TrinoMetadata extends TrinoMetadataBase {
+/** A factory to create {@link TrinoMetadata}. */
+public class TrinoMetadataFactory {
+
+    private final Options options;
+
+    private final Configuration configuration;
 
     @Inject
-    public TrinoMetadata(Options catalogOptions, Configuration configuration) {
-        super(catalogOptions, configuration);
+    public TrinoMetadataFactory(
+            Options options, HdfsConfigurationInitializer hdfsConfigurationInitializer) {
+        this.options = options;
+        this.configuration = ConfigurationUtils.getInitialConfiguration();
+        hdfsConfigurationInitializer.initializeConfiguration(configuration);
     }
 
-    @Override
-    public boolean usesLegacyTableLayouts() {
-        return false;
+    public TrinoMetadata create() {
+        return new TrinoMetadata(options, configuration);
     }
 }

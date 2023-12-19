@@ -18,22 +18,42 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.options.Options;
+import io.airlift.configuration.Config;
 
-import com.google.inject.Inject;
-import io.trino.spi.connector.ConnectorMetadata;
-import org.apache.hadoop.conf.Configuration;
+/** Used for configuration item inspection and management. */
+public class PaimonConfig {
 
-/** Trino {@link ConnectorMetadata}. */
-public class TrinoMetadata extends TrinoMetadataBase {
+    private String warehouse;
+    private String metastore;
+    private String uri;
 
-    @Inject
-    public TrinoMetadata(Options catalogOptions, Configuration configuration) {
-        super(catalogOptions, configuration);
+    public String getWarehouse() {
+        return warehouse;
     }
 
-    @Override
-    public boolean usesLegacyTableLayouts() {
-        return false;
+    @Config("warehouse")
+    public PaimonConfig setWarehouse(String warehouse) {
+        this.warehouse = warehouse;
+        return this;
+    }
+
+    public String getMetastore() {
+        return metastore;
+    }
+
+    @Config("metastore")
+    public PaimonConfig setMetastore(String metastore) {
+        this.metastore = metastore;
+        return this;
+    }
+
+    public String getUri() {
+        return uri;
+    }
+
+    @Config("uri")
+    public PaimonConfig setUri(String uri) {
+        this.uri = uri;
+        return this;
     }
 }

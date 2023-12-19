@@ -25,7 +25,6 @@ import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.options.Options;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
-import org.apache.paimon.security.SecurityContext;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.utils.InstantiationUtil;
 import org.apache.paimon.utils.StringUtils;
@@ -48,6 +47,7 @@ import io.trino.spi.expression.ConnectorExpression;
 import io.trino.spi.predicate.Domain;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.security.TrinoPrincipal;
+import org.apache.hadoop.conf.Configuration;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -73,15 +73,17 @@ import static org.apache.paimon.utils.Preconditions.checkArgument;
 /** Trino {@link ConnectorMetadata}. */
 public abstract class TrinoMetadataBase implements ConnectorMetadata {
 
-    private final Catalog catalog;
+    protected final Catalog catalog;
 
-    public TrinoMetadataBase(Options catalogOptions) {
-        try {
-            SecurityContext.install(catalogOptions);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        this.catalog = CatalogFactory.createCatalog(CatalogContext.create(catalogOptions));
+    public TrinoMetadataBase(Options catalogOptions, Configuration configuration) {
+        // todo
+        //        try {
+        //            SecurityContext.install(catalogOptions);
+        //        } catch (Exception e) {
+        //            throw new RuntimeException(e);
+        //        }
+        this.catalog =
+                CatalogFactory.createCatalog(CatalogContext.create(catalogOptions, configuration));
     }
 
     @Override

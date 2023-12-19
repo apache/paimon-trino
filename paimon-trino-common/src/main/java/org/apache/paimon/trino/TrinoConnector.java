@@ -41,14 +41,16 @@ public class TrinoConnector implements Connector {
     public TrinoConnector(
             TrinoMetadataBase trinoMetadata,
             TrinoSplitManagerBase trinoSplitManager,
-            TrinoPageSourceProvider trinoPageSourceProvider) {
+            TrinoPageSourceProvider trinoPageSourceProvider,
+            TrinoTableOptions trinoTableOptions,
+            TrinoSessionProperties trinoSessionProperties) {
         this.trinoMetadata = requireNonNull(trinoMetadata, "jmxMetadata is null");
         this.trinoSplitManager = requireNonNull(trinoSplitManager, "jmxSplitManager is null");
         this.trinoPageSourceProvider =
                 requireNonNull(trinoPageSourceProvider, "jmxRecordSetProvider is null");
         tableProperties =
-                new TrinoTableOptions().getTableProperties().stream().collect(toImmutableList());
-        sessionProperties = new TrinoSessionProperties().getSessionProperties();
+                trinoTableOptions.getTableProperties().stream().collect(toImmutableList());
+        sessionProperties = trinoSessionProperties.getSessionProperties();
     }
 
     @Override

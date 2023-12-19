@@ -20,8 +20,10 @@ package org.apache.paimon.trino;
 
 import com.google.inject.Module;
 import io.airlift.json.JsonModule;
+import io.opentelemetry.api.OpenTelemetry;
+import io.trino.hdfs.HdfsModule;
+import io.trino.hdfs.authentication.HdfsAuthenticationModule;
 import io.trino.plugin.hive.NodeVersion;
-import io.trino.plugin.hive.authentication.HdfsAuthenticationModule;
 import io.trino.spi.connector.ConnectorContext;
 import io.trino.spi.connector.ConnectorFactory;
 import io.trino.spi.type.TypeManager;
@@ -37,15 +39,15 @@ public class TrinoConnectorFactory extends TrinoConnectorFactoryBase {
         return new Module[] {
             new JsonModule(),
             new TrinoModule(config),
-            new HiveHdfsModule(),
+            new HdfsModule(),
             new HdfsAuthenticationModule(),
             binder -> {
-                // orc need NodeVersion
                 binder.bind(NodeVersion.class)
                         .toInstance(
                                 new NodeVersion(
                                         context.getNodeManager().getCurrentNode().getVersion()));
                 binder.bind(TypeManager.class).toInstance(context.getTypeManager());
+                binder.bind(OpenTelemetry.class).toInstance(context.getOpenTelemetry());
             }
         };
     }

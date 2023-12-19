@@ -18,8 +18,17 @@
 
 package org.apache.paimon.trino;
 
+import com.google.inject.Module;
+import io.airlift.json.JsonModule;
+import io.trino.plugin.hive.HiveHdfsModule;
+import io.trino.plugin.hive.NodeVersion;
+import io.trino.plugin.hive.authentication.HdfsAuthenticationModule;
+import io.trino.spi.connector.ConnectorContext;
 import io.trino.spi.connector.ConnectorFactory;
 import io.trino.spi.connector.ConnectorHandleResolver;
+import io.trino.spi.type.TypeManager;
+
+import java.util.Map;
 
 /** Trino {@link ConnectorFactory}. */
 public class TrinoConnectorFactory extends TrinoConnectorFactoryBase {
@@ -27,5 +36,23 @@ public class TrinoConnectorFactory extends TrinoConnectorFactoryBase {
     @Override
     public ConnectorHandleResolver getHandleResolver() {
         return new TrinoHandleResolver();
+    }
+
+    @Override
+    protected Module[] modules(
+            String catalogName, Map<String, String> config, ConnectorContext context) {
+        return new Module[] {
+            new JsonModule(),
+            new TrinoModule(config),
+            new HiveHdfsModule(),
+            new HdfsAuthenticationModule(),
+            binder -> {
+                binder.bind(NodeVersion.class)
+                        .toInstance(
+                                new NodeVersion(
+                                        context.getNodeManager().getCurrentNode().getVersion()));
+                binder.bind(TypeManager.class).toInstance(context.getTypeManager());
+            }
+        };
     }
 }

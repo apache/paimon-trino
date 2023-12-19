@@ -19,14 +19,11 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.CoreOptions;
-import org.apache.paimon.catalog.Catalog;
-import org.apache.paimon.catalog.CatalogContext;
-import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.options.Options;
 import org.apache.paimon.schema.SchemaChange;
-import org.apache.paimon.security.SecurityContext;
 
+import com.google.inject.Inject;
 import io.trino.spi.TrinoException;
 import io.trino.spi.connector.ConnectorMetadata;
 import io.trino.spi.connector.ConnectorSession;
@@ -37,6 +34,7 @@ import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.type.LongTimestampWithTimeZone;
 import io.trino.spi.type.TimestampWithTimeZoneType;
 import io.trino.spi.type.Type;
+import org.apache.hadoop.conf.Configuration;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,16 +50,9 @@ import static java.util.stream.Collectors.toMap;
 /** Trino {@link ConnectorMetadata}. */
 public class TrinoMetadata extends TrinoMetadataBase {
 
-    private final Catalog catalog;
-
-    public TrinoMetadata(Options catalogOptions) {
-        super(catalogOptions);
-        try {
-            SecurityContext.install(catalogOptions);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        this.catalog = CatalogFactory.createCatalog(CatalogContext.create(catalogOptions));
+    @Inject
+    public TrinoMetadata(Options catalogOptions, Configuration configuration) {
+        super(catalogOptions, configuration);
     }
 
     @Override

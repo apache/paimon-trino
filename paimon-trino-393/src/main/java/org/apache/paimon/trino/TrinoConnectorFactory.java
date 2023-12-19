@@ -40,7 +40,6 @@ public class TrinoConnectorFactory extends TrinoConnectorFactoryBase {
             new HiveHdfsModule(),
             new HdfsAuthenticationModule(),
             binder -> {
-                // orc need NodeVersion
                 binder.bind(NodeVersion.class)
                         .toInstance(
                                 new NodeVersion(
