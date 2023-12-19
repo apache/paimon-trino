@@ -18,7 +18,11 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.catalog.Catalog;
+import org.apache.paimon.catalog.CatalogContext;
+import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.options.Options;
+import org.apache.paimon.security.SecurityContext;
 
 import com.google.inject.Inject;
 import io.trino.plugin.hive.HdfsConfigurationInitializer;
@@ -28,19 +32,23 @@ import org.apache.hadoop.conf.Configuration;
 /** A factory to create {@link TrinoMetadata}. */
 public class TrinoMetadataFactory {
 
-    private final Options options;
-
-    private final Configuration configuration;
+    private final Catalog catalog;
 
     @Inject
     public TrinoMetadataFactory(
             Options options, HdfsConfigurationInitializer hdfsConfigurationInitializer) {
-        this.options = options;
-        this.configuration = ConfigurationUtils.getInitialConfiguration();
+        Configuration configuration = ConfigurationUtils.getInitialConfiguration();
         hdfsConfigurationInitializer.initializeConfiguration(configuration);
+        CatalogContext catalogContext = CatalogContext.create(options, configuration);
+        try {
+            SecurityContext.install(catalogContext);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        this.catalog = CatalogFactory.createCatalog(catalogContext);
     }
 
     public TrinoMetadata create() {
-        return new TrinoMetadata(options, configuration);
+        return new TrinoMetadata(catalog);
     }
 }

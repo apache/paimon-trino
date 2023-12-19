@@ -26,7 +26,6 @@ import com.google.inject.Module;
 import java.util.Map;
 
 import static com.google.inject.Scopes.SINGLETON;
-import static io.airlift.configuration.ConfigBinder.configBinder;
 
 /** Module for binding instance. */
 public class TrinoModule implements Module {
@@ -44,6 +43,5 @@ public class TrinoModule implements Module {
         binder.bind(TrinoPageSourceProvider.class).in(SINGLETON);
         binder.bind(TrinoSessionProperties.class).in(SINGLETON);
         binder.bind(TrinoTableOptions.class).in(SINGLETON);
-        configBinder(binder).bindConfig(PaimonConfig.class);
     }
 }

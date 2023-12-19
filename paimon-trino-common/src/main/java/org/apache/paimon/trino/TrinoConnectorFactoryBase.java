@@ -21,10 +21,15 @@ package org.apache.paimon.trino;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import io.airlift.bootstrap.Bootstrap;
+import io.airlift.json.JsonModule;
+import io.trino.plugin.hive.HiveHdfsModule;
+import io.trino.plugin.hive.NodeVersion;
+import io.trino.plugin.hive.authentication.HdfsAuthenticationModule;
 import io.trino.spi.classloader.ThreadContextClassLoader;
 import io.trino.spi.connector.Connector;
 import io.trino.spi.connector.ConnectorContext;
 import io.trino.spi.connector.ConnectorFactory;
+import io.trino.spi.type.TypeManager;
 
 import java.util.Map;
 
@@ -46,7 +51,8 @@ public abstract class TrinoConnectorFactoryBase implements ConnectorFactory {
 
             Injector injector =
                     app.doNotInitializeLogging()
-                            .setRequiredConfigurationProperties(config)
+                            .setRequiredConfigurationProperties(Map.of())
+                            .setOptionalConfigurationProperties(config)
                             .initialize();
 
             TrinoMetadata trinoMetadata = injector.getInstance(TrinoMetadataFactory.class).create();
@@ -66,6 +72,20 @@ public abstract class TrinoConnectorFactoryBase implements ConnectorFactory {
         }
     }
 
-    protected abstract Module[] modules(
-            String catalogName, Map<String, String> config, ConnectorContext context);
+    protected Module[] modules(
+            String catalogName, Map<String, String> config, ConnectorContext context) {
+        return new Module[] {
+            new JsonModule(),
+            new TrinoModule(config),
+            new HiveHdfsModule(),
+            new HdfsAuthenticationModule(),
+            binder -> {
+                binder.bind(NodeVersion.class)
+                        .toInstance(
+                                new NodeVersion(
+                                        context.getNodeManager().getCurrentNode().getVersion()));
+                binder.bind(TypeManager.class).toInstance(context.getTypeManager());
+            }
+        };
+    }
 }

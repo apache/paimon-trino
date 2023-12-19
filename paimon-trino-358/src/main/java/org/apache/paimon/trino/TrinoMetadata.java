@@ -18,18 +18,15 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.options.Options;
+import org.apache.paimon.catalog.Catalog;
 
-import com.google.inject.Inject;
 import io.trino.spi.connector.ConnectorMetadata;
-import org.apache.hadoop.conf.Configuration;
 
 /** Trino {@link ConnectorMetadata}. */
 public class TrinoMetadata extends TrinoMetadataBase {
 
-    @Inject
-    public TrinoMetadata(Options catalogOptions, Configuration configuration) {
-        super(catalogOptions, configuration);
+    public TrinoMetadata(Catalog catalog) {
+        super(catalog);
     }
 
     @Override
