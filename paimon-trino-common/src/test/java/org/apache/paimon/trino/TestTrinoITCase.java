@@ -30,7 +30,6 @@ import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaManager;
 import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.FileStoreTableFactory;
-import org.apache.paimon.table.sink.DynamicBucketRow;
 import org.apache.paimon.table.sink.InnerTableCommit;
 import org.apache.paimon.table.sink.InnerTableWrite;
 import org.apache.paimon.types.ArrayType;
@@ -232,6 +231,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                             new Schema(
                                     rowType.getFields(),
                                     List.of(
+                                            "boolean",
                                             "tinyint",
                                             "smallint",
                                             "int",
@@ -263,34 +263,32 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                             "timestamp_tz",
                                             "decimal",
                                             "varbinary"),
-                                    Map.of("bucket", "-1"),
+                                    Collections.emptyMap(),
                                     ""));
             FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath6);
             InnerTableWrite writer = table.newWrite("user");
             InnerTableCommit commit = table.newCommit("user");
             writer.write(
-                    new DynamicBucketRow(
-                            GenericRow.of(
-                                    true,
-                                    (byte) 1,
-                                    (short) 1,
-                                    1,
-                                    1L,
-                                    1.0f,
-                                    1.0d,
-                                    BinaryString.fromString("char1"),
-                                    BinaryString.fromString("varchar1"),
-                                    0,
-                                    Timestamp.fromMicros(1694505288000000L),
-                                    Timestamp.fromMicros(1694505288001000L),
-                                    Timestamp.fromMicros(1694505288001001L),
-                                    Timestamp.fromMicros(1694505288002001L),
-                                    Decimal.fromUnscaledLong(10000, 10, 5),
-                                    new byte[] {0x01, 0x02, 0x03},
-                                    new GenericArray(new int[] {1, 1, 1}),
-                                    new GenericMap(Map.of(1, 1)),
-                                    GenericRow.of(1, 1)),
-                            0));
+                    GenericRow.of(
+                            true,
+                            (byte) 1,
+                            (short) 1,
+                            1,
+                            1L,
+                            1.0f,
+                            1.0d,
+                            BinaryString.fromString("char1"),
+                            BinaryString.fromString("varchar1"),
+                            0,
+                            Timestamp.fromMicros(1694505288000000L),
+                            Timestamp.fromMicros(1694505288001000L),
+                            Timestamp.fromMicros(1694505288001001L),
+                            Timestamp.fromMicros(1694505288002001L),
+                            Decimal.fromUnscaledLong(10000, 10, 5),
+                            new byte[] {0x01, 0x02, 0x03},
+                            new GenericArray(new int[] {1, 1, 1}),
+                            new GenericMap(Map.of(1, 1)),
+                            GenericRow.of(1, 1)));
             commit.commit(0, writer.prepareCommit(true, 0));
         }
 
