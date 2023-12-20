@@ -26,6 +26,7 @@ import org.apache.paimon.security.SecurityContext;
 
 import com.google.inject.Inject;
 import io.trino.hdfs.ConfigurationUtils;
+import io.trino.hdfs.HdfsConfig;
 import io.trino.hdfs.HdfsConfigurationInitializer;
 import org.apache.hadoop.conf.Configuration;
 
@@ -36,10 +37,17 @@ public class TrinoMetadataFactory {
 
     @Inject
     public TrinoMetadataFactory(
-            Options options, HdfsConfigurationInitializer hdfsConfigurationInitializer) {
-        Configuration configuration = ConfigurationUtils.getInitialConfiguration();
-        hdfsConfigurationInitializer.initializeConfiguration(configuration);
-        CatalogContext catalogContext = CatalogContext.create(options, configuration);
+            Options options,
+            HdfsConfigurationInitializer hdfsConfigurationInitializer,
+            HdfsConfig hdfsConfig) {
+        CatalogContext catalogContext;
+        if (hdfsConfig.getResourceConfigFiles().isEmpty()) {
+            catalogContext = CatalogContext.create(options);
+        } else {
+            Configuration configuration = ConfigurationUtils.getInitialConfiguration();
+            hdfsConfigurationInitializer.initializeConfiguration(configuration);
+            catalogContext = CatalogContext.create(options, configuration);
+        }
         try {
             SecurityContext.install(catalogContext);
         } catch (Exception e) {
