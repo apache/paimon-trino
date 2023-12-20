@@ -38,23 +38,9 @@ under the License.
         <slice.version>0.42</slice.version>
         <airlift.version>216</airlift.version>
         <hadoop.apache.version>3.2.0-18</hadoop.apache.version>
-        <hive.apache.version>3.1.2-21</hive.apache.version>
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>io.trino.hive</groupId>
-            <artifactId>hive-apache</artifactId>
-            <version>${hive.apache.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
         <dependency>
             <groupId>io.trino.hadoop</groupId>
             <artifactId>hadoop-apache</artifactId>
