@@ -28,7 +28,6 @@ import java.util.List;
 import static io.trino.spi.transaction.IsolationLevel.READ_COMMITTED;
 import static io.trino.spi.transaction.IsolationLevel.checkConnectorSupports;
 import static java.util.Objects.requireNonNull;
-import static org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableList.toImmutableList;
 
 /** Trino {@link Connector}. */
 public abstract class TrinoConnectorBase implements Connector {
@@ -41,14 +40,15 @@ public abstract class TrinoConnectorBase implements Connector {
     public TrinoConnectorBase(
             TrinoMetadataBase trinoMetadata,
             TrinoSplitManagerBase trinoSplitManager,
-            TrinoPageSourceProvider trinoPageSourceProvider) {
+            TrinoPageSourceProvider trinoPageSourceProvider,
+            TrinoTableOptions trinoTableOptions,
+            TrinoSessionProperties trinoSessionProperties) {
         this.trinoMetadata = requireNonNull(trinoMetadata, "jmxMetadata is null");
         this.trinoSplitManager = requireNonNull(trinoSplitManager, "jmxSplitManager is null");
         this.trinoPageSourceProvider =
                 requireNonNull(trinoPageSourceProvider, "jmxRecordSetProvider is null");
-        tableProperties =
-                new TrinoTableOptions().getTableProperties().stream().collect(toImmutableList());
-        sessionProperties = new TrinoSessionProperties().getSessionProperties();
+        this.tableProperties = trinoTableOptions.getTableProperties();
+        sessionProperties = trinoSessionProperties.getSessionProperties();
     }
 
     protected ConnectorTransactionHandle beginTransactionBase(

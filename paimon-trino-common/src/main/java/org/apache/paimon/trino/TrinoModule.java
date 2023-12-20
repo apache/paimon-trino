@@ -18,19 +18,30 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.catalog.Catalog;
+import org.apache.paimon.options.Options;
 
-import io.trino.spi.connector.ConnectorMetadata;
+import com.google.inject.Binder;
+import com.google.inject.Module;
 
-/** Trino {@link ConnectorMetadata}. */
-public class TrinoMetadata extends TrinoMetadataBase {
+import java.util.Map;
 
-    public TrinoMetadata(Catalog catalog) {
-        super(catalog);
+import static com.google.inject.Scopes.SINGLETON;
+
+/** Module for binding instance. */
+public class TrinoModule implements Module {
+    private Map<String, String> config;
+
+    public TrinoModule(Map<String, String> config) {
+        this.config = config;
     }
 
     @Override
-    public boolean usesLegacyTableLayouts() {
-        return false;
+    public void configure(Binder binder) {
+        binder.bind(Options.class).toInstance(new Options(config));
+        binder.bind(TrinoMetadataFactory.class).in(SINGLETON);
+        binder.bind(TrinoSplitManager.class).in(SINGLETON);
+        binder.bind(TrinoPageSourceProvider.class).in(SINGLETON);
+        binder.bind(TrinoSessionProperties.class).in(SINGLETON);
+        binder.bind(TrinoTableOptions.class).in(SINGLETON);
     }
 }

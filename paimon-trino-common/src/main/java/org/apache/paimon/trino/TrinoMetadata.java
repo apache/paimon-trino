@@ -20,12 +20,8 @@ package org.apache.paimon.trino;
 
 import org.apache.paimon.CoreOptions;
 import org.apache.paimon.catalog.Catalog;
-import org.apache.paimon.catalog.CatalogContext;
-import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.catalog.Identifier;
-import org.apache.paimon.options.Options;
 import org.apache.paimon.schema.SchemaChange;
-import org.apache.paimon.security.SecurityContext;
 
 import io.trino.spi.TrinoException;
 import io.trino.spi.connector.ConnectorMetadata;
@@ -51,16 +47,8 @@ import static java.util.stream.Collectors.toMap;
 /** Trino {@link ConnectorMetadata}. */
 public class TrinoMetadata extends TrinoMetadataBase {
 
-    private final Catalog catalog;
-
-    public TrinoMetadata(Options catalogOptions) {
-        super(catalogOptions);
-        try {
-            SecurityContext.install(catalogOptions);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        this.catalog = CatalogFactory.createCatalog(CatalogContext.create(catalogOptions));
+    public TrinoMetadata(Catalog catalog) {
+        super(catalog);
     }
 
     @Override

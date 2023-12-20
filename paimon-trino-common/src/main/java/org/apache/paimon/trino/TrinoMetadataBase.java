@@ -19,13 +19,9 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.catalog.Catalog;
-import org.apache.paimon.catalog.CatalogContext;
-import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.catalog.Identifier;
-import org.apache.paimon.options.Options;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
-import org.apache.paimon.security.SecurityContext;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.utils.InstantiationUtil;
 import org.apache.paimon.utils.StringUtils;
@@ -73,15 +69,10 @@ import static org.apache.paimon.utils.Preconditions.checkArgument;
 /** Trino {@link ConnectorMetadata}. */
 public abstract class TrinoMetadataBase implements ConnectorMetadata {
 
-    private final Catalog catalog;
+    protected final Catalog catalog;
 
-    public TrinoMetadataBase(Options catalogOptions) {
-        try {
-            SecurityContext.install(catalogOptions);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        this.catalog = CatalogFactory.createCatalog(CatalogContext.create(catalogOptions));
+    public TrinoMetadataBase(Catalog catalog) {
+        this.catalog = catalog;
     }
 
     @Override

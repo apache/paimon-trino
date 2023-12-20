@@ -35,9 +35,6 @@ under the License.
         <target.java.version>17</target.java.version>
         <jdk.test.version>17</jdk.test.version>
         <trino.version>393</trino.version>
-        <hadoop.version>2.8.5</hadoop.version>
-        <configuration.version>216</configuration.version>
-        <slice.version>0.42</slice.version>
         <maven.toolchains.plugin.version>3.1.0</maven.toolchains.plugin.version>
     </properties>
 
@@ -61,20 +58,6 @@ under the License.
             <version>${trino.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>configuration</artifactId>
-            <version>${configuration.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>slice</artifactId>
-            <version>${slice.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- for testing -->
 
         <dependency>
@@ -115,40 +98,6 @@ under the License.
             <version>${trino.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-client</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
     </dependencies>
 
     <build>
@@ -175,23 +124,7 @@ under the License.
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>shade-paimon</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <artifactSet>
-                                <includes combine.children="append">
-                                    <include>org.apache.paimon:paimon-trino-common</include>
-                                </includes>
-                            </artifactSet>
-                        </configuration>
-                    </execution>
-                </executions>
+                <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
