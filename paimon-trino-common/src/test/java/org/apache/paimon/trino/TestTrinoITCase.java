@@ -18,6 +18,8 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.data.BinaryString;
+import org.apache.paimon.data.Decimal;
 import org.apache.paimon.data.GenericArray;
 import org.apache.paimon.data.GenericMap;
 import org.apache.paimon.data.GenericRow;
@@ -39,7 +41,6 @@ import org.apache.paimon.types.IntType;
 import org.apache.paimon.types.MapType;
 import org.apache.paimon.types.RowKind;
 import org.apache.paimon.types.RowType;
-import org.apache.paimon.types.TimestampType;
 import org.apache.paimon.types.VarCharType;
 
 import io.trino.testing.AbstractTestQueryFramework;
@@ -195,33 +196,99 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
             RowType rowType =
                     new RowType(
                             Arrays.asList(
-                                    new DataField(0, "i", new IntType()),
-                                    new DataField(1, "createdtime", new TimestampType(0)),
-                                    new DataField(2, "updatedtime", new TimestampType(3)),
-                                    new DataField(3, "microtime", new TimestampType(6)),
+                                    new DataField(0, "boolean", DataTypes.BOOLEAN()),
+                                    new DataField(1, "tinyint", DataTypes.TINYINT()),
+                                    new DataField(2, "smallint", DataTypes.SMALLINT()),
+                                    new DataField(3, "int", DataTypes.INT()),
+                                    new DataField(4, "bigint", DataTypes.BIGINT()),
+                                    new DataField(5, "float", DataTypes.FLOAT()),
+                                    new DataField(6, "double", DataTypes.DOUBLE()),
+                                    new DataField(7, "char", DataTypes.CHAR(5)),
+                                    new DataField(8, "varchar", DataTypes.VARCHAR(100)),
+                                    new DataField(9, "date", DataTypes.DATE()),
+                                    new DataField(10, "timestamp_0", DataTypes.TIMESTAMP(0)),
+                                    new DataField(11, "timestamp_3", DataTypes.TIMESTAMP(3)),
+                                    new DataField(12, "timestamp_6", DataTypes.TIMESTAMP(6)),
                                     new DataField(
-                                            4,
-                                            "localzonedtime",
-                                            new org.apache.paimon.types.LocalZonedTimestampType(
-                                                    3))));
+                                            13,
+                                            "timestamp_tz",
+                                            DataTypes.TIMESTAMP_WITH_LOCAL_TIME_ZONE(3)),
+                                    new DataField(14, "decimal", DataTypes.DECIMAL(10, 5)),
+                                    new DataField(15, "varbinary", DataTypes.VARBINARY(10)),
+                                    new DataField(16, "array", DataTypes.ARRAY(DataTypes.INT())),
+                                    new DataField(
+                                            17,
+                                            "map",
+                                            DataTypes.MAP(DataTypes.INT(), DataTypes.INT())),
+                                    new DataField(
+                                            18,
+                                            "row",
+                                            DataTypes.ROW(
+                                                    DataTypes.FIELD(100, "q1", DataTypes.INT()),
+                                                    DataTypes.FIELD(101, "q2", DataTypes.INT())))));
             new SchemaManager(LocalFileIO.create(), tablePath6)
                     .createTable(
                             new Schema(
                                     rowType.getFields(),
-                                    Collections.emptyList(),
-                                    Collections.singletonList("i"),
-                                    new HashMap<>(),
+                                    List.of(
+                                            "boolean",
+                                            "tinyint",
+                                            "smallint",
+                                            "int",
+                                            "bigint",
+                                            "float",
+                                            "double",
+                                            "char",
+                                            "varchar",
+                                            "date",
+                                            "timestamp_0",
+                                            "timestamp_3",
+                                            "timestamp_6",
+                                            "timestamp_tz",
+                                            "decimal"),
+                                    List.of(
+                                            "boolean",
+                                            "tinyint",
+                                            "smallint",
+                                            "int",
+                                            "bigint",
+                                            "float",
+                                            "double",
+                                            "char",
+                                            "varchar",
+                                            "date",
+                                            "timestamp_0",
+                                            "timestamp_3",
+                                            "timestamp_6",
+                                            "timestamp_tz",
+                                            "decimal",
+                                            "varbinary"),
+                                    Collections.emptyMap(),
                                     ""));
             FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath6);
             InnerTableWrite writer = table.newWrite("user");
             InnerTableCommit commit = table.newCommit("user");
             writer.write(
                     GenericRow.of(
+                            true,
+                            (byte) 1,
+                            (short) 1,
                             1,
+                            1L,
+                            1.0f,
+                            1.0d,
+                            BinaryString.fromString("char1"),
+                            BinaryString.fromString("varchar1"),
+                            0,
                             Timestamp.fromMicros(1694505288000000L),
                             Timestamp.fromMicros(1694505288001000L),
                             Timestamp.fromMicros(1694505288001001L),
-                            Timestamp.fromMicros(1694505288002001L)));
+                            Timestamp.fromMicros(1694505288002001L),
+                            Decimal.fromUnscaledLong(10000, 10, 5),
+                            new byte[] {0x01, 0x02, 0x03},
+                            new GenericArray(new int[] {1, 1, 1}),
+                            new GenericMap(Map.of(1, 1)),
+                            GenericRow.of(1, 1)));
             commit.commit(0, writer.prepareCommit(true, 0));
         }
 
@@ -501,16 +568,15 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
     }
 
     @Test
-    public void testTimestamp0AndTimestamp3() {
-        assertThat(sql("SELECT i, createdtime, updatedtime, microtime FROM paimon.default.t99"))
+    public void testAllType() {
+        assertThat(
+                        sql(
+                                "SELECT boolean, tinyint, smallint,int,bigint,float,double,char,varchar, date,timestamp_0, "
+                                        + "timestamp_3, timestamp_6, timestamp_tz, decimal, to_hex(varbinary), array, map, row FROM paimon.default.t99"))
                 .isEqualTo(
-                        "[[1, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001]]");
-    }
-
-    @Test
-    public void testTimestampWithTimeZone() {
-        assertThat(sql("SELECT localzonedtime FROM paimon.default.t99"))
-                .isEqualTo("[[2023-09-12T07:54:48.002Z[UTC]]]");
+                        "[[true, 1, 1, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, "
+                                + "2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, "
+                                + "2023-09-12T07:54:48.002Z[UTC], 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]]]");
     }
 
     @Test
