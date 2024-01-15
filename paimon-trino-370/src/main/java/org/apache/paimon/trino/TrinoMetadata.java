@@ -53,11 +53,6 @@ public class TrinoMetadata extends TrinoMetadataBase {
     }
 
     @Override
-    public boolean usesLegacyTableLayouts() {
-        return false;
-    }
-
-    @Override
     public ConnectorTableHandle getTableHandle(
             ConnectorSession session,
             SchemaTableName tableName,
@@ -118,14 +113,14 @@ public class TrinoMetadata extends TrinoMetadataBase {
     public void setTableProperties(
             ConnectorSession session,
             ConnectorTableHandle tableHandle,
-            Map<String, Object> properties) {
+            Map<String, Optional<Object>> properties) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Identifier identifier =
                 new Identifier(trinoTableHandle.getSchemaName(), trinoTableHandle.getTableName());
         List<SchemaChange> changes = new ArrayList<>();
         Map<String, String> options =
                 properties.entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> (String) e.getValue()));
+                        .collect(toMap(Map.Entry::getKey, e -> (String) e.getValue().get()));
         options.forEach((key, value) -> changes.add(SchemaChange.setOption(key, value)));
         // TODO: remove options, SET PROPERTIES x = DEFAULT
         try {

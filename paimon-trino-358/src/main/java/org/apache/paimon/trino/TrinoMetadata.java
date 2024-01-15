@@ -18,15 +18,15 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.options.Options;
+import org.apache.paimon.catalog.Catalog;
 
 import io.trino.spi.connector.ConnectorMetadata;
 
 /** Trino {@link ConnectorMetadata}. */
 public class TrinoMetadata extends TrinoMetadataBase {
 
-    public TrinoMetadata(Options catalogOptions) {
-        super(catalogOptions);
+    public TrinoMetadata(Catalog catalog) {
+        super(catalog);
     }
 
     @Override

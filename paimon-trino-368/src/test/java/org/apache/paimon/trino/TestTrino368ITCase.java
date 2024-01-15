@@ -19,4 +19,8 @@
 package org.apache.paimon.trino;
 
 /** {@link TestTrinoITCase} for Trino 368. */
-public class TestTrino368ITCase extends TestTrinoITCase {}
+public class TestTrino368ITCase extends TestTrinoITCase {
+    public TestTrino368ITCase() {
+        super(368);
+    }
+}

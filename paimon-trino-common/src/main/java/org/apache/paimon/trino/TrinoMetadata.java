@@ -18,39 +18,85 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.CoreOptions;
 import org.apache.paimon.catalog.Catalog;
-import org.apache.paimon.catalog.CatalogContext;
-import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.catalog.Identifier;
-import org.apache.paimon.options.Options;
 import org.apache.paimon.schema.SchemaChange;
-import org.apache.paimon.security.SecurityContext;
 
+import io.trino.spi.TrinoException;
 import io.trino.spi.connector.ConnectorMetadata;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTableHandle;
+import io.trino.spi.connector.ConnectorTableVersion;
+import io.trino.spi.connector.SchemaTableName;
+import io.trino.spi.type.LongTimestampWithTimeZone;
+import io.trino.spi.type.TimestampWithTimeZoneType;
+import io.trino.spi.type.Type;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.trino.spi.StandardErrorCode.NOT_SUPPORTED;
+import static io.trino.spi.type.DateTimeEncoding.unpackMillisUtc;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 
 /** Trino {@link ConnectorMetadata}. */
 public class TrinoMetadata extends TrinoMetadataBase {
 
-    private final Catalog catalog;
+    public TrinoMetadata(Catalog catalog) {
+        super(catalog);
+    }
 
-    public TrinoMetadata(Options catalogOptions) {
-        super(catalogOptions);
-        try {
-            SecurityContext.install(catalogOptions);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    @Override
+    public ConnectorTableHandle getTableHandle(
+            ConnectorSession session,
+            SchemaTableName tableName,
+            Optional<ConnectorTableVersion> startVersion,
+            Optional<ConnectorTableVersion> endVersion) {
+        if (startVersion.isPresent()) {
+            throw new TrinoException(
+                    NOT_SUPPORTED, "Read paimon table with start version is not supported");
         }
-        this.catalog = CatalogFactory.createCatalog(CatalogContext.create(catalogOptions));
+
+        Map<String, String> dynamicOptions = new HashMap<>();
+        if (endVersion.isPresent()) {
+            ConnectorTableVersion version = endVersion.get();
+            Type versionType = version.getVersionType();
+            switch (version.getPointerType()) {
+                case TEMPORAL:
+                    {
+                        if (!(versionType instanceof TimestampWithTimeZoneType)) {
+                            throw new TrinoException(
+                                    NOT_SUPPORTED,
+                                    "Unsupported type for table version: "
+                                            + versionType.getDisplayName());
+                        }
+                        TimestampWithTimeZoneType timeZonedVersionType =
+                                (TimestampWithTimeZoneType) versionType;
+                        long epochMillis =
+                                timeZonedVersionType.isShort()
+                                        ? unpackMillisUtc((long) version.getVersion())
+                                        : ((LongTimestampWithTimeZone) version.getVersion())
+                                                .getEpochMillis();
+                        dynamicOptions.put(
+                                CoreOptions.SCAN_TIMESTAMP_MILLIS.key(),
+                                String.valueOf(epochMillis));
+                        break;
+                    }
+                case TARGET_ID:
+                    {
+                        dynamicOptions.put(
+                                CoreOptions.SCAN_SNAPSHOT_ID.key(),
+                                version.getVersion().toString());
+                        break;
+                    }
+            }
+        }
+        return getTableHandle(tableName, dynamicOptions);
     }
 
     @Override

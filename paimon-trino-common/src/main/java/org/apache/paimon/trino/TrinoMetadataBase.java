@@ -19,13 +19,10 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.catalog.Catalog;
-import org.apache.paimon.catalog.CatalogContext;
-import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.catalog.Identifier;
-import org.apache.paimon.options.Options;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
-import org.apache.paimon.security.SecurityContext;
+import org.apache.paimon.table.Table;
 import org.apache.paimon.utils.InstantiationUtil;
 import org.apache.paimon.utils.StringUtils;
 
@@ -72,15 +69,10 @@ import static org.apache.paimon.utils.Preconditions.checkArgument;
 /** Trino {@link ConnectorMetadata}. */
 public abstract class TrinoMetadataBase implements ConnectorMetadata {
 
-    private final Catalog catalog;
+    protected final Catalog catalog;
 
-    public TrinoMetadataBase(Options catalogOptions) {
-        try {
-            SecurityContext.install(catalogOptions);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        this.catalog = CatalogFactory.createCatalog(CatalogContext.create(catalogOptions));
+    public TrinoMetadataBase(Catalog catalog) {
+        this.catalog = catalog;
     }
 
     @Override
@@ -125,7 +117,7 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
 
     @Override
     public TrinoTableHandle getTableHandle(ConnectorSession session, SchemaTableName tableName) {
-        return getTableHandle(tableName);
+        return getTableHandle(tableName, null);
     }
 
     @Override
@@ -134,11 +126,16 @@ public abstract class TrinoMetadataBase implements ConnectorMetadata {
         return new ConnectorTableProperties();
     }
 
-    public TrinoTableHandle getTableHandle(SchemaTableName tableName) {
+    public TrinoTableHandle getTableHandle(
+            SchemaTableName tableName, Map<String, String> dynamicOptions) {
         Identifier tablePath = new Identifier(tableName.getSchemaName(), tableName.getTableName());
         byte[] serializedTable;
         try {
-            serializedTable = InstantiationUtil.serializeObject(catalog.getTable(tablePath));
+            Table table = catalog.getTable(tablePath);
+            if (dynamicOptions != null && !dynamicOptions.isEmpty()) {
+                table = table.copy(dynamicOptions);
+            }
+            serializedTable = InstantiationUtil.serializeObject(table);
         } catch (Catalog.TableNotExistException e) {
             return null;
         } catch (IOException e) {
