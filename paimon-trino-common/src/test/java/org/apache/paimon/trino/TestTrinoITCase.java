@@ -41,7 +41,6 @@ import org.apache.paimon.types.IntType;
 import org.apache.paimon.types.MapType;
 import org.apache.paimon.types.RowKind;
 import org.apache.paimon.types.RowType;
-import org.apache.paimon.types.TimestampType;
 import org.apache.paimon.types.VarCharType;
 
 import io.trino.testing.AbstractTestQueryFramework;
@@ -51,8 +50,8 @@ import io.trino.testing.QueryRunner;
 import org.testng.annotations.Test;
 
 import java.nio.file.Files;
-import java.time.LocalDateTime;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -538,7 +537,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "changelog_producer = 'input'"
                         + ")");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [orders], [t1], [t2], [t3], [t4], [t99], [table_partition_filter]]");
+                .isEqualTo(
+                        "[[empty_t], [orders], [t1], [t2], [t3], [t4], [t99], [table_partition_filter]]");
         sql("DROP TABLE IF EXISTS paimon.default.orders");
     }
 
@@ -561,7 +561,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("ALTER TABLE paimon.default.t5 RENAME TO t6");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [t1], [t2], [t3], [t4], [t6], [t99], [table_partition_filter]]");
+                .isEqualTo(
+                        "[[empty_t], [t1], [t2], [t3], [t4], [t6], [t99], [table_partition_filter]]");
         sql("DROP TABLE IF EXISTS paimon.default.t6");
     }
 
