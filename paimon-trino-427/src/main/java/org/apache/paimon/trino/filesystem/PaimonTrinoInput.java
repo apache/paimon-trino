@@ -26,30 +26,32 @@ import io.trino.filesystem.TrinoInput;
 
 import java.io.IOException;
 
-import static java.lang.Math.min;
-
 /** Paimon trino input. */
 public class PaimonTrinoInput implements TrinoInput {
 
     private final SeekableInputStream inputStream;
+    private final PaimonTrinoInputFile inputFile;
 
-    public PaimonTrinoInput(SeekableInputStream inputStream) {
+    public PaimonTrinoInput(SeekableInputStream inputStream, PaimonTrinoInputFile inputFile) {
         this.inputStream = inputStream;
+        this.inputFile = inputFile;
     }
 
     @Override
     public void readFully(long position, byte[] buffer, int bufferOffset, int bufferLength)
             throws IOException {
+        long start = inputStream.getPos();
         inputStream.seek(position);
         inputStream.read(buffer, bufferOffset, bufferLength);
+        inputStream.seek(start);
     }
 
     @Override
     public int readTail(byte[] buffer, int bufferOffset, int bufferLength) throws IOException {
         long startPos = inputStream.getPos();
         try {
-            long available = inputStream.available();
-            long position = min(available, bufferLength);
+            long available = inputFile.length();
+            long position = available - bufferLength;
             if (position >= 0) {
                 inputStream.seek(position);
             }
@@ -61,6 +63,6 @@ public class PaimonTrinoInput implements TrinoInput {
 
     @Override
     public void close() throws IOException {
-        inputStream.close();
+        //        inputStream.close();
     }
 }

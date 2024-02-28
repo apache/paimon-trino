@@ -45,7 +45,7 @@ public class PaimonTrinoInputFile implements TrinoInputFile {
     @Override
     public TrinoInput newInput() throws IOException {
         try {
-            return new PaimonTrinoInput(fileIO.newInputStream(path));
+            return new PaimonTrinoInput(fileIO.newInputStream(path), this);
         } catch (IOException e) {
             if (e.getMessage().contains("Null IO stream")) {
                 return newInput();

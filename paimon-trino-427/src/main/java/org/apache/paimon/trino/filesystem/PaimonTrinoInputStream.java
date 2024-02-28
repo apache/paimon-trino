@@ -59,4 +59,9 @@ public class PaimonTrinoInputStream extends TrinoInputStream {
     public int read(byte[] b, int off, int len) throws IOException {
         return inputStream.read(b, off, len);
     }
+
+    @Override
+    public void close() throws IOException {
+        //        inputStream.close();
+    }
 }
