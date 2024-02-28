@@ -46,12 +46,17 @@ public class PaimonTrinoInput implements TrinoInput {
 
     @Override
     public int readTail(byte[] buffer, int bufferOffset, int bufferLength) throws IOException {
-        long available = inputStream.available();
-        long position = min(available, bufferLength);
-        if (position >= 0) {
-            inputStream.seek(position);
+        long startPos = inputStream.getPos();
+        try {
+            long available = inputStream.available();
+            long position = min(available, bufferLength);
+            if (position >= 0) {
+                inputStream.seek(position);
+            }
+            return inputStream.read(buffer, bufferOffset, bufferLength);
+        } finally {
+            inputStream.seek(startPos);
         }
-        return inputStream.read(buffer, bufferOffset, bufferLength);
     }
 
     @Override
