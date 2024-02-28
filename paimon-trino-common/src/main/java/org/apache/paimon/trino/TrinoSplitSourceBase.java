@@ -24,6 +24,7 @@ import io.trino.spi.connector.ConnectorSplitSource;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
@@ -31,18 +32,22 @@ import java.util.concurrent.CompletableFuture;
 public abstract class TrinoSplitSourceBase implements ConnectorSplitSource {
 
     private final Queue<TrinoSplit> splits;
+    private final OptionalLong limit;
+    private long count = 0;
 
-    public TrinoSplitSourceBase(List<TrinoSplit> splits) {
+    public TrinoSplitSourceBase(List<TrinoSplit> splits, OptionalLong limit) {
         this.splits = new LinkedList<>(splits);
+        this.limit = limit;
     }
 
     protected CompletableFuture<ConnectorSplitBatch> innerGetNextBatch(int maxSize) {
         List<ConnectorSplit> batch = new ArrayList<>();
         for (int i = 0; i < maxSize; i++) {
             TrinoSplit split = splits.poll();
-            if (split == null) {
+            if (split == null || (limit.isPresent() && count >= limit.getAsLong())) {
                 break;
             }
+            count += split.decodeSplit().rowCount();
             batch.add(split);
         }
         return CompletableFuture.completedFuture(new ConnectorSplitBatch(batch, isFinished()));

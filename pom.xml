@@ -29,6 +29,7 @@ under the License.
         <module>paimon-trino-388</module>
         <module>paimon-trino-393</module>
         <module>paimon-trino-422</module>
+        <module>paimon-trino-427</module>
         <module>paimon-trino-common</module>
     </modules>
 

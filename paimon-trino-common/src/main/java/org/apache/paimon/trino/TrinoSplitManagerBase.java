@@ -61,6 +61,7 @@ public abstract class TrinoSplitManagerBase implements ConnectorSplitManager {
                                                                         / maxRowCount,
                                                                 minimumSplitWeight),
                                                         1.0)))
-                        .collect(Collectors.toList()));
+                        .collect(Collectors.toList()),
+                ((TrinoTableHandle) connectorTableHandle).getLimit());
     }
 }

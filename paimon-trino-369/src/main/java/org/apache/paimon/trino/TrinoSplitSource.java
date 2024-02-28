@@ -22,13 +22,14 @@ import io.trino.spi.connector.ConnectorPartitionHandle;
 import io.trino.spi.connector.ConnectorSplitSource;
 
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 
 /** Trino {@link ConnectorSplitSource}. */
 public class TrinoSplitSource extends TrinoSplitSourceBase {
 
-    public TrinoSplitSource(List<TrinoSplit> splits) {
-        super(splits);
+    public TrinoSplitSource(List<TrinoSplit> splits, OptionalLong limit) {
+        super(splits, limit);
     }
 
     @Override
