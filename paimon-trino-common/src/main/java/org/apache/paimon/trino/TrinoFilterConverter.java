@@ -18,52 +18,28 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.data.BinaryString;
-import org.apache.paimon.data.Decimal;
-import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.predicate.Predicate;
 import org.apache.paimon.predicate.PredicateBuilder;
 import org.apache.paimon.types.RowType;
 
-import io.airlift.slice.Slice;
 import io.trino.spi.predicate.Domain;
 import io.trino.spi.predicate.Range;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.type.ArrayType;
-import io.trino.spi.type.BigintType;
-import io.trino.spi.type.BooleanType;
-import io.trino.spi.type.CharType;
-import io.trino.spi.type.DateType;
-import io.trino.spi.type.DecimalType;
-import io.trino.spi.type.DoubleType;
-import io.trino.spi.type.IntegerType;
-import io.trino.spi.type.LongTimestampWithTimeZone;
 import io.trino.spi.type.MapType;
-import io.trino.spi.type.RealType;
-import io.trino.spi.type.SmallintType;
-import io.trino.spi.type.TinyintType;
 import io.trino.spi.type.Type;
-import io.trino.spi.type.VarbinaryType;
-import io.trino.spi.type.VarcharType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.trino.spi.type.TimeType.TIME_MILLIS;
-import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
-import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
-import static io.trino.spi.type.Timestamps.PICOSECONDS_PER_MILLISECOND;
-import static java.lang.Float.intBitsToFloat;
-import static java.lang.Math.toIntExact;
-import static java.util.Objects.requireNonNull;
 import static org.apache.paimon.predicate.PredicateBuilder.and;
 import static org.apache.paimon.predicate.PredicateBuilder.or;
+import static org.apache.paimon.trino.TrinoTypeUtils.convertTrinoValueToPaimon;
 
 /** Trino filter to flink predicate. */
 public class TrinoFilterConverter {
@@ -159,7 +135,7 @@ public class TrinoFilterConverter {
             List<Predicate> predicates = new ArrayList<>();
             for (Range range : orderedRanges) {
                 if (range.isSingleValue()) {
-                    values.add(getLiteralValue(type, range.getLowBoundedValue()));
+                    values.add(convertTrinoValueToPaimon(type, range.getLowBoundedValue()));
                 } else {
                     predicates.add(toPredicate(columnIndex, range));
                 }
@@ -182,13 +158,13 @@ public class TrinoFilterConverter {
         Type type = range.getType();
 
         if (range.isSingleValue()) {
-            Object value = getLiteralValue(type, range.getSingleValue());
+            Object value = convertTrinoValueToPaimon(type, range.getSingleValue());
             return builder.equal(columnIndex, value);
         }
 
         List<Predicate> conjuncts = new ArrayList<>(2);
         if (!range.isLowUnbounded()) {
-            Object low = getLiteralValue(type, range.getLowBoundedValue());
+            Object low = convertTrinoValueToPaimon(type, range.getLowBoundedValue());
             Predicate lowBound;
             if (range.isLowInclusive()) {
                 lowBound = builder.greaterOrEqual(columnIndex, low);
@@ -199,7 +175,7 @@ public class TrinoFilterConverter {
         }
 
         if (!range.isHighUnbounded()) {
-            Object high = getLiteralValue(type, range.getHighBoundedValue());
+            Object high = convertTrinoValueToPaimon(type, range.getHighBoundedValue());
             Predicate highBound;
             if (range.isHighInclusive()) {
                 highBound = builder.lessOrEqual(columnIndex, high);
@@ -210,84 +186,5 @@ public class TrinoFilterConverter {
         }
 
         return and(conjuncts);
-    }
-
-    private Object getLiteralValue(Type type, Object trinoNativeValue) {
-        requireNonNull(trinoNativeValue, "trinoNativeValue is null");
-
-        if (type instanceof BooleanType) {
-            return trinoNativeValue;
-        }
-
-        if (type instanceof TinyintType) {
-            return ((Long) trinoNativeValue).byteValue();
-        }
-
-        if (type instanceof SmallintType) {
-            return ((Long) trinoNativeValue).shortValue();
-        }
-
-        if (type instanceof IntegerType) {
-            return toIntExact((long) trinoNativeValue);
-        }
-
-        if (type instanceof BigintType) {
-            return trinoNativeValue;
-        }
-
-        if (type instanceof RealType) {
-            return intBitsToFloat(toIntExact((long) trinoNativeValue));
-        }
-
-        if (type instanceof DoubleType) {
-            return trinoNativeValue;
-        }
-
-        if (type instanceof DateType) {
-            return toIntExact(((Long) trinoNativeValue));
-        }
-
-        if (type.equals(TIME_MILLIS)) {
-            return (int) ((long) trinoNativeValue / PICOSECONDS_PER_MILLISECOND);
-        }
-
-        if (type.equals(TIMESTAMP_MILLIS)) {
-            return Timestamp.fromEpochMillis((long) trinoNativeValue / 1000);
-        }
-
-        if (type.equals(TIMESTAMP_TZ_MILLIS)) {
-            if (trinoNativeValue instanceof Long) {
-                return trinoNativeValue;
-            }
-            return Timestamp.fromEpochMillis(
-                    ((LongTimestampWithTimeZone) trinoNativeValue).getEpochMillis());
-        }
-
-        if (type instanceof VarcharType || type instanceof CharType) {
-            return BinaryString.fromBytes(((Slice) trinoNativeValue).getBytes());
-        }
-
-        if (type instanceof VarbinaryType) {
-            return ((Slice) trinoNativeValue).getBytes();
-        }
-
-        if (type instanceof DecimalType) {
-            DecimalType decimalType = (DecimalType) type;
-            BigDecimal bigDecimal;
-            if (trinoNativeValue instanceof Long) {
-                bigDecimal =
-                        BigDecimal.valueOf((long) trinoNativeValue)
-                                .movePointLeft(decimalType.getScale());
-            } else {
-                bigDecimal =
-                        new BigDecimal(
-                                DecimalUtils.toBigInteger(trinoNativeValue),
-                                decimalType.getScale());
-            }
-            return Decimal.fromBigDecimal(
-                    bigDecimal, decimalType.getPrecision(), decimalType.getScale());
-        }
-
-        throw new UnsupportedOperationException("Unsupported type: " + type);
     }
 }
