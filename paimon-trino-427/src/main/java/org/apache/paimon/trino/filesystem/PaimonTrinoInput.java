@@ -54,6 +54,8 @@ public class PaimonTrinoInput implements TrinoInput {
             long position = available - bufferLength;
             if (position >= 0) {
                 inputStream.seek(position);
+            } else {
+                inputStream.seek(0);
             }
             return inputStream.read(buffer, bufferOffset, bufferLength);
         } finally {
@@ -63,6 +65,6 @@ public class PaimonTrinoInput implements TrinoInput {
 
     @Override
     public void close() throws IOException {
-        //        inputStream.close();
+        inputStream.close();
     }
 }

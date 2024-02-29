@@ -62,6 +62,6 @@ public class PaimonTrinoInputStream extends TrinoInputStream {
 
     @Override
     public void close() throws IOException {
-        //        inputStream.close();
+        inputStream.close();
     }
 }

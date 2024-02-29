@@ -19,19 +19,17 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.CoreOptions;
-import org.apache.paimon.fs.FileIO;
-import org.apache.paimon.fs.Path;
 import org.apache.paimon.schema.SchemaManager;
 import org.apache.paimon.table.AbstractFileStoreTable;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.table.source.DataSplit;
 import org.apache.paimon.table.source.RawFile;
 import org.apache.paimon.table.source.ReadBuilder;
-import org.apache.paimon.trino.filesystem.PaimonTrinoInputFile;
 import org.apache.paimon.types.DataField;
 import org.apache.paimon.types.RowType;
 
 import com.google.inject.Inject;
+import io.trino.filesystem.Location;
 import io.trino.filesystem.TrinoFileSystem;
 import io.trino.filesystem.TrinoFileSystemFactory;
 import io.trino.filesystem.TrinoInputFile;
@@ -147,16 +145,14 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                             domains.add(domainMap.getOrDefault(name, null));
                         }
                     }
-                    FileIO fileIO = abstractFileStoreTable.fileIO();
                     return new DirectTrinoPageSource(
                             rawFiles.stream()
                                     .map(
                                             rawFile ->
                                                     createDataPageSource(
                                                             rawFile.format(),
-                                                            new PaimonTrinoInputFile(
-                                                                    fileIO,
-                                                                    new Path(rawFile.path())),
+                                                            fileSystem.newInputFile(
+                                                                    Location.of(rawFile.path())),
                                                             ((AbstractFileStoreTable) table)
                                                                     .coreOptions(),
                                                             mapping(
