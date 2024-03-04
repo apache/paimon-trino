@@ -122,13 +122,15 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
         Optional<List<RawFile>> optionalRawFiles = dataSplit.convertToRawFiles();
         try {
             if (checkRawFile(optionalRawFiles)) {
+                TrinoFileSystem fileSystem = fileSystemFactory.create(session);
+
                 AbstractFileStoreTable abstractFileStoreTable = ((AbstractFileStoreTable) table);
                 SchemaManager schemaManager =
                         new SchemaManager(
                                 abstractFileStoreTable.fileIO(), abstractFileStoreTable.location());
                 List<RawFile> rawFiles = optionalRawFiles.get();
-                TrinoFileSystem fileSystem = fileSystemFactory.create(session);
-                int[] columnMapping =
+                int[] columnIndex =
+                        // the column index, very important
                         projectedFields.stream().mapToInt(fieldNames::indexOf).toArray();
                 List<Type> type =
                         columns.stream()
@@ -156,7 +158,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                                                             ((AbstractFileStoreTable) table)
                                                                     .coreOptions(),
                                                             mapping(
-                                                                    columnMapping,
+                                                                    columnIndex,
                                                                     rowType.getFields(),
                                                                     schemaManager
                                                                             .schema(
@@ -229,6 +231,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
     private ConnectorPageSource createDataPageSource(
             String format,
             TrinoInputFile inputFile,
+            // todo construct read option by core-options
             CoreOptions coreOptions,
             int[] columns,
             List<Type> types,
@@ -264,7 +267,6 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             List<Domain> domains) {
         try {
             OrcDataSource orcDataSource = new TrinoOrcDataSource(inputFile, options);
-
             OrcReader reader =
                     OrcReader.createOrcReader(orcDataSource, options)
                             .orElseThrow(() -> new RuntimeException("ORC file is zero length"));
@@ -278,6 +280,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
 
             for (int i = 0; i < columns.length; i++) {
                 if (columns[i] >= 0) {
+                    // column exists
                     columnAdaptations.add(
                             OrcPageSource.ColumnAdaptation.sourceColumn(fileReadColumns.size()));
                     fileReadColumns.add(fileColumns.get(columns[i]));

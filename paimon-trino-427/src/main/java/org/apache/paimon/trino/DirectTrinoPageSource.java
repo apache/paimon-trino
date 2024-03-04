@@ -39,6 +39,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
 
     @Override
     public long getCompletedBytes() {
+        // todo
         return 0;
     }
 
@@ -104,6 +105,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
 
     @Override
     public long getMemoryUsage() {
+        // todo
         return 0;
     }
 

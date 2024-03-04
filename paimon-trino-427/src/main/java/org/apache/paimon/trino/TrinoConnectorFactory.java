@@ -44,6 +44,7 @@ public class TrinoConnectorFactory extends TrinoConnectorFactoryBase {
             new TrinoModule(config),
             new HdfsModule(),
             new HdfsAuthenticationModule(),
+            // bind the trino file system module
             new FileSystemModule(),
             binder -> {
                 binder.bind(NodeVersion.class)
