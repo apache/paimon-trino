@@ -20,7 +20,7 @@ package org.apache.paimon.trino;
 
 import org.apache.paimon.CoreOptions;
 import org.apache.paimon.schema.SchemaManager;
-import org.apache.paimon.table.AbstractFileStoreTable;
+import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.table.source.DataSplit;
 import org.apache.paimon.table.source.RawFile;
@@ -124,10 +124,9 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             if (checkRawFile(optionalRawFiles)) {
                 TrinoFileSystem fileSystem = fileSystemFactory.create(session);
 
-                AbstractFileStoreTable abstractFileStoreTable = ((AbstractFileStoreTable) table);
+                FileStoreTable fileStoreTable = (FileStoreTable) table;
                 SchemaManager schemaManager =
-                        new SchemaManager(
-                                abstractFileStoreTable.fileIO(), abstractFileStoreTable.location());
+                        new SchemaManager(fileStoreTable.fileIO(), fileStoreTable.location());
                 List<RawFile> rawFiles = optionalRawFiles.get();
                 int[] columnIndex =
                         // the column index, very important
@@ -155,8 +154,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                                                             rawFile.format(),
                                                             fileSystem.newInputFile(
                                                                     Location.of(rawFile.path())),
-                                                            ((AbstractFileStoreTable) table)
-                                                                    .coreOptions(),
+                                                            fileStoreTable.coreOptions(),
                                                             mapping(
                                                                     columnIndex,
                                                                     rowType.getFields(),
