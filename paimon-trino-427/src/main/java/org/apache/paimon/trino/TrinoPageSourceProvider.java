@@ -30,6 +30,7 @@ import org.apache.paimon.types.DataField;
 import org.apache.paimon.types.RowType;
 
 import com.google.inject.Inject;
+import io.airlift.units.DataSize;
 import io.trino.filesystem.Location;
 import io.trino.filesystem.TrinoFileSystem;
 import io.trino.filesystem.TrinoFileSystemFactory;
@@ -240,7 +241,13 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             case "orc":
                 {
                     return createOrcDataPageSource(
-                            inputFile, new OrcReaderOptions(), columns, types, domains);
+                            inputFile,
+                            new OrcReaderOptions()
+                                    .withTinyStripeThreshold(
+                                            DataSize.of(4, DataSize.Unit.KILOBYTE)),
+                            columns,
+                            types,
+                            domains);
                 }
             case "parquet":
                 {
