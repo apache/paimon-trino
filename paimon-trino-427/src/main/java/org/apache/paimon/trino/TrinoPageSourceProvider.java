@@ -25,6 +25,7 @@ import org.apache.paimon.table.Table;
 import org.apache.paimon.table.source.DataSplit;
 import org.apache.paimon.table.source.RawFile;
 import org.apache.paimon.table.source.ReadBuilder;
+import org.apache.paimon.trino.fileio.TrinoFileIO;
 import org.apache.paimon.types.DataField;
 import org.apache.paimon.types.RowType;
 
@@ -125,6 +126,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                 TrinoFileSystem fileSystem = fileSystemFactory.create(session);
 
                 FileStoreTable fileStoreTable = (FileStoreTable) table;
+                TrinoFileIO.setFileIO(fileStoreTable, fileSystem);
                 SchemaManager schemaManager =
                         new SchemaManager(fileStoreTable.fileIO(), fileStoreTable.location());
                 List<RawFile> rawFiles = optionalRawFiles.get();
