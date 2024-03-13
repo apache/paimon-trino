@@ -79,6 +79,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
             completedBytes += current.getCompletedBytes();
             current.close();
         } catch (IOException e) {
+            current = null;
             close();
             throw new RuntimeException("error happens while advance and close old page source.");
         }
