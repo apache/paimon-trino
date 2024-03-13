@@ -30,4 +30,4 @@ jobs:
           java-version: 17
       - name: Build
         run: |
-          mvn clean install -P '!toolchain' -pl paimon-trino-common,paimon-trino-393,paimon-trino-422
+          mvn clean install -P '!toolchain' -pl paimon-trino-common,paimon-trino-422,paimon-trino-427
