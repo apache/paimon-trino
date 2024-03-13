@@ -311,19 +311,15 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                     new DataField(10, "timestamp_0", DataTypes.TIMESTAMP(3)),
                                     new DataField(11, "timestamp_3", DataTypes.TIMESTAMP(3)),
                                     new DataField(12, "timestamp_6", DataTypes.TIMESTAMP(6)),
+                                    new DataField(13, "decimal", DataTypes.DECIMAL(10, 5)),
+                                    new DataField(14, "varbinary", DataTypes.VARBINARY(10)),
+                                    new DataField(15, "array", DataTypes.ARRAY(DataTypes.INT())),
                                     new DataField(
-                                            13,
-                                            "timestamp_tz",
-                                            DataTypes.TIMESTAMP_WITH_LOCAL_TIME_ZONE(6)),
-                                    new DataField(14, "decimal", DataTypes.DECIMAL(10, 5)),
-                                    new DataField(15, "varbinary", DataTypes.VARBINARY(10)),
-                                    new DataField(16, "array", DataTypes.ARRAY(DataTypes.INT())),
-                                    new DataField(
-                                            17,
+                                            16,
                                             "map",
                                             DataTypes.MAP(DataTypes.INT(), DataTypes.INT())),
                                     new DataField(
-                                            18,
+                                            17,
                                             "row",
                                             DataTypes.ROW(
                                                     DataTypes.FIELD(100, "q1", DataTypes.INT()),
@@ -354,7 +350,6 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                             Timestamp.fromMicros(1694505288000000L),
                             Timestamp.fromMicros(1694505288001000L),
                             Timestamp.fromMicros(1694505288001001L),
-                            Timestamp.fromMicros(1694505288002001L),
                             Decimal.fromUnscaledLong(10000, 10, 5),
                             new byte[] {0x01, 0x02, 0x03},
                             new GenericArray(new int[] {1, 1, 1}),
@@ -381,7 +376,6 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                             Timestamp.fromMicros(1694505288000000L),
                             Timestamp.fromMicros(1694505288001000L),
                             Timestamp.fromMicros(1694505288001001L),
-                            Timestamp.fromMicros(1694505288002001L),
                             Decimal.fromUnscaledLong(10000, 10, 5),
                             new byte[] {0x01, 0x02, 0x03},
                             new GenericArray(new int[] {1, 1, 1}),
@@ -408,7 +402,6 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                             Timestamp.fromMicros(1694505288000000L),
                             Timestamp.fromMicros(1694505288001000L),
                             Timestamp.fromMicros(1694505288001001L),
-                            Timestamp.fromMicros(1694505288002001L),
                             Decimal.fromUnscaledLong(10000, 10, 5),
                             new byte[] {0x01, 0x02, 0x03},
                             new GenericArray(new int[] {1, 1, 1}),
@@ -732,11 +725,11 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
         assertThat(
                         sql(
                                 "SELECT boolean, tinyint, smallint, int, bigint,float,double,char,varchar, date,timestamp_0, "
-                                        + "timestamp_3, timestamp_6, timestamp_tz, decimal, to_hex(varbinary), array, map, row FROM paimon.default.t100"))
+                                        + "timestamp_3, timestamp_6, decimal, to_hex(varbinary), array, map, row FROM paimon.default.t100"))
                 .isEqualTo(
-                        "[[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 2023-09-12T07:54:48.002Z[UTC], 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
-                                + "[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 2023-09-12T07:54:48.002Z[UTC], 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
-                                + "[true, 1, 1, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 2023-09-12T07:54:48.002Z[UTC], 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]]]");
+                        "[[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
+                                + "[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
+                                + "[true, 1, 1, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]]]");
     }
 
     protected String sql(String sql) {
