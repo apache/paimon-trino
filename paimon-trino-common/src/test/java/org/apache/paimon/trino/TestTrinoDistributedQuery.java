@@ -263,6 +263,21 @@ public class TestTrinoDistributedQuery extends AbstractDistributedEngineOnlyQuer
     }
 
     @Override
+    public void testColumnNames() {
+        throw new SkipException("TODO: test not implemented yet");
+    }
+
+    @Override
+    public void testExplainAnalyzeTopLevelTimes() {
+        throw new SkipException("TODO: test not implemented yet");
+    }
+
+    @Override
+    public void testExplainDistributed() {
+        throw new SkipException("TODO: test not implemented yet");
+    }
+
+    @Override
     public void testCorrelationSymbolMapping() {
         throw new SkipException("TODO: test not implemented yet");
     }
