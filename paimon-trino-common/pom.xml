@@ -40,7 +40,6 @@ under the License.
         <slice.version>2.2</slice.version>
         <airlift.version>235</airlift.version>
         <hadoop.apache.version>3.2.0-18</hadoop.apache.version>
-        <maven.toolchains.plugin.version>3.1.0</maven.toolchains.plugin.version>
     </properties>
 
     <dependencies>
