@@ -18,5 +18,14 @@
 
 package org.apache.paimon.trino;
 
+import io.trino.spi.type.Int128;
+
+import java.math.BigInteger;
+
 /** Utils for decimal. */
-public class DecimalUtils extends DecimalUtilsBase {}
+public class DecimalUtils {
+
+    public static BigInteger toBigInteger(Object value) {
+        return ((Int128) value).toBigInteger();
+    }
+}

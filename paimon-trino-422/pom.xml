@@ -68,6 +68,12 @@ under the License.
         </dependency>
 
         <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-hive</artifactId>
+            <version>${trino.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>bootstrap</artifactId>
             <version>${airlift.version}</version>

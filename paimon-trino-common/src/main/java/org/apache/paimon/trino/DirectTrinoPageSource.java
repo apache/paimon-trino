@@ -31,6 +31,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
 
     private ConnectorPageSource current;
     private final LinkedList<ConnectorPageSource> pageSourceQueue;
+    private long completedBytes;
 
     public DirectTrinoPageSource(LinkedList<ConnectorPageSource> pageSourceQueue) {
         this.pageSourceQueue = pageSourceQueue;
@@ -39,8 +40,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
 
     @Override
     public long getCompletedBytes() {
-        // todo
-        return 0;
+        return completedBytes;
     }
 
     @Override
@@ -76,6 +76,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
             throw new RuntimeException("Current is null, should not invoke advance");
         }
         try {
+            completedBytes += current.getCompletedBytes();
             current.close();
         } catch (IOException e) {
             close();
@@ -105,8 +106,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
 
     @Override
     public long getMemoryUsage() {
-        // todo
-        return 0;
+        return current == null ? 0 : current.getMemoryUsage();
     }
 
     @Override

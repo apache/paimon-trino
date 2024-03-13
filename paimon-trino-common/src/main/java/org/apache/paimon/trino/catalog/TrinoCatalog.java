@@ -31,6 +31,7 @@ import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
 import org.apache.paimon.security.SecurityContext;
 import org.apache.paimon.table.Table;
+import org.apache.paimon.trino.ClassLoaderUtils;
 import org.apache.paimon.trino.fileio.TrinoFileIOLoader;
 import org.apache.paimon.utils.IOUtils;
 
@@ -66,7 +67,7 @@ public class TrinoCatalog implements Catalog {
         this.trinoFileSystemFactory = trinoFileSystemFactory;
     }
 
-    public void setSession(ConnectorSession connectorSession) {
+    public void initSession(ConnectorSession connectorSession) {
         current =
                 catalogMap.computeIfAbsent(
                         connectorSession,
@@ -77,16 +78,16 @@ public class TrinoCatalog implements Catalog {
                                     CatalogContext.create(
                                             options,
                                             configuration,
-                                            new TrinoFileIOLoader(trinoFileSystem));
+                                            new TrinoFileIOLoader(trinoFileSystem),
+                                            null);
                             try {
                                 SecurityContext.install(catalogContext);
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
-                            // for hadoop file-io to load class from paimon plugin classloader
-                            Thread.currentThread()
-                                    .setContextClassLoader(this.getClass().getClassLoader());
-                            return CatalogFactory.createCatalog(catalogContext);
+                            return ClassLoaderUtils.runWithContextClassLoader(
+                                    () -> CatalogFactory.createCatalog(catalogContext),
+                                    this.getClass().getClassLoader());
                         });
     }
 

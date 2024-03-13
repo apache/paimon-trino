@@ -19,34 +19,79 @@
 package org.apache.paimon.trino;
 
 import io.trino.spi.connector.Connector;
+import io.trino.spi.connector.ConnectorMetadata;
+import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTransactionHandle;
+import io.trino.spi.session.PropertyMetadata;
 import io.trino.spi.transaction.IsolationLevel;
 
+import java.util.List;
+
+import static io.trino.spi.transaction.IsolationLevel.READ_COMMITTED;
+import static io.trino.spi.transaction.IsolationLevel.checkConnectorSupports;
+import static java.util.Objects.requireNonNull;
+
 /** Trino {@link Connector}. */
-public class TrinoConnector extends TrinoConnectorBase {
+public class TrinoConnector implements Connector {
+    private final TrinoMetadata trinoMetadata;
+    private final TrinoSplitManager trinoSplitManager;
+    private final TrinoPageSourceProvider trinoPageSourceProvider;
+    private final List<PropertyMetadata<?>> tableProperties;
+    private final List<PropertyMetadata<?>> sessionProperties;
 
     public TrinoConnector(
-            TrinoMetadataBase trinoMetadata,
-            TrinoSplitManagerBase trinoSplitManager,
+            TrinoMetadata trinoMetadata,
+            TrinoSplitManager trinoSplitManager,
             TrinoPageSourceProvider trinoPageSourceProvider,
             TrinoTableOptions trinoTableOptions,
             TrinoSessionProperties trinoSessionProperties) {
-        super(
-                trinoMetadata,
-                trinoSplitManager,
-                trinoPageSourceProvider,
-                trinoTableOptions,
-                trinoSessionProperties);
+        this.trinoMetadata = requireNonNull(trinoMetadata, "jmxMetadata is null");
+        this.trinoSplitManager = requireNonNull(trinoSplitManager, "jmxSplitManager is null");
+        this.trinoPageSourceProvider =
+                requireNonNull(trinoPageSourceProvider, "jmxRecordSetProvider is null");
+        this.tableProperties = trinoTableOptions.getTableProperties();
+        this.sessionProperties = trinoSessionProperties.getSessionProperties();
     }
 
     @Override
     public ConnectorTransactionHandle beginTransaction(
-            IsolationLevel isolationLevel, boolean readOnly) {
+            IsolationLevel isolationLevel, boolean readOnly, boolean autoCommit) {
         return beginTransactionBase(isolationLevel, readOnly);
     }
 
     @Override
-    public TrinoMetadataBase getMetadata(ConnectorTransactionHandle transactionHandle) {
+    public ConnectorMetadata getMetadata(
+            ConnectorSession session, ConnectorTransactionHandle transactionHandle) {
         return getMetadataBase(transactionHandle);
+    }
+
+    protected ConnectorTransactionHandle beginTransactionBase(
+            IsolationLevel isolationLevel, boolean readOnly) {
+        checkConnectorSupports(READ_COMMITTED, isolationLevel);
+        return TrinoTransactionHandle.INSTANCE;
+    }
+
+    protected TrinoMetadata getMetadataBase(ConnectorTransactionHandle transactionHandle) {
+        return trinoMetadata;
+    }
+
+    @Override
+    public TrinoSplitManager getSplitManager() {
+        return trinoSplitManager;
+    }
+
+    @Override
+    public TrinoPageSourceProvider getPageSourceProvider() {
+        return trinoPageSourceProvider;
+    }
+
+    @Override
+    public List<PropertyMetadata<?>> getSessionProperties() {
+        return sessionProperties;
+    }
+
+    @Override
+    public List<PropertyMetadata<?>> getTableProperties() {
+        return tableProperties;
     }
 }

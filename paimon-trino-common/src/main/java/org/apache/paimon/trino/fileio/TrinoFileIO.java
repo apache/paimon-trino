@@ -26,7 +26,6 @@ import org.apache.paimon.fs.FileStatus;
 import org.apache.paimon.fs.Path;
 import org.apache.paimon.fs.PositionOutputStream;
 import org.apache.paimon.fs.SeekableInputStream;
-import org.apache.paimon.table.FileStoreTable;
 
 import io.trino.filesystem.FileEntry;
 import io.trino.filesystem.FileIterator;
@@ -34,29 +33,26 @@ import io.trino.filesystem.Location;
 import io.trino.filesystem.TrinoFileSystem;
 import io.trino.filesystem.TrinoInputFile;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
 /** Trino file io for paimon. */
 public class TrinoFileIO implements FileIO {
 
-    private transient TrinoFileSystem trinoFileSystem;
-    private final URI uri;
+    private final TrinoFileSystem trinoFileSystem;
+    private final boolean objectStore;
 
-    public TrinoFileIO(TrinoFileSystem trinoFileSystem, Path path) {
+    public TrinoFileIO(TrinoFileSystem trinoFileSystem, @Nullable Path path) {
         this.trinoFileSystem = trinoFileSystem;
-        this.uri = path.toUri();
-    }
-
-    public void setTrinoFileSystem(TrinoFileSystem trinoFileSystem) {
-        this.trinoFileSystem = trinoFileSystem;
+        this.objectStore = path == null || checkObjectStore(path.toUri().getScheme());
     }
 
     @Override
     public boolean isObjectStore() {
-        return checkObjectStore(uri.getScheme());
+        return objectStore;
     }
 
     @Override
@@ -101,7 +97,7 @@ public class TrinoFileIO implements FileIO {
                 fileStatusList.add(
                         new TrinoFileStatus(
                                 fileEntry.length(),
-                                new Path(fileEntry.location().path()),
+                                new Path(fileEntry.location().toString()),
                                 fileEntry.lastModified().getEpochSecond()));
             }
             trinoFileSystem
@@ -109,7 +105,7 @@ public class TrinoFileIO implements FileIO {
                     .forEach(
                             l ->
                                     fileStatusList.add(
-                                            new TrinoDirectoryFileStatus(new Path(l.path()))));
+                                            new TrinoDirectoryFileStatus(new Path(l.toString()))));
         }
         return fileStatusList.toArray(new FileStatus[0]);
     }
@@ -150,15 +146,14 @@ public class TrinoFileIO implements FileIO {
 
     @Override
     public boolean rename(Path source, Path target) throws IOException {
-        trinoFileSystem.renameFile(Location.of(source.toString()), Location.of(target.toString()));
-        return true;
-    }
-
-    public static void setFileIO(FileStoreTable table, TrinoFileSystem trinoFileSystem) {
-        FileIO fileIO = table.fileIO();
-        if (fileIO instanceof TrinoFileIO) {
-            ((TrinoFileIO) fileIO).setTrinoFileSystem(trinoFileSystem);
+        Location sourceLocation = Location.of(source.toString());
+        Location targetLocation = Location.of(target.toString());
+        if (trinoFileSystem.directoryExists(sourceLocation).orElse(false)) {
+            trinoFileSystem.renameDirectory(sourceLocation, targetLocation);
+        } else {
+            trinoFileSystem.renameFile(sourceLocation, targetLocation);
         }
+        return true;
     }
 
     private static boolean checkObjectStore(String scheme) {

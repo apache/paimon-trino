@@ -18,6 +18,13 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.table.Table;
+import org.apache.paimon.table.source.ReadBuilder;
+import org.apache.paimon.table.source.Split;
+import org.apache.paimon.trino.catalog.TrinoCatalog;
+
+import com.google.inject.Inject;
+import io.trino.filesystem.TrinoFileSystemFactory;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplitManager;
 import io.trino.spi.connector.ConnectorSplitSource;
@@ -26,8 +33,26 @@ import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.connector.Constraint;
 import io.trino.spi.connector.DynamicFilter;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static java.util.Objects.requireNonNull;
+
 /** Trino {@link ConnectorSplitManager}. */
-public class TrinoSplitManager extends TrinoSplitManagerBase {
+public class TrinoSplitManager implements ConnectorSplitManager {
+
+    private final TrinoFileSystemFactory fileSystemFactory;
+    private final TrinoCatalog trinoCatalog;
+
+    @Inject
+    public TrinoSplitManager(
+            TrinoFileSystemFactory fileSystemFactory, TrinoMetadataFactory trinoMetadataFactory) {
+        this.fileSystemFactory = requireNonNull(fileSystemFactory, "fileSystemFactory is null");
+        this.trinoCatalog =
+                requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null")
+                        .create()
+                        .catalog();
+    }
 
     @Override
     public ConnectorSplitSource getSplits(
@@ -37,5 +62,38 @@ public class TrinoSplitManager extends TrinoSplitManagerBase {
             DynamicFilter dynamicFilter,
             Constraint constraint) {
         return getSplits(table, session);
+    }
+
+    protected ConnectorSplitSource getSplits(
+            ConnectorTableHandle connectorTableHandle, ConnectorSession session) {
+        // TODO dynamicFilter?
+        // TODO what is constraint?
+
+        TrinoTableHandle tableHandle = (TrinoTableHandle) connectorTableHandle;
+        tableHandle.setTrinoFileSystem(fileSystemFactory.create(session));
+        Table table = tableHandle.tableWithDynamicOptions(trinoCatalog, session);
+        ReadBuilder readBuilder = table.newReadBuilder();
+        new TrinoFilterConverter(table.rowType())
+                .convert(tableHandle.getFilter())
+                .ifPresent(readBuilder::withFilter);
+        tableHandle.getLimit().ifPresent(limit -> readBuilder.withLimit((int) limit));
+        List<Split> splits = readBuilder.newScan().plan().splits();
+
+        long maxRowCount = splits.stream().mapToLong(Split::rowCount).max().orElse(0L);
+        double minimumSplitWeight = TrinoSessionProperties.getMinimumSplitWeight(session);
+        return new TrinoSplitSource(
+                splits.stream()
+                        .map(
+                                split ->
+                                        TrinoSplit.fromSplit(
+                                                split,
+                                                Math.min(
+                                                        Math.max(
+                                                                (double) split.rowCount()
+                                                                        / maxRowCount,
+                                                                minimumSplitWeight),
+                                                        1.0)))
+                        .collect(Collectors.toList()),
+                ((TrinoTableHandle) connectorTableHandle).getLimit());
     }
 }

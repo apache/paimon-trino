@@ -727,6 +727,18 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                 .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2], [5, 6, 3, 3], [7, 8, 4, 4]]");
     }
 
+    @Test
+    public void testSchemaEvolution() {
+        assertThat(
+                        sql(
+                                "SELECT boolean, tinyint, smallint, int, bigint,float,double,char,varchar, date,timestamp_0, "
+                                        + "timestamp_3, timestamp_6, timestamp_tz, decimal, to_hex(varbinary), array, map, row FROM paimon.default.t100"))
+                .isEqualTo(
+                        "[[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 2023-09-11T23:54:48.002Z[UTC], 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
+                                + "[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 2023-09-11T23:54:48.002Z[UTC], 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
+                                + "[true, 1, 1, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 2023-09-11T23:54:48.002Z[UTC], 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]]]");
+    }
+
     protected String sql(String sql) {
         MaterializedResult result = getQueryRunner().execute(sql);
         return result.getMaterializedRows().toString();
