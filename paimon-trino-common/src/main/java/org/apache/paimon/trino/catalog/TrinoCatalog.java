@@ -139,31 +139,31 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
-    public void createTable(Identifier identifier, Schema schema, boolean b)
+    public void createTable(Identifier identifier, Schema schema, boolean ignoreIfExists)
             throws TableAlreadyExistException, DatabaseNotExistException {
-        current.createTable(identifier, schema, b);
+        current.createTable(identifier, schema, ignoreIfExists);
     }
 
     @Override
-    public void renameTable(Identifier identifier, Identifier identifier1, boolean b)
+    public void renameTable(Identifier fromTable, Identifier toTable, boolean ignoreIfExistsb)
             throws TableNotExistException, TableAlreadyExistException {
-        current.renameTable(identifier, identifier1, b);
+        current.renameTable(fromTable, toTable, ignoreIfExistsb);
     }
 
     @Override
-    public void alterTable(Identifier identifier, List<SchemaChange> list, boolean b)
+    public void alterTable(Identifier identifier, List<SchemaChange> list, boolean ignoreIfExists)
             throws TableNotExistException, ColumnAlreadyExistException, ColumnNotExistException {
-        current.alterTable(identifier, list, b);
+        current.alterTable(identifier, list, ignoreIfExists);
     }
 
     @Override
-    public void dropPartition(Identifier identifier, Map<String, String> map)
+    public void dropPartition(Identifier identifier, Map<String, String> partitions)
             throws TableNotExistException, PartitionNotExistException {
-        current.dropPartition(identifier, map);
+        current.dropPartition(identifier, partitions);
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         catalogMap.values().forEach(IOUtils::closeQuietly);
         catalogMap.clear();
         current = null;
