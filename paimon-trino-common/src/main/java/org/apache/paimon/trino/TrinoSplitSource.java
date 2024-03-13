@@ -63,6 +63,6 @@ public class TrinoSplitSource implements ConnectorSplitSource {
 
     @Override
     public boolean isFinished() {
-        return splits.isEmpty();
+        return splits.isEmpty() || (limit.isPresent() && count >= limit.getAsLong());
     }
 }
