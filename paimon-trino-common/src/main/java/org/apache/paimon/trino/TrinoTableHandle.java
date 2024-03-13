@@ -26,7 +26,6 @@ import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.trino.filesystem.TrinoFileSystem;
 import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ColumnMetadata;
 import io.trino.spi.connector.ConnectorSession;
@@ -47,13 +46,12 @@ import java.util.stream.Collectors;
 /** Trino {@link ConnectorTableHandle}. */
 public class TrinoTableHandle implements ConnectorTableHandle {
 
-    protected final String schemaName;
-    protected final String tableName;
-    protected final TupleDomain<TrinoColumnHandle> filter;
-    protected final Optional<List<ColumnHandle>> projectedColumns;
-    protected final OptionalLong limit;
-    protected final Map<String, String> dynamicOptions;
-    protected TrinoFileSystem trinoFileSystem;
+    private final String schemaName;
+    private final String tableName;
+    private final TupleDomain<TrinoColumnHandle> filter;
+    private final Optional<List<ColumnHandle>> projectedColumns;
+    private final OptionalLong limit;
+    private final Map<String, String> dynamicOptions;
 
     private transient Table table;
 
@@ -173,10 +171,6 @@ public class TrinoTableHandle implements ConnectorTableHandle {
                     String.format("Cannot find field %s in schema %s", field, fieldNames));
         }
         return TrinoColumnHandle.of(field, paimonTable.rowType().getTypeAt(index));
-    }
-
-    public void setTrinoFileSystem(TrinoFileSystem fileSystem) {
-        this.trinoFileSystem = fileSystem;
     }
 
     public TrinoTableHandle copy(TupleDomain<TrinoColumnHandle> filter) {

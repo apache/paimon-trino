@@ -70,7 +70,6 @@ public class TrinoSplitManager implements ConnectorSplitManager {
         // TODO what is constraint?
 
         TrinoTableHandle tableHandle = (TrinoTableHandle) connectorTableHandle;
-        tableHandle.setTrinoFileSystem(fileSystemFactory.create(session));
         Table table = tableHandle.tableWithDynamicOptions(trinoCatalog, session);
         ReadBuilder readBuilder = table.newReadBuilder();
         new TrinoFilterConverter(table.rowType())
