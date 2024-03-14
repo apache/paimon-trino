@@ -36,7 +36,6 @@ import io.trino.filesystem.TrinoInputFile;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,6 +90,9 @@ public class TrinoFileIO implements FileIO {
     public FileStatus[] listStatus(Path path) throws IOException {
         List<FileStatus> fileStatusList = new ArrayList<>();
         Location location = Location.of(path.toString());
+        // In version trino 422, trinoFileSystem could only search for files (directories don't
+        // count in files in trino)
+        // Therefore, this interface only return FileStatus those are file.
         if (trinoFileSystem.directoryExists(location).orElse(false)) {
             FileIterator fileIterator = trinoFileSystem.listFiles(location);
             while (fileIterator.hasNext()) {
@@ -135,7 +137,7 @@ public class TrinoFileIO implements FileIO {
 
     @Override
     public boolean mkdirs(Path path) throws IOException {
-        throw new UnsupportedEncodingException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -143,7 +145,7 @@ public class TrinoFileIO implements FileIO {
         Location sourceLocation = Location.of(source.toString());
         Location targetLocation = Location.of(target.toString());
         if (trinoFileSystem.directoryExists(sourceLocation).orElse(false)) {
-            throw new UnsupportedEncodingException();
+            throw new UnsupportedOperationException();
         } else {
             trinoFileSystem.renameFile(sourceLocation, targetLocation);
         }

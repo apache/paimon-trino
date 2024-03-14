@@ -212,12 +212,12 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
     }
 
     private boolean checkRawFile(Optional<List<RawFile>> optionalRawFiles) {
-        return optionalRawFiles.isPresent() && checkFormat(optionalRawFiles.get());
+        return optionalRawFiles.isPresent() && canUseTrinoPageSource(optionalRawFiles.get());
     }
 
     // only support orc yet.
-    // todo: support parquet and avro
-    private boolean checkFormat(List<RawFile> rawFiles) {
+    // TODO: support parquet and avro
+    private boolean canUseTrinoPageSource(List<RawFile> rawFiles) {
         for (RawFile rawFile : rawFiles) {
             if (!rawFile.format().equals("orc")) {
                 return false;
@@ -246,7 +246,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
     private ConnectorPageSource createDataPageSource(
             String format,
             TrinoInputFile inputFile,
-            // todo construct read option by core-options
+            // TODO construct read option by core-options
             CoreOptions coreOptions,
             int[] columns,
             List<Type> types,
@@ -256,7 +256,11 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                 {
                     return createOrcDataPageSource(
                             inputFile,
+                            // TODO: pass options from catalog configuration
                             new OrcReaderOptions()
+                                    // Default tiny stripe size 8 M is too big for paimon.
+                                    // Cache stripe will cause more read (I want to read one column,
+                                    // but not the whole stripe)
                                     .withTinyStripeThreshold(
                                             DataSize.of(4, DataSize.Unit.KILOBYTE)),
                             columns,
