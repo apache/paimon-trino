@@ -27,6 +27,7 @@ import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.fs.Path;
 import org.apache.paimon.fs.local.LocalFileIO;
 import org.apache.paimon.schema.Schema;
+import org.apache.paimon.schema.SchemaChange;
 import org.apache.paimon.schema.SchemaManager;
 import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.FileStoreTableFactory;
@@ -172,7 +173,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                     rowType.getFields(),
                                     Collections.emptyList(),
                                     Collections.singletonList("i"),
-                                    new HashMap<>(),
+                                    Collections.singletonMap("bucket", "1"),
                                     ""));
             FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath4);
             InnerTableWrite writer = table.newWrite("user");
@@ -263,7 +264,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                             "timestamp_tz",
                                             "decimal",
                                             "varbinary"),
-                                    Collections.emptyMap(),
+                                    Collections.singletonMap("bucket", "1"),
                                     ""));
             FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath6);
             InnerTableWrite writer = table.newWrite("user");
@@ -290,6 +291,124 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                             new GenericMap(Map.of(1, 1)),
                             GenericRow.of(1, 1)));
             commit.commit(0, writer.prepareCommit(true, 0));
+        }
+
+        {
+            Path tablePath7 = new Path(warehouse, "default.db/t100");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "boolean", DataTypes.BOOLEAN()),
+                                    new DataField(1, "tinyint", DataTypes.TINYINT()),
+                                    new DataField(2, "smallint", DataTypes.SMALLINT()),
+                                    new DataField(3, "int", DataTypes.INT()),
+                                    new DataField(4, "bigint", DataTypes.BIGINT()),
+                                    new DataField(5, "float", DataTypes.FLOAT()),
+                                    new DataField(6, "double", DataTypes.DOUBLE()),
+                                    new DataField(7, "char", DataTypes.CHAR(5)),
+                                    new DataField(8, "varchar", DataTypes.VARCHAR(100)),
+                                    new DataField(9, "date", DataTypes.DATE()),
+                                    new DataField(10, "timestamp_0", DataTypes.TIMESTAMP(3)),
+                                    new DataField(11, "timestamp_3", DataTypes.TIMESTAMP(3)),
+                                    new DataField(12, "timestamp_6", DataTypes.TIMESTAMP(6)),
+                                    new DataField(13, "decimal", DataTypes.DECIMAL(10, 5)),
+                                    new DataField(14, "varbinary", DataTypes.VARBINARY(10)),
+                                    new DataField(15, "array", DataTypes.ARRAY(DataTypes.INT())),
+                                    new DataField(
+                                            16,
+                                            "map",
+                                            DataTypes.MAP(DataTypes.INT(), DataTypes.INT())),
+                                    new DataField(
+                                            17,
+                                            "row",
+                                            DataTypes.ROW(
+                                                    DataTypes.FIELD(100, "q1", DataTypes.INT()),
+                                                    DataTypes.FIELD(101, "q2", DataTypes.INT())))));
+            new SchemaManager(LocalFileIO.create(), tablePath7)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    Collections.emptyList(),
+                                    Collections.singletonMap("bucket", "-1"),
+                                    ""));
+            FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath7);
+            InnerTableWrite writer = table.newWrite("user");
+            InnerTableCommit commit = table.newCommit("user");
+            writer.write(
+                    GenericRow.of(
+                            true,
+                            (byte) 1,
+                            (short) 1,
+                            1,
+                            1L,
+                            1.0f,
+                            1.0d,
+                            BinaryString.fromString("char1"),
+                            BinaryString.fromString("varchar1"),
+                            0,
+                            Timestamp.fromMicros(1694505288000000L),
+                            Timestamp.fromMicros(1694505288001000L),
+                            Timestamp.fromMicros(1694505288001001L),
+                            Decimal.fromUnscaledLong(10000, 10, 5),
+                            new byte[] {0x01, 0x02, 0x03},
+                            new GenericArray(new int[] {1, 1, 1}),
+                            new GenericMap(Map.of(1, 1)),
+                            GenericRow.of(1, 1)));
+            commit.commit(0, writer.prepareCommit(true, 0));
+
+            new SchemaManager(LocalFileIO.create(), tablePath7)
+                    .commitChanges(SchemaChange.dropColumn("smallint"));
+            table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath7);
+            writer = table.newWrite("user");
+            commit = table.newCommit("user");
+            writer.write(
+                    GenericRow.of(
+                            true,
+                            (byte) 1,
+                            1,
+                            1L,
+                            1.0f,
+                            1.0d,
+                            BinaryString.fromString("char1"),
+                            BinaryString.fromString("varchar1"),
+                            0,
+                            Timestamp.fromMicros(1694505288000000L),
+                            Timestamp.fromMicros(1694505288001000L),
+                            Timestamp.fromMicros(1694505288001001L),
+                            Decimal.fromUnscaledLong(10000, 10, 5),
+                            new byte[] {0x01, 0x02, 0x03},
+                            new GenericArray(new int[] {1, 1, 1}),
+                            new GenericMap(Map.of(1, 1)),
+                            GenericRow.of(1, 1)));
+            commit.commit(1, writer.prepareCommit(true, 1));
+
+            new SchemaManager(LocalFileIO.create(), tablePath7)
+                    .commitChanges(SchemaChange.addColumn("smallint", DataTypes.SMALLINT()));
+            table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath7);
+            writer = table.newWrite("user");
+            commit = table.newCommit("user");
+            writer.write(
+                    GenericRow.of(
+                            true,
+                            (byte) 1,
+                            1,
+                            1L,
+                            1.0f,
+                            1.0d,
+                            BinaryString.fromString("char1"),
+                            BinaryString.fromString("varchar1"),
+                            0,
+                            Timestamp.fromMicros(1694505288000000L),
+                            Timestamp.fromMicros(1694505288001000L),
+                            Timestamp.fromMicros(1694505288001001L),
+                            Decimal.fromUnscaledLong(10000, 10, 5),
+                            new byte[] {0x01, 0x02, 0x03},
+                            new GenericArray(new int[] {1, 1, 1}),
+                            new GenericMap(Map.of(1, 1)),
+                            GenericRow.of(1, 1),
+                            (short) 1));
+            commit.commit(1, writer.prepareCommit(true, 1));
         }
 
         DistributedQueryRunner queryRunner = null;
@@ -424,7 +543,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "changelog_producer = 'input'"
                         + ")");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [orders], [t1], [t2], [t3], [t4], [t99]]");
+                .isEqualTo("[[empty_t], [orders], [t1], [t100], [t2], [t3], [t4], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.orders");
     }
 
@@ -447,7 +566,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("ALTER TABLE paimon.default.t5 RENAME TO t6");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [t1], [t2], [t3], [t4], [t6], [t99]]");
+                .isEqualTo("[[empty_t], [t1], [t100], [t2], [t3], [t4], [t6], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.t6");
     }
 
@@ -470,7 +589,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [t1], [t2], [t3], [t4], [t99]]");
+                .isEqualTo("[[empty_t], [t1], [t100], [t2], [t3], [t4], [t99]]");
     }
 
     @Test
@@ -599,6 +718,18 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                 "SELECT * FROM paimon.default.t2 FOR TIMESTAMP AS OF TIMESTAMP "
                                         + timestampLiteral(System.currentTimeMillis(), 6)))
                 .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2], [5, 6, 3, 3], [7, 8, 4, 4]]");
+    }
+
+    @Test
+    public void testSchemaEvolution() {
+        assertThat(
+                        sql(
+                                "SELECT boolean, tinyint, smallint, int, bigint,float,double,char,varchar, date,timestamp_0, "
+                                        + "timestamp_3, timestamp_6, decimal, to_hex(varbinary), array, map, row FROM paimon.default.t100"))
+                .isEqualTo(
+                        "[[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
+                                + "[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
+                                + "[true, 1, 1, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]]]");
     }
 
     protected String sql(String sql) {

@@ -19,8 +19,10 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.CoreOptions;
+import org.apache.paimon.catalog.Catalog;
+import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.table.Table;
-import org.apache.paimon.utils.InstantiationUtil;
+import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -32,8 +34,6 @@ import io.trino.spi.connector.ConnectorTableMetadata;
 import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.predicate.TupleDomain;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,22 +44,23 @@ import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 /** Trino {@link ConnectorTableHandle}. */
-public final class TrinoTableHandle implements ConnectorTableHandle {
+public class TrinoTableHandle implements ConnectorTableHandle {
 
     private final String schemaName;
     private final String tableName;
-    private final byte[] serializedTable;
     private final TupleDomain<TrinoColumnHandle> filter;
     private final Optional<List<ColumnHandle>> projectedColumns;
     private final OptionalLong limit;
+    private final Map<String, String> dynamicOptions;
 
-    private Table lazyTable;
+    private transient Table table;
 
-    public TrinoTableHandle(String schemaName, String tableName, byte[] serializedTable) {
+    public TrinoTableHandle(
+            String schemaName, String tableName, Map<String, String> dynamicOptions) {
         this(
                 schemaName,
                 tableName,
-                serializedTable,
+                dynamicOptions,
                 TupleDomain.all(),
                 Optional.empty(),
                 OptionalLong.empty());
@@ -69,13 +70,13 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
     public TrinoTableHandle(
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
-            @JsonProperty("serializedTable") byte[] serializedTable,
+            @JsonProperty("dynamicOptions") Map<String, String> dynamicOptions,
             @JsonProperty("filter") TupleDomain<TrinoColumnHandle> filter,
             @JsonProperty("projection") Optional<List<ColumnHandle>> projectedColumns,
             @JsonProperty("limit") OptionalLong limit) {
         this.schemaName = schemaName;
         this.tableName = tableName;
-        this.serializedTable = serializedTable;
+        this.dynamicOptions = dynamicOptions;
         this.filter = filter;
         this.projectedColumns = projectedColumns;
         this.limit = limit;
@@ -92,8 +93,8 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
     }
 
     @JsonProperty
-    public byte[] getSerializedTable() {
-        return serializedTable;
+    public Map<String, String> getDynamicOptions() {
+        return dynamicOptions;
     }
 
     @JsonProperty
@@ -110,22 +111,9 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
         return limit;
     }
 
-    public TrinoTableHandle copy(TupleDomain<TrinoColumnHandle> filter) {
-        return new TrinoTableHandle(
-                schemaName, tableName, serializedTable, filter, projectedColumns, limit);
-    }
+    public Table tableWithDynamicOptions(TrinoCatalog catalog, ConnectorSession session) {
+        Table paimonTable = table(catalog);
 
-    public TrinoTableHandle copy(Optional<List<ColumnHandle>> projectedColumns) {
-        return new TrinoTableHandle(
-                schemaName, tableName, serializedTable, filter, projectedColumns, limit);
-    }
-
-    public TrinoTableHandle copy(OptionalLong limit) {
-        return new TrinoTableHandle(
-                schemaName, tableName, serializedTable, filter, projectedColumns, limit);
-    }
-
-    public Table tableWithDynamicOptions(ConnectorSession session) {
         // see TrinoConnector.getSessionProperties
         Map<String, String> dynamicOptions = new HashMap<>();
         Long scanTimestampMills = TrinoSessionProperties.getScanTimestampMillis(session);
@@ -138,32 +126,31 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
             dynamicOptions.put(CoreOptions.SCAN_SNAPSHOT_ID.key(), scanSnapshotId.toString());
         }
 
-        return dynamicOptions.size() > 0 ? table().copy(dynamicOptions) : table();
+        return dynamicOptions.size() > 0 ? paimonTable.copy(dynamicOptions) : paimonTable;
     }
 
-    public Table table() {
-        if (lazyTable == null) {
-            try {
-                lazyTable =
-                        InstantiationUtil.deserializeObject(
-                                serializedTable, this.getClass().getClassLoader());
-            } catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+    public Table table(TrinoCatalog catalog) {
+        if (table != null) {
+            return table;
         }
-        return lazyTable;
+        try {
+            table = catalog.getTable(Identifier.create(schemaName, tableName)).copy(dynamicOptions);
+        } catch (Catalog.TableNotExistException e) {
+            throw new RuntimeException(e);
+        }
+        return table;
     }
 
-    public ConnectorTableMetadata tableMetadata() {
+    public ConnectorTableMetadata tableMetadata(TrinoCatalog catalog) {
         return new ConnectorTableMetadata(
                 SchemaTableName.schemaTableName(schemaName, tableName),
-                columnMetadatas(),
+                columnMetadatas(catalog),
                 Collections.emptyMap(),
                 Optional.empty());
     }
 
-    public List<ColumnMetadata> columnMetadatas() {
-        return table().rowType().getFields().stream()
+    public List<ColumnMetadata> columnMetadatas(TrinoCatalog catalog) {
+        return table(catalog).rowType().getFields().stream()
                 .map(
                         column ->
                                 ColumnMetadata.builder()
@@ -175,14 +162,30 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
                 .collect(Collectors.toList());
     }
 
-    public TrinoColumnHandle columnHandle(String field) {
-        List<String> fieldNames = FieldNameUtils.fieldNames(table().rowType());
+    public TrinoColumnHandle columnHandle(TrinoCatalog catalog, String field) {
+        Table paimonTable = table(catalog);
+        List<String> fieldNames = FieldNameUtils.fieldNames(paimonTable.rowType());
         int index = fieldNames.indexOf(field);
         if (index == -1) {
             throw new RuntimeException(
                     String.format("Cannot find field %s in schema %s", field, fieldNames));
         }
-        return TrinoColumnHandle.of(field, table().rowType().getTypeAt(index));
+        return TrinoColumnHandle.of(field, paimonTable.rowType().getTypeAt(index));
+    }
+
+    public TrinoTableHandle copy(TupleDomain<TrinoColumnHandle> filter) {
+        return new TrinoTableHandle(
+                schemaName, tableName, dynamicOptions, filter, projectedColumns, limit);
+    }
+
+    public TrinoTableHandle copy(Optional<List<ColumnHandle>> projectedColumns) {
+        return new TrinoTableHandle(
+                schemaName, tableName, dynamicOptions, filter, projectedColumns, limit);
+    }
+
+    public TrinoTableHandle copy(OptionalLong limit) {
+        return new TrinoTableHandle(
+                schemaName, tableName, dynamicOptions, filter, projectedColumns, limit);
     }
 
     @Override
@@ -194,7 +197,7 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
             return false;
         }
         TrinoTableHandle that = (TrinoTableHandle) o;
-        return Arrays.equals(serializedTable, that.serializedTable)
+        return Objects.equals(dynamicOptions, that.dynamicOptions)
                 && Objects.equals(schemaName, that.schemaName)
                 && Objects.equals(tableName, that.tableName)
                 && Objects.equals(filter, that.filter)
@@ -203,7 +206,6 @@ public final class TrinoTableHandle implements ConnectorTableHandle {
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                schemaName, tableName, filter, projectedColumns, Arrays.hashCode(serializedTable));
+        return Objects.hash(schemaName, tableName, filter, projectedColumns, dynamicOptions);
     }
 }

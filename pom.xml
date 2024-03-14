@@ -22,13 +22,8 @@ under the License.
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <modules>
-        <module>paimon-trino-358</module>
-        <module>paimon-trino-368</module>
-        <module>paimon-trino-369</module>
-        <module>paimon-trino-370</module>
-        <module>paimon-trino-388</module>
-        <module>paimon-trino-393</module>
         <module>paimon-trino-422</module>
+        <module>paimon-trino-427</module>
         <module>paimon-trino-common</module>
     </modules>
 

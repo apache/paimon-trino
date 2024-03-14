@@ -18,20 +18,51 @@
 
 package org.apache.paimon.trino;
 
+import io.trino.spi.connector.ConnectorSplit;
 import io.trino.spi.connector.ConnectorSplitSource;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.OptionalLong;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
 /** Trino {@link ConnectorSplitSource}. */
-public class TrinoSplitSource extends TrinoSplitSourceBase {
+public class TrinoSplitSource implements ConnectorSplitSource {
 
-    public TrinoSplitSource(List<TrinoSplit> splits) {
-        super(splits);
+    private final Queue<TrinoSplit> splits;
+    private final OptionalLong limit;
+    private long count = 0;
+
+    public TrinoSplitSource(List<TrinoSplit> splits, OptionalLong limit) {
+        this.splits = new LinkedList<>(splits);
+        this.limit = limit;
+    }
+
+    protected CompletableFuture<ConnectorSplitBatch> innerGetNextBatch(int maxSize) {
+        List<ConnectorSplit> batch = new ArrayList<>();
+        for (int i = 0; i < maxSize; i++) {
+            TrinoSplit split = splits.poll();
+            if (split == null || (limit.isPresent() && count >= limit.getAsLong())) {
+                break;
+            }
+            count += split.decodeSplit().rowCount();
+            batch.add(split);
+        }
+        return CompletableFuture.completedFuture(new ConnectorSplitBatch(batch, isFinished()));
     }
 
     @Override
     public CompletableFuture<ConnectorSplitBatch> getNextBatch(int maxSize) {
         return innerGetNextBatch(maxSize);
+    }
+
+    @Override
+    public void close() {}
+
+    @Override
+    public boolean isFinished() {
+        return splits.isEmpty() || (limit.isPresent() && count >= limit.getAsLong());
     }
 }

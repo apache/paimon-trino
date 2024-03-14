@@ -22,6 +22,7 @@ import io.airlift.json.JsonCodec;
 import io.trino.spi.predicate.TupleDomain;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -34,12 +35,11 @@ public class TestTrinoTableHandle {
 
     @Test
     public void testPrestoTableHandle() throws Exception {
-        byte[] serializedTable = TrinoTestUtils.getSerializedTable();
         TrinoTableHandle expected =
                 new TrinoTableHandle(
                         "test",
                         "user",
-                        serializedTable,
+                        Collections.emptyMap(),
                         TupleDomain.all(),
                         Optional.empty(),
                         OptionalLong.empty());
@@ -52,7 +52,6 @@ public class TestTrinoTableHandle {
         assertThat(actual).isEqualTo(expected);
         assertThat(actual.getSchemaName()).isEqualTo(expected.getSchemaName());
         assertThat(actual.getTableName()).isEqualTo(expected.getTableName());
-        assertThat(actual.getSerializedTable()).isEqualTo(expected.getSerializedTable());
         assertThat(actual.getFilter()).isEqualTo(expected.getFilter());
         assertThat(actual.getProjectedColumns()).isEqualTo(expected.getProjectedColumns());
     }

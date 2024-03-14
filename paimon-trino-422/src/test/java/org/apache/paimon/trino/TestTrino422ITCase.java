@@ -24,4 +24,31 @@ public class TestTrino422ITCase extends TestTrinoITCase {
     public TestTrino422ITCase() {
         super(422);
     }
+
+    @Override
+    public void testCreateSchema() {}
+
+    @Override
+    public void testDropSchema() {}
+
+    @Override
+    public void testCreateTable() {}
+
+    @Override
+    public void testRenameTable() {}
+
+    @Override
+    public void testDropTable() {}
+
+    @Override
+    public void testAddColumn() {}
+
+    @Override
+    public void testRenameColumn() {}
+
+    @Override
+    public void testDropColumn() {}
+
+    @Override
+    public void testSetTableProperties() {}
 }

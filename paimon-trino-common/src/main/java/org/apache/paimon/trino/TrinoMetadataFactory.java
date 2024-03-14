@@ -18,42 +18,34 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.catalog.Catalog;
-import org.apache.paimon.catalog.CatalogContext;
-import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.options.Options;
-import org.apache.paimon.security.SecurityContext;
+import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import com.google.inject.Inject;
-import io.trino.plugin.hive.HdfsConfig;
-import io.trino.plugin.hive.HdfsConfigurationInitializer;
-import io.trino.plugin.hive.util.ConfigurationUtils;
+import io.trino.filesystem.TrinoFileSystemFactory;
+import io.trino.hdfs.ConfigurationUtils;
+import io.trino.hdfs.HdfsConfig;
+import io.trino.hdfs.HdfsConfigurationInitializer;
 import org.apache.hadoop.conf.Configuration;
 
 /** A factory to create {@link TrinoMetadata}. */
 public class TrinoMetadataFactory {
 
-    private final Catalog catalog;
+    private final TrinoCatalog catalog;
 
     @Inject
     public TrinoMetadataFactory(
             Options options,
             HdfsConfigurationInitializer hdfsConfigurationInitializer,
-            HdfsConfig hdfsConfig) {
-        CatalogContext catalogContext;
-        if (hdfsConfig.getResourceConfigFiles().isEmpty()) {
-            catalogContext = CatalogContext.create(options);
-        } else {
-            Configuration configuration = ConfigurationUtils.getInitialConfiguration();
+            HdfsConfig hdfsConfig,
+            TrinoFileSystemFactory fileSystemFactory) {
+        Configuration configuration = null;
+        if (!hdfsConfig.getResourceConfigFiles().isEmpty()) {
+            configuration = ConfigurationUtils.getInitialConfiguration();
             hdfsConfigurationInitializer.initializeConfiguration(configuration);
-            catalogContext = CatalogContext.create(options, configuration);
         }
-        try {
-            SecurityContext.install(catalogContext);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        this.catalog = CatalogFactory.createCatalog(catalogContext);
+
+        this.catalog = new TrinoCatalog(options, configuration, fileSystemFactory);
     }
 
     public TrinoMetadata create() {

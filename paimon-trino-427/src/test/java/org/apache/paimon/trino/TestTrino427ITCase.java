@@ -18,14 +18,10 @@
 
 package org.apache.paimon.trino;
 
-import io.trino.spi.type.Int128;
+/** {@link TestTrinoITCase} for Trino 422. */
+public class TestTrino427ITCase extends TestTrinoITCase {
 
-import java.math.BigInteger;
-
-/** Utils for decimal. */
-public class DecimalUtils {
-
-    public static BigInteger toBigInteger(Object value) {
-        return ((Int128) value).toBigInteger();
+    public TestTrino427ITCase() {
+        super(427);
     }
 }

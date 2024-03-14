@@ -44,7 +44,7 @@ public class SimpleTableTestHelper {
                                 rowType.getFields(),
                                 Collections.emptyList(),
                                 Collections.singletonList("a"),
-                                Collections.emptyMap(),
+                                Collections.singletonMap("bucket", "1"),
                                 ""));
         FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), path);
         String user = "user";
