@@ -25,6 +25,9 @@ import org.apache.paimon.fs.SeekableInputStream;
 import io.trino.filesystem.TrinoInputStream;
 
 import java.io.IOException;
+import java.io.OutputStream;
+
+import static java.util.Objects.requireNonNull;
 
 /** Trino input stream wrapper for paimon. */
 public class TrinoInputStreamWrapper extends SeekableInputStream {
@@ -32,7 +35,7 @@ public class TrinoInputStreamWrapper extends SeekableInputStream {
     private final TrinoInputStream trinoInputStream;
 
     public TrinoInputStreamWrapper(TrinoInputStream trinoInputStream) {
-        this.trinoInputStream = trinoInputStream;
+        this.trinoInputStream = requireNonNull(trinoInputStream, "trino input stream is null");
     }
 
     @Override
@@ -58,5 +61,60 @@ public class TrinoInputStreamWrapper extends SeekableInputStream {
     @Override
     public void close() throws IOException {
         trinoInputStream.close();
+    }
+
+    @Override
+    public byte[] readNBytes(int len) throws IOException {
+        return trinoInputStream.readNBytes(len);
+    }
+
+    @Override
+    public int readNBytes(byte[] b, int off, int len) throws IOException {
+        return trinoInputStream.readNBytes(b, off, len);
+    }
+
+    @Override
+    public int read(byte[] b) throws IOException {
+        return trinoInputStream.read(b);
+    }
+
+    @Override
+    public long skip(long n) throws IOException {
+        return trinoInputStream.skip(n);
+    }
+
+    @Override
+    public void skipNBytes(long n) throws IOException {
+        trinoInputStream.skipNBytes(n);
+    }
+
+    @Override
+    public byte[] readAllBytes() throws IOException {
+        return trinoInputStream.readAllBytes();
+    }
+
+    @Override
+    public int available() throws IOException {
+        return trinoInputStream.available();
+    }
+
+    @Override
+    public void mark(int readlimit) {
+        trinoInputStream.mark(readlimit);
+    }
+
+    @Override
+    public void reset() throws IOException {
+        trinoInputStream.reset();
+    }
+
+    @Override
+    public boolean markSupported() {
+        return trinoInputStream.markSupported();
+    }
+
+    @Override
+    public long transferTo(OutputStream out) throws IOException {
+        return trinoInputStream.transferTo(out);
     }
 }
