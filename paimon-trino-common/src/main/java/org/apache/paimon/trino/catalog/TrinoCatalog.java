@@ -71,24 +71,25 @@ public class TrinoCatalog implements Catalog {
         current =
                 catalogMap.computeIfAbsent(
                         connectorSession,
-                        session -> {
-                            TrinoFileSystem trinoFileSystem =
-                                    trinoFileSystemFactory.create(session);
-                            CatalogContext catalogContext =
-                                    CatalogContext.create(
-                                            options,
-                                            configuration,
-                                            new TrinoFileIOLoader(trinoFileSystem),
-                                            null);
-                            try {
-                                SecurityContext.install(catalogContext);
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                            return ClassLoaderUtils.runWithContextClassLoader(
-                                    () -> CatalogFactory.createCatalog(catalogContext),
-                                    this.getClass().getClassLoader());
-                        });
+                        session ->
+                                ClassLoaderUtils.runWithContextClassLoader(
+                                        () -> {
+                                            TrinoFileSystem trinoFileSystem =
+                                                    trinoFileSystemFactory.create(session);
+                                            CatalogContext catalogContext =
+                                                    CatalogContext.create(
+                                                            options,
+                                                            configuration,
+                                                            new TrinoFileIOLoader(trinoFileSystem),
+                                                            null);
+                                            try {
+                                                SecurityContext.install(catalogContext);
+                                            } catch (Exception e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                            return CatalogFactory.createCatalog(catalogContext);
+                                        },
+                                        this.getClass().getClassLoader()));
     }
 
     @Override
