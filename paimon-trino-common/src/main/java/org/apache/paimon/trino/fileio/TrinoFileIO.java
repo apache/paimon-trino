@@ -116,6 +116,15 @@ public class TrinoFileIO implements FileIO {
                 || existFile(Location.of(path.toString()));
     }
 
+    @Override
+    public void checkOrMkdirs(Path path) throws IOException {
+        // reduce file io times.
+        Location location = Location.of(path.toString());
+        if (!trinoFileSystem.directoryExists(location).orElse(false)) {
+            trinoFileSystem.createDirectory(location);
+        }
+    }
+
     private boolean existFile(Location location) throws IOException {
         try {
             return trinoFileSystem.newInputFile(location).exists();
