@@ -24,7 +24,6 @@ import org.apache.paimon.table.source.Split;
 import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import com.google.inject.Inject;
-import io.trino.filesystem.TrinoFileSystemFactory;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplitManager;
 import io.trino.spi.connector.ConnectorSplitSource;
@@ -41,13 +40,10 @@ import static java.util.Objects.requireNonNull;
 /** Trino {@link ConnectorSplitManager}. */
 public class TrinoSplitManager implements ConnectorSplitManager {
 
-    private final TrinoFileSystemFactory fileSystemFactory;
     private final TrinoCatalog trinoCatalog;
 
     @Inject
-    public TrinoSplitManager(
-            TrinoFileSystemFactory fileSystemFactory, TrinoMetadataFactory trinoMetadataFactory) {
-        this.fileSystemFactory = requireNonNull(fileSystemFactory, "fileSystemFactory is null");
+    public TrinoSplitManager(TrinoMetadataFactory trinoMetadataFactory) {
         this.trinoCatalog =
                 requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null")
                         .create()

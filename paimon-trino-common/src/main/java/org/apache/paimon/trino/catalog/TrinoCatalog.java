@@ -33,22 +33,18 @@ import org.apache.paimon.security.SecurityContext;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.trino.ClassLoaderUtils;
 import org.apache.paimon.trino.fileio.TrinoFileIOLoader;
-import org.apache.paimon.utils.IOUtils;
 
 import io.trino.filesystem.TrinoFileSystem;
 import io.trino.filesystem.TrinoFileSystemFactory;
 import io.trino.spi.connector.ConnectorSession;
 import org.apache.hadoop.conf.Configuration;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /** Trino catalog, use it after set session. */
 public class TrinoCatalog implements Catalog {
-
-    private final Map<ConnectorSession, Catalog> catalogMap = new HashMap<>();
 
     private final Options options;
 
@@ -57,6 +53,8 @@ public class TrinoCatalog implements Catalog {
     private final TrinoFileSystemFactory trinoFileSystemFactory;
 
     private Catalog current;
+
+    private volatile boolean inited = false;
 
     public TrinoCatalog(
             Options options,
@@ -68,28 +66,32 @@ public class TrinoCatalog implements Catalog {
     }
 
     public void initSession(ConnectorSession connectorSession) {
-        current =
-                catalogMap.computeIfAbsent(
-                        connectorSession,
-                        session ->
-                                ClassLoaderUtils.runWithContextClassLoader(
-                                        () -> {
-                                            TrinoFileSystem trinoFileSystem =
-                                                    trinoFileSystemFactory.create(session);
-                                            CatalogContext catalogContext =
-                                                    CatalogContext.create(
-                                                            options,
-                                                            configuration,
-                                                            new TrinoFileIOLoader(trinoFileSystem),
-                                                            null);
-                                            try {
-                                                SecurityContext.install(catalogContext);
-                                            } catch (Exception e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                            return CatalogFactory.createCatalog(catalogContext);
-                                        },
-                                        this.getClass().getClassLoader()));
+        if (!inited) {
+            synchronized (this) {
+                if (!inited) {
+                    current =
+                            ClassLoaderUtils.runWithContextClassLoader(
+                                    () -> {
+                                        TrinoFileSystem trinoFileSystem =
+                                                trinoFileSystemFactory.create(connectorSession);
+                                        CatalogContext catalogContext =
+                                                CatalogContext.create(
+                                                        options,
+                                                        configuration,
+                                                        new TrinoFileIOLoader(trinoFileSystem),
+                                                        null);
+                                        try {
+                                            SecurityContext.install(catalogContext);
+                                        } catch (Exception e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                        return CatalogFactory.createCatalog(catalogContext);
+                                    },
+                                    this.getClass().getClassLoader());
+                    inited = true;
+                }
+            }
+        }
     }
 
     @Override
@@ -164,10 +166,10 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
-    public void close() {
-        catalogMap.values().forEach(IOUtils::closeQuietly);
-        catalogMap.clear();
-        current = null;
+    public void close() throws Exception {
+        if (current != null) {
+            current.close();
+        }
     }
 
     @Override
