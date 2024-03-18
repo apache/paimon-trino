@@ -155,10 +155,10 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                                         rawFile.format(),
                                         fileSystem.newInputFile(Location.of(rawFile.path())),
                                         fileStoreTable.coreOptions(),
-                                        // map table column index to data column
-                                        // index, if column does not exist in
-                                        // data columns, set it to -1
-                                        // columns those set to -1 will generate
+                                        // map table column name to data column
+                                        // name, if column does not exist in
+                                        // data columns, set it to null
+                                        // columns those set to null will generate
                                         // a null vector in orc page
                                         fileStoreTable.schema().id() == rawFile.schemaId()
                                                 ? projectedFields
@@ -244,7 +244,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
         return true;
     }
 
-    // map the table schema columnsIndex to data schema columnsIndex
+    // map the table schema column names to data schema column names
     private List<String> mapping(
             List<String> fieldNames, List<DataField> tableFields, List<DataField> dataFields) {
 
