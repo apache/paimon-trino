@@ -85,7 +85,6 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
     @Override
     protected QueryRunner createQueryRunner() throws Exception {
-        System.setProperty("java.io.tmpdir", "/tmp");
         String warehouse =
                 Files.createTempDirectory(UUID.randomUUID().toString()).toUri().toString();
         // flink sink
