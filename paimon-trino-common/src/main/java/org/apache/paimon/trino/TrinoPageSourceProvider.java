@@ -142,7 +142,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
 
                 int offset = table.primaryKeys().isEmpty() ? 0 : table.primaryKeys().size() + 2;
 
-                int[] columnIndex =
+                int[] columnIndexOfTableSchema =
                         // the column index, very important
                         projectedFields.stream()
                                 .mapToInt(fieldNames::indexOf)
@@ -171,7 +171,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                                         // columns those set to -1 will generate
                                         // a null vector in orc page
                                         mapping(
-                                                columnIndex,
+                                                columnIndexOfTableSchema,
                                                 rowType.getFields(),
                                                 schemaManager.schema(rawFile.schemaId()).fields()),
                                         type,
@@ -202,7 +202,6 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                 }
             } else {
                 int[] columnIndex =
-                        // the column index, very important
                         projectedFields.stream().mapToInt(fieldNames::indexOf).toArray();
 
                 // old read way
