@@ -18,12 +18,14 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.CoreOptions;
 import org.apache.paimon.data.BinaryString;
 import org.apache.paimon.data.Decimal;
 import org.apache.paimon.data.GenericArray;
 import org.apache.paimon.data.GenericMap;
 import org.apache.paimon.data.GenericRow;
 import org.apache.paimon.data.Timestamp;
+import org.apache.paimon.disk.IOManagerImpl;
 import org.apache.paimon.fs.Path;
 import org.apache.paimon.fs.local.LocalFileIO;
 import org.apache.paimon.schema.Schema;
@@ -411,6 +413,40 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
             commit.commit(1, writer.prepareCommit(true, 1));
         }
 
+        {
+            Path tablePath6 = new Path(warehouse, "default.db/t101");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "a", DataTypes.STRING()),
+                                    new DataField(1, "b", DataTypes.INT()),
+                                    new DataField(2, "c", DataTypes.INT())));
+            new SchemaManager(LocalFileIO.create(), tablePath6)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    List.of("a"),
+                                    new HashMap<>() {
+                                        {
+                                            put(CoreOptions.BUCKET.key(), "1");
+                                            put(CoreOptions.DELETION_VECTORS_ENABLED.key(), "true");
+                                        }
+                                    },
+                                    ""));
+            FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath6);
+            InnerTableWrite writer = table.newWrite("user");
+            writer.withIOManager(new IOManagerImpl("/tmp"));
+            InnerTableCommit commit = table.newCommit("user");
+            for (int i = 0; i < 10; i++) {
+                writer.write(GenericRow.of(BinaryString.fromString("a" + i), i, i));
+            }
+            commit.commit(0, writer.prepareCommit(true, 0));
+
+            writer.write(GenericRow.ofKind(RowKind.DELETE, BinaryString.fromString("a0"), 0, 0));
+            commit.commit(1, writer.prepareCommit(true, 1));
+        }
+
         DistributedQueryRunner queryRunner = null;
         try {
             queryRunner =
@@ -543,7 +579,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "changelog_producer = 'input'"
                         + ")");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [orders], [t1], [t100], [t2], [t3], [t4], [t99]]");
+                .isEqualTo("[[empty_t], [orders], [t1], [t100], [t101], [t2], [t3], [t4], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.orders");
     }
 
@@ -566,7 +602,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("ALTER TABLE paimon.default.t5 RENAME TO t6");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [t1], [t100], [t2], [t3], [t4], [t6], [t99]]");
+                .isEqualTo("[[empty_t], [t1], [t100], [t101], [t2], [t3], [t4], [t6], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.t6");
     }
 
@@ -589,7 +625,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [t1], [t100], [t2], [t3], [t4], [t99]]");
+                .isEqualTo("[[empty_t], [t1], [t100], [t101], [t2], [t3], [t4], [t99]]");
     }
 
     @Test
@@ -730,6 +766,13 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         "[[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
                                 + "[true, 1, null, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]], "
                                 + "[true, 1, 1, 1, 1, 1.0, 1.0, char1, varchar1, 1970-01-01, 2023-09-12T07:54:48, 2023-09-12T07:54:48.001, 2023-09-12T07:54:48.001001, 0.10000, 010203, [1, 1, 1], {1=1}, [1, 1]]]");
+    }
+
+    @Test
+    public void testDeletionFile() {
+        assertThat(sql("SELECT * FROM paimon.default.t101"))
+                .isEqualTo(
+                        "[[a1, 1, 1], [a2, 2, 2], [a3, 3, 3], [a4, 4, 4], [a5, 5, 5], [a6, 6, 6], [a7, 7, 7], [a8, 8, 8], [a9, 9, 9]]");
     }
 
     protected String sql(String sql) {

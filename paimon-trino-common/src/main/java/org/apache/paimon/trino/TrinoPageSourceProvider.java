@@ -19,9 +19,11 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.CoreOptions;
+import org.apache.paimon.deletionvectors.DeletionVector;
 import org.apache.paimon.schema.SchemaManager;
 import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.Table;
+import org.apache.paimon.table.source.DeletionFile;
 import org.apache.paimon.table.source.RawFile;
 import org.apache.paimon.table.source.ReadBuilder;
 import org.apache.paimon.table.source.Split;
@@ -57,6 +59,7 @@ import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.type.Type;
 import org.joda.time.DateTimeZone;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -64,13 +67,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static io.trino.memory.context.AggregatedMemoryContext.newSimpleAggregatedMemoryContext;
 import static io.trino.orc.OrcReader.INITIAL_BATCH_SIZE;
 import static java.util.Objects.requireNonNull;
-import static org.apache.paimon.schema.SchemaEvolutionUtil.createIndexMapping;
 import static org.apache.paimon.trino.ClassLoaderUtils.runWithContextClassLoader;
 
 /** Trino {@link ConnectorPageSourceProvider}. */
@@ -126,60 +127,77 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                         .map(TrinoColumnHandle.class::cast)
                         .map(TrinoColumnHandle::getColumnName)
                         .toList();
-        int[] columnIndex =
-                // the column index, very important
-                projectedFields.stream().mapToInt(fieldNames::indexOf).toArray();
-
         TrinoFileSystem fileSystem = fileSystemFactory.create(session);
 
         try {
             Split paimonSplit = split.decodeSplit();
             Optional<List<RawFile>> optionalRawFiles = paimonSplit.convertToRawFiles();
             if (checkRawFile(optionalRawFiles)) {
+                Optional<List<DeletionFile>> deletionFiles = paimonSplit.deletionFiles();
+
                 FileStoreTable fileStoreTable = (FileStoreTable) table;
                 SchemaManager schemaManager =
                         new SchemaManager(fileStoreTable.fileIO(), fileStoreTable.location());
+
                 List<Type> type =
                         columns.stream()
                                 .map(s -> ((TrinoColumnHandle) s).getTrinoType())
                                 .collect(Collectors.toList());
+
                 try {
-                    return new DirectTrinoPageSource(
-                            optionalRawFiles.orElseThrow().stream()
-                                    .map(
-                                            rawFile ->
-                                                    createDataPageSource(
-                                                            rawFile.format(),
-                                                            fileSystem.newInputFile(
-                                                                    Location.of(rawFile.path())),
-                                                            fileStoreTable.coreOptions(),
-                                                            // map table column index to data column
-                                                            // index, if column does not exist in
-                                                            // data columns, set it to -1
-                                                            // columns those set to -1 will generate
-                                                            // a null vector in orc page
-                                                            mapping(
-                                                                    columnIndex,
-                                                                    rowType.getFields(),
-                                                                    schemaManager
-                                                                            .schema(
-                                                                                    rawFile
-                                                                                            .schemaId())
-                                                                            .fields()),
-                                                            type,
-                                                            orderDomains(projectedFields, filter)))
-                                    .collect(
-                                            Collector.of(
-                                                    LinkedList::new,
-                                                    List::add,
-                                                    (left, right) -> {
-                                                        left.addAll(right);
-                                                        return left;
-                                                    })));
+                    List<RawFile> files = optionalRawFiles.orElseThrow();
+                    LinkedList<ConnectorPageSource> sources = new LinkedList<>();
+
+                    for (int i = 0; i < files.size(); i++) {
+                        RawFile rawFile = files.get(i);
+                        ConnectorPageSource source =
+                                createDataPageSource(
+                                        rawFile.format(),
+                                        fileSystem.newInputFile(Location.of(rawFile.path())),
+                                        fileStoreTable.coreOptions(),
+                                        // map table column name to data column
+                                        // name, if column does not exist in
+                                        // data columns, set it to null
+                                        // columns those set to null will generate
+                                        // a null vector in orc page
+                                        fileStoreTable.schema().id() == rawFile.schemaId()
+                                                ? projectedFields
+                                                : schemaEvolutionFieldNames(
+                                                        projectedFields,
+                                                        rowType.getFields(),
+                                                        schemaManager
+                                                                .schema(rawFile.schemaId())
+                                                                .fields()),
+                                        type,
+                                        orderDomains(projectedFields, filter));
+
+                        if (deletionFiles.isPresent()) {
+                            source =
+                                    TrinoPageSourceWrapper.wrap(
+                                            source,
+                                            Optional.ofNullable(deletionFiles.get().get(i))
+                                                    .map(
+                                                            deletionFile -> {
+                                                                try {
+                                                                    return DeletionVector.read(
+                                                                            fileStoreTable.fileIO(),
+                                                                            deletionFile);
+                                                                } catch (IOException e) {
+                                                                    throw new RuntimeException(e);
+                                                                }
+                                                            }));
+                        }
+                        sources.add(source);
+                    }
+
+                    return new DirectTrinoPageSource(sources);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             } else {
+                int[] columnIndex =
+                        projectedFields.stream().mapToInt(fieldNames::indexOf).toArray();
+
                 // old read way
                 ReadBuilder read = table.newReadBuilder();
                 new TrinoFilterConverter(rowType).convert(filter).ifPresent(read::withFilter);
@@ -226,19 +244,20 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
         return true;
     }
 
-    // map the table schema columnsIndex to data schema columnsIndex
-    private int[] mapping(
-            int[] tableSchemaColumnIndex, List<DataField> tableFields, List<DataField> dataFields) {
+    // map the table schema column names to data schema column names
+    private List<String> schemaEvolutionFieldNames(
+            List<String> fieldNames, List<DataField> tableFields, List<DataField> dataFields) {
 
-        int[] mapping = createIndexMapping(tableFields, dataFields);
-        if (mapping == null) {
-            return tableSchemaColumnIndex;
-        }
-        int[] result = new int[tableSchemaColumnIndex.length];
+        Map<String, Integer> fieldNameToId = new HashMap<>();
+        Map<Integer, String> idToFieldName = new HashMap<>();
+        List<String> result = new ArrayList<>();
 
-        for (int i = 0; i < tableSchemaColumnIndex.length; i++) {
-            int po = tableSchemaColumnIndex[i];
-            result[i] = mapping[po];
+        tableFields.forEach(field -> fieldNameToId.put(field.name(), field.id()));
+        dataFields.forEach(field -> idToFieldName.put(field.id(), field.name()));
+
+        for (String fieldName : fieldNames) {
+            Integer id = fieldNameToId.get(fieldName);
+            result.add(idToFieldName.getOrDefault(id, null));
         }
         return result;
     }
@@ -248,7 +267,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             TrinoInputFile inputFile,
             // TODO construct read option by core-options
             CoreOptions coreOptions,
-            int[] columns,
+            List<String> columns,
             List<Type> types,
             List<Domain> domains) {
         switch (format) {
@@ -287,7 +306,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
     private ConnectorPageSource createOrcDataPageSource(
             TrinoInputFile inputFile,
             OrcReaderOptions options,
-            int[] columns,
+            List<String> columns,
             List<Type> types,
             List<Domain> domains) {
         try {
@@ -297,22 +316,28 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                             .orElseThrow(() -> new RuntimeException("ORC file is zero length"));
 
             List<OrcColumn> fileColumns = reader.getRootColumn().getNestedColumns();
+            Map<String, OrcColumn> fieldsMap = new HashMap<>();
+            fileColumns.forEach(column -> fieldsMap.put(column.getColumnName(), column));
             TupleDomainOrcPredicate.TupleDomainOrcPredicateBuilder predicateBuilder =
                     TupleDomainOrcPredicate.builder();
             List<OrcPageSource.ColumnAdaptation> columnAdaptations = new ArrayList<>();
-            List<OrcColumn> fileReadColumns = new ArrayList<>(columns.length);
-            List<Type> fileReadTypes = new ArrayList<>(columns.length);
+            List<OrcColumn> fileReadColumns = new ArrayList<>(columns.size());
+            List<Type> fileReadTypes = new ArrayList<>(columns.size());
 
-            for (int i = 0; i < columns.length; i++) {
-                if (columns[i] >= 0) {
+            for (int i = 0; i < columns.size(); i++) {
+                if (columns.get(i) != null) {
                     // column exists
                     columnAdaptations.add(
                             OrcPageSource.ColumnAdaptation.sourceColumn(fileReadColumns.size()));
-                    fileReadColumns.add(fileColumns.get(columns[i]));
+                    OrcColumn orcColumn = fieldsMap.get(columns.get(i));
+                    if (orcColumn == null) {
+                        throw new RuntimeException(
+                                "Column " + columns.get(i) + " does not exist in orc file.");
+                    }
+                    fileReadColumns.add(orcColumn);
                     fileReadTypes.add(types.get(i));
                     if (domains.get(i) != null) {
-                        predicateBuilder.addColumn(
-                                fileColumns.get(columns[i]).getColumnId(), domains.get(i));
+                        predicateBuilder.addColumn(orcColumn.getColumnId(), domains.get(i));
                     }
                 } else {
                     columnAdaptations.add(OrcPageSource.ColumnAdaptation.nullColumn(types.get(i)));
