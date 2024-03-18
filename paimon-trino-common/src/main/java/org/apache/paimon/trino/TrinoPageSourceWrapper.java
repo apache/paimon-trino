@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 
+/** Wrap {@link ConnectorPageSource} using deletion vector. */
 public class TrinoPageSourceWrapper implements ConnectorPageSource {
 
     private final ConnectorPageSource source;
