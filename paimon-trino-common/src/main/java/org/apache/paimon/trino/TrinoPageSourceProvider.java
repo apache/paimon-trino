@@ -162,7 +162,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                                         // a null vector in orc page
                                         fileStoreTable.schema().id() == rawFile.schemaId()
                                                 ? projectedFields
-                                                : mapping(
+                                                : schemaEvolutionFieldNames(
                                                         projectedFields,
                                                         rowType.getFields(),
                                                         schemaManager
@@ -245,7 +245,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
     }
 
     // map the table schema column names to data schema column names
-    private List<String> mapping(
+    private List<String> schemaEvolutionFieldNames(
             List<String> fieldNames, List<DataField> tableFields, List<DataField> dataFields) {
 
         Map<String, Integer> fieldNameToId = new HashMap<>();
