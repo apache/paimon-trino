@@ -51,7 +51,6 @@ under the License.
             <groupId>io.trino</groupId>
             <artifactId>trino-plugin-toolkit</artifactId>
             <version>${trino.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
