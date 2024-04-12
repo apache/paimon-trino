@@ -23,7 +23,8 @@ package org.apache.paimon.trino.catalog;
 import org.apache.paimon.catalog.Catalog;
 import org.apache.paimon.catalog.CatalogContext;
 import org.apache.paimon.catalog.CatalogFactory;
-import org.apache.paimon.catalog.CatalogLock;
+import org.apache.paimon.catalog.CatalogLockContext;
+import org.apache.paimon.catalog.CatalogLockFactory;
 import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.metastore.MetastoreClient;
 import org.apache.paimon.options.Options;
@@ -95,7 +96,7 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
-    public Optional<CatalogLock.LockFactory> lockFactory() {
+    public Optional<CatalogLockFactory> lockFactory() {
         return current.lockFactory();
     }
 
@@ -173,7 +174,7 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
-    public Optional<CatalogLock.LockContext> lockContext() {
+    public Optional<CatalogLockContext> lockContext() {
         return current.lockContext();
     }
 

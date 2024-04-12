@@ -121,7 +121,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             List<ColumnHandle> columns,
             OptionalLong limit) {
         RowType rowType = table.rowType();
-        List<String> fieldNames = FieldNameUtils.fieldNames(rowType);
+        List<String> fieldNames = rowType.getFieldNames();
         List<String> projectedFields =
                 columns.stream()
                         .map(TrinoColumnHandle.class::cast)

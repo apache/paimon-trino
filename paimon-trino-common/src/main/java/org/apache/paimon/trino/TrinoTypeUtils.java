@@ -153,12 +153,29 @@ public class TrinoTypeUtils {
         @Override
         public Type visit(TimestampType timestampType) {
             int precision = timestampType.getPrecision();
-            return io.trino.spi.type.TimestampType.createTimestampType(precision);
+            if (precision <= 3) {
+                return io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
+            } else if (precision <= 6) {
+                return io.trino.spi.type.TimestampType.TIMESTAMP_MICROS;
+            } else if (precision <= 9) {
+                return io.trino.spi.type.TimestampType.TIMESTAMP_NANOS;
+            } else {
+                return io.trino.spi.type.TimestampType.TIMESTAMP_PICOS;
+            }
         }
 
         @Override
         public Type visit(LocalZonedTimestampType localZonedTimestampType) {
-            return TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
+            int precision = localZonedTimestampType.getPrecision();
+            if (precision <= 3) {
+                return TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
+            } else if (precision <= 6) {
+                return TimestampWithTimeZoneType.TIMESTAMP_TZ_MICROS;
+            } else if (precision <= 9) {
+                return TimestampWithTimeZoneType.TIMESTAMP_TZ_NANOS;
+            } else {
+                return TimestampWithTimeZoneType.TIMESTAMP_TZ_PICOS;
+            }
         }
 
         @Override
