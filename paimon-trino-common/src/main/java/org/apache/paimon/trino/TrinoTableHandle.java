@@ -164,13 +164,15 @@ public class TrinoTableHandle implements ConnectorTableHandle {
 
     public TrinoColumnHandle columnHandle(TrinoCatalog catalog, String field) {
         Table paimonTable = table(catalog);
-        List<String> fieldNames = FieldNameUtils.fieldNames(paimonTable.rowType());
-        int index = fieldNames.indexOf(field);
+        List<String> lowerCaseFieldNames = FieldNameUtils.fieldNames(paimonTable.rowType());
+        List<String> originFieldNames = paimonTable.rowType().getFieldNames();
+        int index = lowerCaseFieldNames.indexOf(field);
         if (index == -1) {
             throw new RuntimeException(
-                    String.format("Cannot find field %s in schema %s", field, fieldNames));
+                    String.format("Cannot find field %s in schema %s", field, lowerCaseFieldNames));
         }
-        return TrinoColumnHandle.of(field, paimonTable.rowType().getTypeAt(index));
+        return TrinoColumnHandle.of(
+                originFieldNames.get(index), paimonTable.rowType().getTypeAt(index));
     }
 
     public TrinoTableHandle copy(TupleDomain<TrinoColumnHandle> filter) {
