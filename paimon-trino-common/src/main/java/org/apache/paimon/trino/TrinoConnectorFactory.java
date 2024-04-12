@@ -28,7 +28,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.google.common.base.Throwables.throwIfUnchecked;
+import static org.apache.paimon.shade.guava30.com.google.common.base.Throwables.throwIfUnchecked;
 
 /** Trino {@link ConnectorFactory}. */
 public class TrinoConnectorFactory implements ConnectorFactory {
@@ -75,6 +75,7 @@ public class TrinoConnectorFactory implements ConnectorFactory {
         }
     }
 
+    /** Empty module for paimon connector factory. */
     public static class EmptyModule implements Module {
         @Override
         public void configure(Binder binder) {}
