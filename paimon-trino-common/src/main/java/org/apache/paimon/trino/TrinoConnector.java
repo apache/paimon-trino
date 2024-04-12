@@ -20,7 +20,9 @@ package org.apache.paimon.trino;
 
 import io.trino.spi.connector.Connector;
 import io.trino.spi.connector.ConnectorMetadata;
+import io.trino.spi.connector.ConnectorPageSourceProvider;
 import io.trino.spi.connector.ConnectorSession;
+import io.trino.spi.connector.ConnectorSplitManager;
 import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.session.PropertyMetadata;
 import io.trino.spi.transaction.IsolationLevel;
@@ -33,22 +35,22 @@ import static java.util.Objects.requireNonNull;
 
 /** Trino {@link Connector}. */
 public class TrinoConnector implements Connector {
-    private final TrinoMetadata trinoMetadata;
-    private final TrinoSplitManager trinoSplitManager;
-    private final TrinoPageSourceProvider trinoPageSourceProvider;
+    private final ConnectorMetadata trinoMetadata;
+    private final ConnectorSplitManager trinoSplitManager;
+    private final ConnectorPageSourceProvider trinoPageSourceProvider;
     private final List<PropertyMetadata<?>> tableProperties;
     private final List<PropertyMetadata<?>> sessionProperties;
 
     public TrinoConnector(
-            TrinoMetadata trinoMetadata,
-            TrinoSplitManager trinoSplitManager,
-            TrinoPageSourceProvider trinoPageSourceProvider,
+            ConnectorMetadata trinoMetadata,
+            ConnectorSplitManager trinoSplitManager,
+            ConnectorPageSourceProvider trinoPageSourceProvider,
             TrinoTableOptions trinoTableOptions,
             TrinoSessionProperties trinoSessionProperties) {
-        this.trinoMetadata = requireNonNull(trinoMetadata, "jmxMetadata is null");
-        this.trinoSplitManager = requireNonNull(trinoSplitManager, "jmxSplitManager is null");
+        this.trinoMetadata = requireNonNull(trinoMetadata, "trinoMetadata is null");
+        this.trinoSplitManager = requireNonNull(trinoSplitManager, "trinoSplitManager is null");
         this.trinoPageSourceProvider =
-                requireNonNull(trinoPageSourceProvider, "jmxRecordSetProvider is null");
+                requireNonNull(trinoPageSourceProvider, "trinoRecordSetProvider is null");
         this.tableProperties = trinoTableOptions.getTableProperties();
         this.sessionProperties = trinoSessionProperties.getSessionProperties();
     }
@@ -56,32 +58,23 @@ public class TrinoConnector implements Connector {
     @Override
     public ConnectorTransactionHandle beginTransaction(
             IsolationLevel isolationLevel, boolean readOnly, boolean autoCommit) {
-        return beginTransactionBase(isolationLevel, readOnly);
+        checkConnectorSupports(READ_COMMITTED, isolationLevel);
+        return TrinoTransactionHandle.INSTANCE;
     }
 
     @Override
     public ConnectorMetadata getMetadata(
             ConnectorSession session, ConnectorTransactionHandle transactionHandle) {
-        return getMetadataBase(transactionHandle);
-    }
-
-    protected ConnectorTransactionHandle beginTransactionBase(
-            IsolationLevel isolationLevel, boolean readOnly) {
-        checkConnectorSupports(READ_COMMITTED, isolationLevel);
-        return TrinoTransactionHandle.INSTANCE;
-    }
-
-    protected TrinoMetadata getMetadataBase(ConnectorTransactionHandle transactionHandle) {
         return trinoMetadata;
     }
 
     @Override
-    public TrinoSplitManager getSplitManager() {
+    public ConnectorSplitManager getSplitManager() {
         return trinoSplitManager;
     }
 
     @Override
-    public TrinoPageSourceProvider getPageSourceProvider() {
+    public ConnectorPageSourceProvider getPageSourceProvider() {
         return trinoPageSourceProvider;
     }
 

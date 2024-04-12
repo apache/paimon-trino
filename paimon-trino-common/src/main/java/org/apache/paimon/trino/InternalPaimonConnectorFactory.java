@@ -30,6 +30,9 @@ import io.trino.filesystem.TrinoFileSystemFactory;
 import io.trino.filesystem.manager.FileSystemModule;
 import io.trino.hdfs.HdfsModule;
 import io.trino.hdfs.authentication.HdfsAuthenticationModule;
+import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata;
+import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorPageSourceProvider;
+import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorSplitManager;
 import io.trino.plugin.hive.NodeVersion;
 import io.trino.plugin.hive.orc.OrcReaderConfig;
 import io.trino.spi.classloader.ThreadContextClassLoader;
@@ -100,9 +103,10 @@ public class InternalPaimonConnectorFactory {
             TrinoTableOptions trinoTableOptions = injector.getInstance(TrinoTableOptions.class);
 
             return new TrinoConnector(
-                    trinoMetadata,
-                    trinoSplitManager,
-                    trinoPageSourceProvider,
+                    new ClassLoaderSafeConnectorMetadata(trinoMetadata, classLoader),
+                    new ClassLoaderSafeConnectorSplitManager(trinoSplitManager, classLoader),
+                    new ClassLoaderSafeConnectorPageSourceProvider(
+                            trinoPageSourceProvider, classLoader),
                     trinoTableOptions,
                     trinoSessionProperties);
         }
