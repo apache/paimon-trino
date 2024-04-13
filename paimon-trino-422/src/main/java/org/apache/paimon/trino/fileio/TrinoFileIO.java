@@ -108,6 +108,11 @@ public class TrinoFileIO implements FileIO {
     }
 
     @Override
+    public FileStatus[] listDirectories(Path path) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean exists(Path path) throws IOException {
         return trinoFileSystem.directoryExists(Location.of(path.toString())).orElse(false)
                 || existFile(Location.of(path.toString()));
