@@ -86,6 +86,12 @@ public class TrinoMetadata implements ConnectorMetadata {
     }
 
     @Override
+    public boolean schemaExists(ConnectorSession session, String schemaName) {
+        catalog.initSession(session);
+        return catalog.databaseExists(schemaName);
+    }
+
+    @Override
     public List<String> listSchemaNames(ConnectorSession session) {
         catalog.initSession(session);
         return catalog.listDatabases();
