@@ -23,10 +23,12 @@ import org.apache.paimon.catalog.Catalog;
 import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
+import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableList;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.trino.catalog.TrinoCatalog;
 import org.apache.paimon.utils.StringUtils;
 
+import io.airlift.slice.Slice;
 import io.trino.spi.TrinoException;
 import io.trino.spi.connector.Assignment;
 import io.trino.spi.connector.ColumnHandle;
@@ -43,11 +45,18 @@ import io.trino.spi.connector.LimitApplicationResult;
 import io.trino.spi.connector.ProjectionApplicationResult;
 import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.connector.SchemaTablePrefix;
+import io.trino.spi.expression.Call;
 import io.trino.spi.expression.ConnectorExpression;
+import io.trino.spi.expression.Constant;
+import io.trino.spi.expression.Variable;
 import io.trino.spi.predicate.Domain;
+import io.trino.spi.predicate.Range;
+import io.trino.spi.predicate.SortedRangeSet;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.security.TrinoPrincipal;
+import io.trino.spi.type.ArrayType;
 import io.trino.spi.type.LongTimestampWithTimeZone;
+import io.trino.spi.type.MapType;
 import io.trino.spi.type.TimestampWithTimeZoneType;
 import io.trino.spi.type.Type;
 
@@ -429,6 +438,10 @@ public class TrinoMetadata implements ConnectorMetadata {
                         .getSummary()
                         .transformKeys(TrinoColumnHandle.class::cast)
                         .intersect(oldFilter);
+
+        TupleDomain<TrinoColumnHandle> expressionFilter =
+                getTrinoColumnHandleTupleDomain(constraint);
+
         if (oldFilter.equals(newFilter)) {
             return Optional.empty();
         }
@@ -454,7 +467,37 @@ public class TrinoMetadata implements ConnectorMetadata {
                                 .intersect(TupleDomain.withColumnDomains(unenforcedDomains));
 
         return Optional.of(
-                new ConstraintApplicationResult<>(trinoTableHandle.copy(newFilter), remain, false));
+                new ConstraintApplicationResult<>(
+                        trinoTableHandle.copy(newFilter, expressionFilter), remain, false));
+    }
+
+    private static TupleDomain<TrinoColumnHandle> getTrinoColumnHandleTupleDomain(
+            Constraint constraint) {
+        Map<TrinoColumnHandle, Domain> expressionPredicates = new HashMap<>();
+
+        if (constraint.getExpression() instanceof Call) {
+            Call expression = (Call) constraint.getExpression();
+            Map<String, ColumnHandle> assignments = constraint.getAssignments();
+
+            switch (expression.getFunctionName().getName()) {
+                case "$equal":
+                    expressionPredicates = handleElementAtArguments(assignments, expression, false);
+                    break;
+
+                case "$in":
+                    expressionPredicates = handleElementAtArguments(assignments, expression, true);
+                    break;
+
+                case "$and":
+                    expressionPredicates = handleAndArguments(assignments, expression);
+                    break;
+
+                default:
+            }
+        }
+        TupleDomain<TrinoColumnHandle> expressionFilter =
+                TupleDomain.withColumnDomains(expressionPredicates);
+        return expressionFilter;
     }
 
     @Override
@@ -521,5 +564,84 @@ public class TrinoMetadata implements ConnectorMetadata {
         table = table.copy(OptionalLong.of(limit));
 
         return Optional.of(new LimitApplicationResult<>(table, false, false));
+    }
+
+    private static Map<TrinoColumnHandle, Domain> handleElementAtArguments(
+            Map<String, ColumnHandle> assignments, Call expression, boolean isIn) {
+        Map<TrinoColumnHandle, Domain> expressionPredicates = new HashMap<>();
+
+        Call elementAtExpression = (Call) expression.getArguments().get(0);
+
+        if (!elementAtExpression.getFunctionName().getName().equals("element_at")) {
+            return expressionPredicates;
+        }
+
+        Variable columnExpression = (Variable) elementAtExpression.getArguments().get(0);
+        Constant columnKey = (Constant) elementAtExpression.getArguments().get(1);
+
+        TrinoColumnHandle trinoColumnHandle =
+                (TrinoColumnHandle) assignments.get(columnExpression.getName());
+        Type trinoType = trinoColumnHandle.getTrinoType();
+        if (trinoType instanceof MapType) {
+            String columnName = trinoColumnHandle.getColumnName();
+            String key = ((Slice) columnKey.getValue()).toStringUtf8();
+            Constant elementAtValue = (Constant) expression.getArguments().get(1);
+            expressionPredicates.put(
+                    TrinoColumnHandle.of(
+                            toMapKey(columnName, key), TrinoTypeUtils.toPaimonType(trinoType)),
+                    Domain.create(
+                            SortedRangeSet.copyOf(
+                                    isIn
+                                            ? ((ArrayType) elementAtValue.getType())
+                                                    .getElementType()
+                                            : elementAtValue.getType(),
+                                    isIn
+                                            ? elementAtValue.getChildren().stream()
+                                                    .map(
+                                                            arguemnt ->
+                                                                    Range.equal(
+                                                                            arguemnt.getType(),
+                                                                            requireNonNull(
+                                                                                    ((Constant)
+                                                                                                    arguemnt)
+                                                                                            .getValue())))
+                                                    .collect(Collectors.toList())
+                                            : ImmutableList.of(
+                                                    Range.equal(
+                                                            elementAtValue.getType(),
+                                                            elementAtValue.getValue()))),
+                            false));
+        }
+        return expressionPredicates;
+    }
+
+    public static String toMapKey(String mapColumnName, String keyName) {
+        return mapColumnName + "[" + keyName + "]";
+    }
+
+    private static Map<TrinoColumnHandle, Domain> handleAndArguments(
+            Map<String, ColumnHandle> assignments, Call expression) {
+        Map<TrinoColumnHandle, Domain> expressionPredicates = new HashMap<>();
+
+        expression.getArguments().stream()
+                .map(argument -> (Call) argument)
+                .forEach(
+                        argument -> {
+                            switch (argument.getFunctionName().getName()) {
+                                case "$equal":
+                                    expressionPredicates.putAll(
+                                            handleElementAtArguments(assignments, argument, false));
+                                    break;
+
+                                case "$in":
+                                    expressionPredicates.putAll(
+                                            handleElementAtArguments(assignments, argument, true));
+                                    break;
+
+                                default:
+                            }
+                        });
+
+        return expressionPredicates;
     }
 }

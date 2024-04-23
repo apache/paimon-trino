@@ -21,6 +21,8 @@ package org.apache.paimon.trino;
 import org.apache.paimon.data.BinaryString;
 import org.apache.paimon.data.Decimal;
 import org.apache.paimon.data.Timestamp;
+import org.apache.paimon.predicate.In;
+import org.apache.paimon.predicate.LeafPredicate;
 import org.apache.paimon.predicate.Predicate;
 import org.apache.paimon.predicate.PredicateBuilder;
 import org.apache.paimon.types.RowType;
@@ -54,6 +56,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import static io.trino.spi.type.TimeType.TIME_MILLIS;
 import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
@@ -69,6 +72,7 @@ import static org.apache.paimon.predicate.PredicateBuilder.or;
 public class TrinoFilterConverter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TrinoFilterConverter.class);
+    public static final Pattern IS_NESTED = Pattern.compile(".+\\[.+]");
 
     private final RowType rowType;
     private final PredicateBuilder builder;
@@ -103,10 +107,20 @@ public class TrinoFilterConverter {
             TrinoColumnHandle columnHandle = entry.getKey();
             Domain domain = entry.getValue();
             String field = columnHandle.getColumnName();
+            Optional<Integer> nestedColumn = getNestedColumn(field);
+            if (nestedColumn.isPresent()) {
+                int position = nestedColumn.get();
+                field = field.substring(0, position);
+            }
             int index = fieldNames.indexOf(field);
             if (index != -1) {
                 try {
-                    conjuncts.add(toPredicate(index, columnHandle.getTrinoType(), domain));
+                    conjuncts.add(
+                            toPredicate(
+                                    index,
+                                    columnHandle.getColumnName(),
+                                    columnHandle.getTrinoType(),
+                                    domain));
                     acceptedDomains.put(columnHandle, domain);
                     continue;
                 } catch (UnsupportedOperationException exception) {
@@ -124,7 +138,15 @@ public class TrinoFilterConverter {
         return Optional.of(and(conjuncts));
     }
 
-    private Predicate toPredicate(int columnIndex, Type type, Domain domain) {
+    public static Optional<Integer> getNestedColumn(String column) {
+        if (IS_NESTED.matcher(column).find()) {
+            return Optional.of(column.indexOf('['));
+        }
+
+        return Optional.empty();
+    }
+
+    private Predicate toPredicate(int columnIndex, String field, Type type, Domain domain) {
         if (domain.isAll()) {
             // TODO alwaysTrue
             throw new UnsupportedOperationException();
@@ -146,11 +168,33 @@ public class TrinoFilterConverter {
         }
 
         // TODO support structural types
-        if (type instanceof ArrayType
-                || type instanceof MapType
-                || type instanceof io.trino.spi.type.RowType) {
+        if (type instanceof ArrayType || type instanceof io.trino.spi.type.RowType) {
             // Fail fast. Ignoring expression could lead to data loss in case of deletions.
             throw new UnsupportedOperationException();
+        }
+
+        if (type instanceof MapType) {
+            List<Range> orderedRanges = domain.getValues().getRanges().getOrderedRanges();
+            List<Object> values = new ArrayList<>();
+            List<Predicate> predicates = new ArrayList<>();
+            for (Range range : orderedRanges) {
+                if (range.isSingleValue()) {
+                    values.add(
+                            getLiteralValue(
+                                    ((MapType) type).getValueType(), range.getLowBoundedValue()));
+                }
+            }
+            if (!values.isEmpty()) {
+                Predicate predicate =
+                        new LeafPredicate(
+                                In.INSTANCE,
+                                TrinoTypeUtils.toPaimonType(type),
+                                columnIndex,
+                                field,
+                                values);
+                predicates.add(predicate);
+            }
+            return or(predicates);
         }
 
         if (type.isOrderable()) {

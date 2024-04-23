@@ -41,6 +41,7 @@ public class TestTrinoTableHandle {
                         "user",
                         Collections.emptyMap(),
                         TupleDomain.all(),
+                        TupleDomain.all(),
                         Optional.empty(),
                         OptionalLong.empty());
         testRoundTrip(expected);
@@ -53,6 +54,7 @@ public class TestTrinoTableHandle {
         assertThat(actual.getSchemaName()).isEqualTo(expected.getSchemaName());
         assertThat(actual.getTableName()).isEqualTo(expected.getTableName());
         assertThat(actual.getFilter()).isEqualTo(expected.getFilter());
+        assertThat(actual.getExpressionFilter()).isEqualTo(expected.getExpressionFilter());
         assertThat(actual.getProjectedColumns()).isEqualTo(expected.getProjectedColumns());
     }
 }
