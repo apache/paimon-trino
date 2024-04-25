@@ -72,7 +72,6 @@ import static org.apache.paimon.predicate.PredicateBuilder.or;
 public class TrinoFilterConverter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TrinoFilterConverter.class);
-    public static final Pattern IS_NESTED = Pattern.compile(".+\\[.+]");
 
     private final RowType rowType;
     private final PredicateBuilder builder;
@@ -107,7 +106,7 @@ public class TrinoFilterConverter {
             TrinoColumnHandle columnHandle = entry.getKey();
             Domain domain = entry.getValue();
             String field = columnHandle.getColumnName();
-            Optional<Integer> nestedColumn = getNestedColumn(field);
+            Optional<Integer> nestedColumn = topLevelIndexOfNested(field);
             if (nestedColumn.isPresent()) {
                 int position = nestedColumn.get();
                 field = field.substring(0, position);
@@ -138,11 +137,11 @@ public class TrinoFilterConverter {
         return Optional.of(and(conjuncts));
     }
 
-    public static Optional<Integer> getNestedColumn(String column) {
-        if (IS_NESTED.matcher(column).find()) {
-            return Optional.of(column.indexOf('['));
+    public static Optional<Integer> topLevelIndexOfNested(String column) {
+        int start = column.indexOf('[');
+        if (start != -1 && column.endsWith("]")) {
+            return Optional.of(start);
         }
-
         return Optional.empty();
     }
 
