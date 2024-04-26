@@ -48,6 +48,7 @@ import static io.trino.spi.expression.StandardFunctions.IN_PREDICATE_FUNCTION_NA
 public class TrinoExpressionFilterExtract {
     public static final String TRINO_MAP_ELEMENT_AT_FUNCTION_NAME = "element_at";
 
+    /** Extract Expression filter from trino Constraint. */
     public static TupleDomain<TrinoColumnHandle> getTrinoColumnHandleForExpressionFilter(
             Constraint constraint) {
         Map<TrinoColumnHandle, Domain> expressionPredicates = Collections.emptyMap();
@@ -67,6 +68,7 @@ public class TrinoExpressionFilterExtract {
         return TupleDomain.withColumnDomains(expressionPredicates);
     }
 
+    /** Using paimon, trino only supports element_at function to extract values from map type . */
     private static Map<TrinoColumnHandle, Domain> handleElementAtArguments(
             Map<String, ColumnHandle> assignments, Call expression, boolean isIn) {
         Map<TrinoColumnHandle, Domain> expressionPredicates = Maps.newHashMap();
@@ -117,10 +119,12 @@ public class TrinoExpressionFilterExtract {
         return expressionPredicates;
     }
 
+    /** Generate map key name ,e.g. map[key] . */
     public static String toMapKey(String mapColumnName, String keyName) {
         return mapColumnName + "[" + keyName + "]";
     }
 
+    /** Expression filter support the case of AND and IN . */
     private static Map<TrinoColumnHandle, Domain> handleAndArguments(
             Map<String, ColumnHandle> assignments, Call expression) {
         Map<TrinoColumnHandle, Domain> expressionPredicates = new HashMap<>();
