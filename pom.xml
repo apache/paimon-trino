@@ -52,9 +52,9 @@ under the License.
     </licenses>
 
     <scm>
-        <url>https://github.com/apache/incubator-paimon-trino</url>
-        <connection>git@github.com:apache/incubator-paimon-trino.git</connection>
-        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/incubator-paimon-trino.git</developerConnection>
+        <url>https://github.com/apache/paimon-trino</url>
+        <connection>git@github.com:apache/paimon-trino.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/paimon-trino.git</developerConnection>
     </scm>
 
     <properties>
