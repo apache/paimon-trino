@@ -28,13 +28,13 @@ under the License.
         <version>0.8-SNAPSHOT</version>
     </parent>
 
-    <artifactId>paimon-trino-422</artifactId>
-    <name>Paimon : Trino : 422</name>
+    <artifactId>paimon-trino-420</artifactId>
+    <name>Paimon : Trino : 420</name>
 
     <properties>
         <target.java.version>17</target.java.version>
         <jdk.test.version>17</jdk.test.version>
-        <trino.version>422</trino.version>
+        <trino.version>420</trino.version>
         <airlift.version>235</airlift.version>
         <slice.version>0.45</slice.version>
         <maven.toolchains.plugin.version>3.1.0</maven.toolchains.plugin.version>
