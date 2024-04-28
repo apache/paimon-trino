@@ -49,7 +49,6 @@ public class TrinoTableHandle implements ConnectorTableHandle {
     private final String schemaName;
     private final String tableName;
     private final TupleDomain<TrinoColumnHandle> filter;
-    private final TupleDomain<TrinoColumnHandle> expressionFilter;
     private final Optional<List<ColumnHandle>> projectedColumns;
     private final OptionalLong limit;
     private final Map<String, String> dynamicOptions;
@@ -63,7 +62,6 @@ public class TrinoTableHandle implements ConnectorTableHandle {
                 tableName,
                 dynamicOptions,
                 TupleDomain.all(),
-                TupleDomain.all(),
                 Optional.empty(),
                 OptionalLong.empty());
     }
@@ -74,14 +72,12 @@ public class TrinoTableHandle implements ConnectorTableHandle {
             @JsonProperty("tableName") String tableName,
             @JsonProperty("dynamicOptions") Map<String, String> dynamicOptions,
             @JsonProperty("filter") TupleDomain<TrinoColumnHandle> filter,
-            @JsonProperty("expressionFilter") TupleDomain<TrinoColumnHandle> expressionFilter,
             @JsonProperty("projection") Optional<List<ColumnHandle>> projectedColumns,
             @JsonProperty("limit") OptionalLong limit) {
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.dynamicOptions = dynamicOptions;
         this.filter = filter;
-        this.expressionFilter = expressionFilter;
         this.projectedColumns = projectedColumns;
         this.limit = limit;
     }
@@ -104,11 +100,6 @@ public class TrinoTableHandle implements ConnectorTableHandle {
     @JsonProperty
     public TupleDomain<TrinoColumnHandle> getFilter() {
         return filter;
-    }
-
-    @JsonProperty
-    public TupleDomain<TrinoColumnHandle> getExpressionFilter() {
-        return expressionFilter;
     }
 
     @JsonProperty
@@ -186,48 +177,17 @@ public class TrinoTableHandle implements ConnectorTableHandle {
 
     public TrinoTableHandle copy(TupleDomain<TrinoColumnHandle> filter) {
         return new TrinoTableHandle(
-                schemaName,
-                tableName,
-                dynamicOptions,
-                filter,
-                TupleDomain.all(),
-                projectedColumns,
-                limit);
-    }
-
-    public TrinoTableHandle copy(
-            TupleDomain<TrinoColumnHandle> filter,
-            TupleDomain<TrinoColumnHandle> expressionFilter) {
-        return new TrinoTableHandle(
-                schemaName,
-                tableName,
-                dynamicOptions,
-                filter,
-                expressionFilter,
-                projectedColumns,
-                limit);
+                schemaName, tableName, dynamicOptions, filter, projectedColumns, limit);
     }
 
     public TrinoTableHandle copy(Optional<List<ColumnHandle>> projectedColumns) {
         return new TrinoTableHandle(
-                schemaName,
-                tableName,
-                dynamicOptions,
-                filter,
-                TupleDomain.all(),
-                projectedColumns,
-                limit);
+                schemaName, tableName, dynamicOptions, filter, projectedColumns, limit);
     }
 
     public TrinoTableHandle copy(OptionalLong limit) {
         return new TrinoTableHandle(
-                schemaName,
-                tableName,
-                dynamicOptions,
-                filter,
-                TupleDomain.all(),
-                projectedColumns,
-                limit);
+                schemaName, tableName, dynamicOptions, filter, projectedColumns, limit);
     }
 
     @Override

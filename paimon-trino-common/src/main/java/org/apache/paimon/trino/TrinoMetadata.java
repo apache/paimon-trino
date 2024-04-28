@@ -45,7 +45,6 @@ import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.connector.SchemaTablePrefix;
 import io.trino.spi.expression.ConnectorExpression;
 import io.trino.spi.predicate.Domain;
-import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.security.TrinoPrincipal;
 import io.trino.spi.type.LongTimestampWithTimeZone;
 import io.trino.spi.type.TimestampWithTimeZoneType;
@@ -70,7 +69,6 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.apache.paimon.trino.TrinoExpressionFilterExtract.getTrinoColumnHandleForExpressionFilter;
 import static org.apache.paimon.utils.Preconditions.checkArgument;
 
 /** Trino {@link ConnectorMetadata}. */
@@ -424,43 +422,18 @@ public class TrinoMetadata implements ConnectorMetadata {
             ConnectorSession session, ConnectorTableHandle handle, Constraint constraint) {
         catalog.initSession(session);
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) handle;
-        TupleDomain<TrinoColumnHandle> oldFilter = trinoTableHandle.getFilter();
-        TupleDomain<TrinoColumnHandle> newFilter =
-                constraint
-                        .getSummary()
-                        .transformKeys(TrinoColumnHandle.class::cast)
-                        .intersect(oldFilter);
-
-        TupleDomain<TrinoColumnHandle> expressionFilter =
-                getTrinoColumnHandleForExpressionFilter(constraint);
-
-        if (oldFilter.equals(newFilter)) {
+        Optional<TrinoFilterExtractor.TrinoFilter> extract =
+                TrinoFilterExtractor.extract(catalog, trinoTableHandle, constraint);
+        if (extract.isPresent()) {
+            TrinoFilterExtractor.TrinoFilter trinoFilter = extract.get();
+            return Optional.of(
+                    new ConstraintApplicationResult<>(
+                            trinoTableHandle.copy(trinoFilter.getFilter()),
+                            trinoFilter.getRemainFilter(),
+                            false));
+        } else {
             return Optional.empty();
         }
-
-        LinkedHashMap<TrinoColumnHandle, Domain> acceptedDomains = new LinkedHashMap<>();
-        LinkedHashMap<TrinoColumnHandle, Domain> unsupportedDomains = new LinkedHashMap<>();
-        new TrinoFilterConverter(trinoTableHandle.table(catalog).rowType())
-                .convert(newFilter, acceptedDomains, unsupportedDomains);
-
-        List<String> partitionKeys = trinoTableHandle.table(catalog).partitionKeys();
-        LinkedHashMap<TrinoColumnHandle, Domain> unenforcedDomains = new LinkedHashMap<>();
-        acceptedDomains.forEach(
-                (columnHandle, domain) -> {
-                    if (!partitionKeys.contains(columnHandle.getColumnName())) {
-                        unenforcedDomains.put(columnHandle, domain);
-                    }
-                });
-
-        @SuppressWarnings({"unchecked", "rawtypes"})
-        TupleDomain<ColumnHandle> remain =
-                (TupleDomain)
-                        TupleDomain.withColumnDomains(unsupportedDomains)
-                                .intersect(TupleDomain.withColumnDomains(unenforcedDomains));
-
-        return Optional.of(
-                new ConstraintApplicationResult<>(
-                        trinoTableHandle.copy(newFilter, expressionFilter), remain, false));
     }
 
     @Override

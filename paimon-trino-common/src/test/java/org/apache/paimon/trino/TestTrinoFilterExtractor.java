@@ -39,17 +39,16 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static io.trino.spi.type.BooleanType.BOOLEAN;
 import static io.trino.type.InternalTypeManager.TESTING_TYPE_MANAGER;
-import static org.apache.paimon.trino.TrinoExpressionFilterExtract.TRINO_MAP_ELEMENT_AT_FUNCTION_NAME;
+import static org.apache.paimon.trino.TrinoFilterExtractor.TRINO_MAP_ELEMENT_AT_FUNCTION_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** The test of TrinoExpressionFilterExtract. */
-public class TestTrinoExpressionFilterExtract {
+/** The test of TestTrinoFilterExtractor. */
+public class TestTrinoFilterExtractor {
     @Test
-    public void testTrinoColumnHandle() {
+    public void testExtractTrinoColumnHandleForExpressionFilter() {
         TupleDomain<ColumnHandle> summary = TupleDomain.all();
         Type mapType = TESTING_TYPE_MANAGER.fromSqlType("map<varchar,varchar>");
         String columnName = "map";
@@ -78,15 +77,12 @@ public class TestTrinoExpressionFilterExtract {
                 TrinoColumnHandle.of(
                         columnName, DataTypes.MAP(DataTypes.STRING(), DataTypes.STRING())));
         Constraint constraint = new Constraint(summary, expression, assignments);
-        TupleDomain<TrinoColumnHandle> tupleDomain =
-                TrinoExpressionFilterExtract.getTrinoColumnHandleForExpressionFilter(constraint);
-        Optional<Map<TrinoColumnHandle, Domain>> domains = tupleDomain.getDomains();
-        assertThat(domains.isPresent()).isEqualTo(true);
-        Map<TrinoColumnHandle, Domain> domainMap = domains.get();
+        Map<TrinoColumnHandle, Domain> domainMap =
+                TrinoFilterExtractor.extractTrinoColumnHandleForExpressionFilter(constraint);
         assertThat(domainMap.entrySet().size()).isEqualTo(1);
         Map.Entry<TrinoColumnHandle, Domain> next = domainMap.entrySet().iterator().next();
         assertThat(next.getKey().getColumnName())
-                .isEqualTo(TrinoExpressionFilterExtract.toMapKey(columnName, mapKeyName));
+                .isEqualTo(TrinoFilterExtractor.toMapKey(columnName, mapKeyName));
         assertThat(
                         next.getValue()
                                 .getValues()
