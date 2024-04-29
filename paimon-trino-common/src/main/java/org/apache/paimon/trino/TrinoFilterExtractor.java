@@ -51,6 +51,7 @@ import static org.apache.paimon.fileindex.FileIndexCommon.toMapKey;
 
 /** Extract filter from trino. */
 public class TrinoFilterExtractor {
+
     public static final String TRINO_MAP_ELEMENT_AT_FUNCTION_NAME = "element_at";
 
     /** Extract filter from trino , include ExpressionFilter. */

@@ -42,11 +42,13 @@ import java.util.Map;
 
 import static io.trino.spi.type.BooleanType.BOOLEAN;
 import static io.trino.type.InternalTypeManager.TESTING_TYPE_MANAGER;
+import static org.apache.paimon.fileindex.FileIndexCommon.toMapKey;
 import static org.apache.paimon.trino.TrinoFilterExtractor.TRINO_MAP_ELEMENT_AT_FUNCTION_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** The test of TestTrinoFilterExtractor. */
 public class TestTrinoFilterExtractor {
+
     @Test
     public void testExtractTrinoColumnHandleForExpressionFilter() {
         TupleDomain<ColumnHandle> summary = TupleDomain.all();
@@ -81,8 +83,7 @@ public class TestTrinoFilterExtractor {
                 TrinoFilterExtractor.extractTrinoColumnHandleForExpressionFilter(constraint);
         assertThat(domainMap.entrySet().size()).isEqualTo(1);
         Map.Entry<TrinoColumnHandle, Domain> next = domainMap.entrySet().iterator().next();
-        assertThat(next.getKey().getColumnName())
-                .isEqualTo(TrinoFilterExtractor.toMapKey(columnName, mapKeyName));
+        assertThat(next.getKey().getColumnName()).isEqualTo(toMapKey(columnName, mapKeyName));
         assertThat(
                         next.getValue()
                                 .getValues()
