@@ -132,7 +132,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                         .map(TrinoColumnHandle::getColumnName)
                         .toList();
         TrinoFileSystem fileSystem = fileSystemFactory.create(session);
-        TrinoFilterConverter filterConverter = new TrinoFilterConverter(rowType);
+        Optional<Predicate> paimonFilter = new TrinoFilterConverter(rowType).convert(filter);
 
         try {
             Split paimonSplit = split.decodeSplit();
@@ -159,17 +159,14 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                         RawFile rawFile = files.get(i);
                         if (indexFiles.isPresent()) {
                             IndexFile indexFile = indexFiles.get().get(i);
-                            if (indexFile != null) {
-                                Optional<Predicate> paimonFilter = filterConverter.convert(filter);
-                                if (paimonFilter.isPresent()) {
-                                    try (FileIndexPredicate fileIndexPredicate =
-                                            new FileIndexPredicate(
-                                                    new Path(indexFile.path()),
-                                                    ((FileStoreTable) table).fileIO(),
-                                                    rowType)) {
-                                        if (!fileIndexPredicate.testPredicate(paimonFilter.get())) {
-                                            continue;
-                                        }
+                            if (indexFile != null && paimonFilter.isPresent()) {
+                                try (FileIndexPredicate fileIndexPredicate =
+                                        new FileIndexPredicate(
+                                                new Path(indexFile.path()),
+                                                ((FileStoreTable) table).fileIO(),
+                                                rowType)) {
+                                    if (!fileIndexPredicate.testPredicate(paimonFilter.get())) {
+                                        continue;
                                     }
                                 }
                             }
@@ -224,7 +221,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
 
                 // old read way
                 ReadBuilder read = table.newReadBuilder();
-                filterConverter.convert(filter).ifPresent(read::withFilter);
+                paimonFilter.ifPresent(read::withFilter);
 
                 if (!fieldNames.equals(projectedFields)) {
                     read.withProjection(columnIndex);
