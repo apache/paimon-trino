@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 import static io.trino.spi.expression.StandardFunctions.AND_FUNCTION_NAME;
 import static io.trino.spi.expression.StandardFunctions.EQUAL_OPERATOR_FUNCTION_NAME;
 import static io.trino.spi.expression.StandardFunctions.IN_PREDICATE_FUNCTION_NAME;
+import static org.apache.paimon.fileindex.FileIndexCommon.toMapKey;
 
 /** Extract filter from trino. */
 public class TrinoFilterExtractor {
@@ -167,11 +168,6 @@ public class TrinoFilterExtractor {
                             false));
         }
         return expressionPredicates;
-    }
-
-    /** Generate map key name ,e.g. map[key]. */
-    public static String toMapKey(String mapColumnName, String keyName) {
-        return mapColumnName + "[" + keyName + "]";
     }
 
     /** Expression filter support the case of AND and IN. */

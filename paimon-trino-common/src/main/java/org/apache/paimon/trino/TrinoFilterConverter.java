@@ -21,6 +21,7 @@ package org.apache.paimon.trino;
 import org.apache.paimon.data.BinaryString;
 import org.apache.paimon.data.Decimal;
 import org.apache.paimon.data.Timestamp;
+import org.apache.paimon.fileindex.FileIndexOptions;
 import org.apache.paimon.predicate.In;
 import org.apache.paimon.predicate.LeafPredicate;
 import org.apache.paimon.predicate.Predicate;
@@ -105,7 +106,7 @@ public class TrinoFilterConverter {
             TrinoColumnHandle columnHandle = entry.getKey();
             Domain domain = entry.getValue();
             String field = columnHandle.getColumnName();
-            Optional<Integer> nestedColumn = topLevelIndexOfNested(field);
+            Optional<Integer> nestedColumn = FileIndexOptions.topLevelIndexOfNested(field);
             if (nestedColumn.isPresent()) {
                 int position = nestedColumn.get();
                 field = field.substring(0, position);
@@ -134,14 +135,6 @@ public class TrinoFilterConverter {
             return Optional.empty();
         }
         return Optional.of(and(conjuncts));
-    }
-
-    public static Optional<Integer> topLevelIndexOfNested(String column) {
-        int start = column.indexOf('[');
-        if (start != -1 && column.endsWith("]")) {
-            return Optional.of(start);
-        }
-        return Optional.empty();
     }
 
     private Predicate toPredicate(int columnIndex, String field, Type type, Domain domain) {
