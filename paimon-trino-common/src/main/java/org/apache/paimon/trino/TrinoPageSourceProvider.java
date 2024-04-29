@@ -138,13 +138,14 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             Split paimonSplit = split.decodeSplit();
             Optional<List<RawFile>> optionalRawFiles = paimonSplit.convertToRawFiles();
             if (checkRawFile(optionalRawFiles)) {
-                Optional<List<DeletionFile>> deletionFiles = paimonSplit.deletionFiles();
-                Optional<List<IndexFile>> indexFiles = paimonSplit.indexFiles();
-
                 FileStoreTable fileStoreTable = (FileStoreTable) table;
+                boolean readIndex = fileStoreTable.coreOptions().fileIndexReadEnabled();
+
+                Optional<List<DeletionFile>> deletionFiles = paimonSplit.deletionFiles();
+                Optional<List<IndexFile>> indexFiles =
+                        readIndex ? paimonSplit.indexFiles() : Optional.empty();
                 SchemaManager schemaManager =
                         new SchemaManager(fileStoreTable.fileIO(), fileStoreTable.location());
-
                 List<Type> type =
                         columns.stream()
                                 .map(s -> ((TrinoColumnHandle) s).getTrinoType())
