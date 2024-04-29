@@ -447,6 +447,46 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
             commit.commit(1, writer.prepareCommit(true, 1));
         }
 
+        {
+            Path tablePath = new Path(warehouse, "default.db/t102");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "a", DataTypes.STRING()),
+                                    new DataField(1, "b", DataTypes.INT()),
+                                    new DataField(2, "c", DataTypes.INT())));
+            new SchemaManager(LocalFileIO.create(), tablePath)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    Collections.emptyList(),
+                                    new HashMap<>() {
+                                        {
+                                            put("file-index.bloom-filter.columns", "a,b,c");
+                                        }
+                                    },
+                                    ""));
+            FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath);
+            InnerTableWrite writer = table.newWrite("user");
+            writer.withIOManager(new IOManagerImpl("/tmp"));
+            InnerTableCommit commit = table.newCommit("user");
+            for (int i = 0; i < 100; i = i + 3) {
+                writer.write(GenericRow.of(BinaryString.fromString("a" + i), i, i));
+            }
+            commit.commit(0, writer.prepareCommit(true, 0));
+
+            for (int i = 1; i < 100; i = i + 3) {
+                writer.write(GenericRow.of(BinaryString.fromString("a" + i), i, i));
+            }
+            commit.commit(1, writer.prepareCommit(true, 1));
+
+            for (int i = 2; i < 100; i = i + 3) {
+                writer.write(GenericRow.of(BinaryString.fromString("a" + i), i, i));
+            }
+            commit.commit(2, writer.prepareCommit(true, 2));
+        }
+
         DistributedQueryRunner queryRunner = null;
         try {
             queryRunner =
@@ -579,7 +619,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "changelog_producer = 'input'"
                         + ")");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [orders], [t1], [t100], [t101], [t2], [t3], [t4], [t99]]");
+                .isEqualTo(
+                        "[[empty_t], [orders], [t1], [t100], [t101], [t102], [t2], [t3], [t4], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.orders");
     }
 
@@ -602,7 +643,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("ALTER TABLE paimon.default.t5 RENAME TO t6");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [t1], [t100], [t101], [t2], [t3], [t4], [t6], [t99]]");
+                .isEqualTo(
+                        "[[empty_t], [t1], [t100], [t101], [t102], [t2], [t3], [t4], [t6], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.t6");
     }
 
@@ -625,7 +667,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [t1], [t100], [t101], [t2], [t3], [t4], [t99]]");
+                .isEqualTo("[[empty_t], [t1], [t100], [t101], [t102], [t2], [t3], [t4], [t99]]");
     }
 
     @Test
@@ -773,6 +815,11 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
         assertThat(sql("SELECT * FROM paimon.default.t101"))
                 .isEqualTo(
                         "[[a1, 1, 1], [a2, 2, 2], [a3, 3, 3], [a4, 4, 4], [a5, 5, 5], [a6, 6, 6], [a7, 7, 7], [a8, 8, 8], [a9, 9, 9]]");
+    }
+
+    @Test
+    public void testFileIndex() {
+        assertThat(sql("SELECT * FROM paimon.default.t102 where c = 2")).isEqualTo("[[a2, 2, 2]]");
     }
 
     protected String sql(String sql) {

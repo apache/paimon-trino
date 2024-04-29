@@ -20,10 +20,14 @@ package org.apache.paimon.trino;
 
 import org.apache.paimon.CoreOptions;
 import org.apache.paimon.deletionvectors.DeletionVector;
+import org.apache.paimon.fileindex.FileIndexPredicate;
+import org.apache.paimon.fs.Path;
+import org.apache.paimon.predicate.Predicate;
 import org.apache.paimon.schema.SchemaManager;
 import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.table.source.DeletionFile;
+import org.apache.paimon.table.source.IndexFile;
 import org.apache.paimon.table.source.RawFile;
 import org.apache.paimon.table.source.ReadBuilder;
 import org.apache.paimon.table.source.Split;
@@ -128,12 +132,14 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                         .map(TrinoColumnHandle::getColumnName)
                         .toList();
         TrinoFileSystem fileSystem = fileSystemFactory.create(session);
+        Optional<Predicate> paimonFilter = new TrinoFilterConverter(rowType).convert(filter);
 
         try {
             Split paimonSplit = split.decodeSplit();
             Optional<List<RawFile>> optionalRawFiles = paimonSplit.convertToRawFiles();
             if (checkRawFile(optionalRawFiles)) {
                 Optional<List<DeletionFile>> deletionFiles = paimonSplit.deletionFiles();
+                Optional<List<IndexFile>> indexFiles = paimonSplit.indexFiles();
 
                 FileStoreTable fileStoreTable = (FileStoreTable) table;
                 SchemaManager schemaManager =
@@ -148,8 +154,23 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                     List<RawFile> files = optionalRawFiles.orElseThrow();
                     LinkedList<ConnectorPageSource> sources = new LinkedList<>();
 
+                    // if file index exists, do the filter.
                     for (int i = 0; i < files.size(); i++) {
                         RawFile rawFile = files.get(i);
+                        if (indexFiles.isPresent()) {
+                            IndexFile indexFile = indexFiles.get().get(i);
+                            if (indexFile != null && paimonFilter.isPresent()) {
+                                try (FileIndexPredicate fileIndexPredicate =
+                                        new FileIndexPredicate(
+                                                new Path(indexFile.path()),
+                                                ((FileStoreTable) table).fileIO(),
+                                                rowType)) {
+                                    if (!fileIndexPredicate.testPredicate(paimonFilter.get())) {
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
                         ConnectorPageSource source =
                                 createDataPageSource(
                                         rawFile.format(),
@@ -200,7 +221,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
 
                 // old read way
                 ReadBuilder read = table.newReadBuilder();
-                new TrinoFilterConverter(rowType).convert(filter).ifPresent(read::withFilter);
+                paimonFilter.ifPresent(read::withFilter);
 
                 if (!fieldNames.equals(projectedFields)) {
                     read.withProjection(columnIndex);
