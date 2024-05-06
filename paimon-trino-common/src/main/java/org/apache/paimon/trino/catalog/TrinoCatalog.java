@@ -26,6 +26,7 @@ import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.catalog.CatalogLockContext;
 import org.apache.paimon.catalog.CatalogLockFactory;
 import org.apache.paimon.catalog.Identifier;
+import org.apache.paimon.fs.FileIO;
 import org.apache.paimon.metastore.MetastoreClient;
 import org.apache.paimon.options.Options;
 import org.apache.paimon.schema.Schema;
@@ -93,6 +94,30 @@ public class TrinoCatalog implements Catalog {
                 }
             }
         }
+    }
+
+    @Override
+    public String warehouse() {
+        if (!inited) {
+            throw new RuntimeException("Not inited yet.");
+        }
+        return current.warehouse();
+    }
+
+    @Override
+    public Map<String, String> options() {
+        if (!inited) {
+            throw new RuntimeException("Not inited yet.");
+        }
+        return current.options();
+    }
+
+    @Override
+    public FileIO fileIO() {
+        if (!inited) {
+            throw new RuntimeException("Not inited yet.");
+        }
+        return current.fileIO();
     }
 
     @Override
