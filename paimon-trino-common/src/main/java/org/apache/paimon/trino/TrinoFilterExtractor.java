@@ -121,7 +121,7 @@ public class TrinoFilterExtractor {
         return expressionPredicates;
     }
 
-    /** Expression filter support the case of AND and IN. */
+    /** Expression filter support the case of "AND" and "IN". */
     private static Map<TrinoColumnHandle, Domain> handleAndArguments(
             Map<String, ColumnHandle> assignments, Call expression) {
         Map<TrinoColumnHandle, Domain> expressionPredicates = new HashMap<>();
