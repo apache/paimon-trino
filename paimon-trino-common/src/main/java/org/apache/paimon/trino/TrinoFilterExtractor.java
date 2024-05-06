@@ -110,63 +110,13 @@ public class TrinoFilterExtractor {
             Map<String, ColumnHandle> assignments = constraint.getAssignments();
 
             if (expression.getFunctionName().equals(EQUAL_OPERATOR_FUNCTION_NAME)) {
-                expressionPredicates = handleElementAtArguments(assignments, expression, false);
+                expressionPredicates = handleExpressionEqualOrIn(assignments, expression, false);
             } else if (expression.getFunctionName().equals(IN_PREDICATE_FUNCTION_NAME)) {
-                expressionPredicates = handleElementAtArguments(assignments, expression, true);
+                expressionPredicates = handleExpressionEqualOrIn(assignments, expression, true);
             } else if (expression.getFunctionName().equals(AND_FUNCTION_NAME)) {
                 expressionPredicates = handleAndArguments(assignments, expression);
             }
-        }
-        return expressionPredicates;
-    }
-
-    /** Using paimon, trino only supports element_at function to extract values from map type. */
-    private static Map<TrinoColumnHandle, Domain> handleElementAtArguments(
-            Map<String, ColumnHandle> assignments, Call expression, boolean isIn) {
-        Map<TrinoColumnHandle, Domain> expressionPredicates = Maps.newHashMap();
-
-        Call elementAtExpression = (Call) expression.getArguments().get(0);
-
-        if (!elementAtExpression
-                .getFunctionName()
-                .getName()
-                .equals(TRINO_MAP_ELEMENT_AT_FUNCTION_NAME)) {
-            return expressionPredicates;
-        }
-
-        Variable columnExpression = (Variable) elementAtExpression.getArguments().get(0);
-        Constant columnKey = (Constant) elementAtExpression.getArguments().get(1);
-
-        TrinoColumnHandle trinoColumnHandle =
-                (TrinoColumnHandle) assignments.get(columnExpression.getName());
-        Type trinoType = trinoColumnHandle.getTrinoType();
-        if (trinoType instanceof MapType) {
-            String columnName = trinoColumnHandle.getColumnName();
-            String key = ((Slice) columnKey.getValue()).toStringUtf8();
-            Constant elementAtValue = (Constant) expression.getArguments().get(1);
-            expressionPredicates.put(
-                    TrinoColumnHandle.of(
-                            toMapKey(columnName, key), TrinoTypeUtils.toPaimonType(trinoType)),
-                    Domain.create(
-                            SortedRangeSet.copyOf(
-                                    isIn
-                                            ? ((ArrayType) elementAtValue.getType())
-                                                    .getElementType()
-                                            : elementAtValue.getType(),
-                                    isIn
-                                            ? elementAtValue.getChildren().stream()
-                                                    .map(
-                                                            arguemnt ->
-                                                                    Range.equal(
-                                                                            arguemnt.getType(),
-                                                                            ((Constant) arguemnt)
-                                                                                    .getValue()))
-                                                    .collect(Collectors.toList())
-                                            : ImmutableList.of(
-                                                    Range.equal(
-                                                            elementAtValue.getType(),
-                                                            elementAtValue.getValue()))),
-                            false));
+            // TODO: Support "or" clause
         }
         return expressionPredicates;
     }
@@ -182,14 +132,90 @@ public class TrinoFilterExtractor {
                         argument -> {
                             if (argument.getFunctionName().equals(EQUAL_OPERATOR_FUNCTION_NAME)) {
                                 expressionPredicates.putAll(
-                                        handleElementAtArguments(assignments, argument, false));
+                                        handleExpressionEqualOrIn(assignments, argument, false));
                             } else if (argument.getFunctionName()
                                     .equals(IN_PREDICATE_FUNCTION_NAME)) {
                                 expressionPredicates.putAll(
-                                        handleElementAtArguments(assignments, argument, true));
+                                        handleExpressionEqualOrIn(assignments, argument, true));
                             }
                         });
 
+        return expressionPredicates;
+    }
+
+    private static Map<TrinoColumnHandle, Domain> handleExpressionEqualOrIn(
+            Map<String, ColumnHandle> assignments, Call expression, boolean inClause) {
+
+        Call elementAtExpression = (Call) expression.getArguments().get(0);
+
+        String functionName = elementAtExpression.getFunctionName().getName();
+
+        switch (functionName) {
+            case TRINO_MAP_ELEMENT_AT_FUNCTION_NAME:
+                {
+                    Variable columnExpression =
+                            (Variable) elementAtExpression.getArguments().get(0);
+                    Constant columnKey = (Constant) elementAtExpression.getArguments().get(1);
+
+                    Constant elementAtValue = (Constant) expression.getArguments().get(1);
+                    List<Range> values;
+                    Type elementType;
+                    if (inClause) {
+                        elementType = ((ArrayType) elementAtValue.getType()).getElementType();
+                        values =
+                                elementAtValue.getChildren().stream()
+                                        .filter(a -> ((Constant) a).getValue() != null)
+                                        .map(
+                                                arguemnt ->
+                                                        Range.equal(
+                                                                arguemnt.getType(),
+                                                                ((Constant) arguemnt).getValue()))
+                                        .collect(Collectors.toList());
+                    } else {
+                        elementType = elementAtValue.getType();
+                        values =
+                                elementAtValue.getValue() == null
+                                        ? Collections.emptyList()
+                                        : ImmutableList.of(
+                                                Range.equal(
+                                                        elementAtValue.getType(),
+                                                        elementAtValue.getValue()));
+                    }
+                    if (columnKey.getValue() == null) {
+                        throw new RuntimeException("Expression pares failed: " + expression);
+                    }
+
+                    return handleElementAtArguments(
+                            assignments,
+                            columnExpression.getName(),
+                            ((Slice) columnKey.getValue()).toStringUtf8(),
+                            elementType,
+                            values);
+                }
+            default:
+                {
+                    return Collections.emptyMap();
+                }
+        }
+    }
+
+    /** Using paimon, trino only supports element_at function to extract values from map type. */
+    private static Map<TrinoColumnHandle, Domain> handleElementAtArguments(
+            Map<String, ColumnHandle> assignments,
+            String columnName,
+            String nestedName,
+            Type elementType,
+            List<Range> ranges) {
+        Map<TrinoColumnHandle, Domain> expressionPredicates = Maps.newHashMap();
+        TrinoColumnHandle trinoColumnHandle = (TrinoColumnHandle) assignments.get(columnName);
+        Type trinoType = trinoColumnHandle.getTrinoType();
+        if (trinoType instanceof MapType) {
+            expressionPredicates.put(
+                    TrinoColumnHandle.of(
+                            toMapKey(columnName, nestedName),
+                            TrinoTypeUtils.toPaimonType(trinoType)),
+                    Domain.create(SortedRangeSet.copyOf(elementType, ranges), false));
+        }
         return expressionPredicates;
     }
 
