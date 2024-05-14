@@ -24,6 +24,7 @@ under the License.
     <modules>
         <module>paimon-trino-420</module>
         <module>paimon-trino-427</module>
+        <module>paimon-trino-440</module>
         <module>paimon-trino-common</module>
     </modules>
 
@@ -58,6 +59,7 @@ under the License.
     </scm>
 
     <properties>
+        <paimon.version>0.8.0</paimon.version>
         <target.java.version>11</target.java.version>
         <junit5.version>5.8.1</junit5.version>
         <slf4j.version>2.0.7</slf4j.version>
@@ -93,7 +95,7 @@ under the License.
         <dependency>
             <groupId>org.apache.paimon</groupId>
             <artifactId>paimon-bundle</artifactId>
-            <version>${project.version}</version>
+            <version>${paimon.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

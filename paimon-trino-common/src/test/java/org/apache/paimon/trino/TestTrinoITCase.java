@@ -778,9 +778,6 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
     @Test
     public void testTimeTravel() {
-        if (trinoVersion < 368) {
-            return;
-        }
         assertThat(sql("SELECT * FROM paimon.default.t2 FOR VERSION AS OF 1"))
                 .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2]]");
         assertThat(sql("SELECT * FROM paimon.default.t2 FOR VERSION AS OF 2"))

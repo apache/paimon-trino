@@ -39,6 +39,8 @@ import io.trino.spi.connector.ConnectorContext;
 import io.trino.spi.connector.ConnectorFactory;
 import io.trino.spi.type.TypeManager;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 /** Trino {@link ConnectorFactory}. */
@@ -69,7 +71,7 @@ public class TrinoConnectorFactory implements ConnectorFactory {
                             new HdfsModule(),
                             new HdfsAuthenticationModule(),
                             // bind the trino file system module
-                            new FileSystemModule(),
+                            newFileSystemModule(catalogName, context),
                             binder -> {
                                 binder.bind(NodeVersion.class)
                                         .toInstance(
@@ -114,5 +116,22 @@ public class TrinoConnectorFactory implements ConnectorFactory {
     public static class EmptyModule implements Module {
         @Override
         public void configure(Binder binder) {}
+    }
+
+    private static FileSystemModule newFileSystemModule(
+            String catalogName, ConnectorContext context) {
+        Constructor<?> constructor = FileSystemModule.class.getConstructors()[0];
+        try {
+            if (constructor.getParameterCount() == 0) {
+                return (FileSystemModule) constructor.newInstance();
+            } else {
+                // for trino 440
+                return (FileSystemModule)
+                        constructor.newInstance(
+                                catalogName, context.getNodeManager(), context.getOpenTelemetry());
+            }
+        } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
