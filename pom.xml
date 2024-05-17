@@ -24,7 +24,7 @@ under the License.
     <modules>
         <module>paimon-trino-420</module>
         <module>paimon-trino-427</module>
-        <module>paimon-trino-440</module>
+        <module>paimon-trino-432</module>
         <module>paimon-trino-common</module>
     </modules>
 

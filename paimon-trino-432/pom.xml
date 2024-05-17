@@ -28,14 +28,14 @@ under the License.
         <version>0.8-SNAPSHOT</version>
     </parent>
 
-    <artifactId>paimon-trino-440</artifactId>
-    <name>Paimon : Trino : 440</name>
+    <artifactId>paimon-trino-432</artifactId>
+    <name>Paimon : Trino : 432</name>
 
     <properties>
         <target.java.version>17</target.java.version>
         <jdk.test.version>17</jdk.test.version>
-        <trino.version>440</trino.version>
-        <airlift.version>241</airlift.version>
+        <trino.version>432</trino.version>
+        <airlift.version>235</airlift.version>
         <slice.version>2.2</slice.version>
         <maven.toolchains.plugin.version>3.1.0</maven.toolchains.plugin.version>
     </properties>
