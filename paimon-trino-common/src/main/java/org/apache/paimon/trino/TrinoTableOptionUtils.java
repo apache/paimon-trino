@@ -93,7 +93,6 @@ public class TrinoTableOptionUtils {
 
     private static boolean isEnum(String className) {
         switch (className) {
-            case "FileFormatType":
             case "StartupMode":
             case "MergeEngine":
             case "ChangelogProducer":
@@ -108,8 +107,6 @@ public class TrinoTableOptionUtils {
 
     private static Class<?> buildClass(String className) {
         switch (className) {
-            case "FileFormatType":
-                return CoreOptions.FileFormatType.class;
             case "MergeEngine":
                 return CoreOptions.MergeEngine.class;
             case "ChangelogProducer":
