@@ -32,8 +32,8 @@ under the License.
     <name>Paimon : Trino : 440</name>
 
     <properties>
-        <target.java.version>17</target.java.version>
-        <jdk.test.version>17</jdk.test.version>
+        <target.java.version>21</target.java.version>
+        <jdk.test.version>21</jdk.test.version>
         <trino.version>440</trino.version>
         <airlift.version>241</airlift.version>
         <slice.version>2.2</slice.version>
