@@ -102,10 +102,12 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
         testHelper2.write(GenericRow.of(1, 2L, fromString("1"), fromString("1")));
         testHelper2.write(GenericRow.of(3, 4L, fromString("2"), fromString("2")));
         testHelper2.commit();
+        testHelper2.createTag("1");
         t2FirstCommitTimestamp = System.currentTimeMillis();
         testHelper2.write(GenericRow.of(5, 6L, fromString("3"), fromString("3")));
         testHelper2.write(GenericRow.of(7, 8L, fromString("4"), fromString("4")));
         testHelper2.commit();
+        testHelper2.createTag("tag-2");
 
         {
             Path tablePath3 = new Path(warehouse, "default.db/t3");
@@ -793,6 +795,18 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                 "SELECT * FROM paimon.default.t2 FOR TIMESTAMP AS OF TIMESTAMP "
                                         + timestampLiteral(System.currentTimeMillis(), 6)))
                 .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2], [5, 6, 3, 3], [7, 8, 4, 4]]");
+    }
+
+    @Test
+    public void testTimeTravelWithTag() {
+        // tag or snapshotId is string
+        assertThat(sql("SELECT * FROM paimon.default.t2 FOR VERSION AS OF '1'"))
+                .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2]]");
+        assertThat(sql("SELECT * FROM paimon.default.t2 FOR VERSION AS OF 'tag-2'"))
+                .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2], [5, 6, 3, 3], [7, 8, 4, 4]]");
+        // tag or snapshotId is int
+        assertThat(sql("SELECT * FROM paimon.default.t2 FOR VERSION AS OF 1"))
+                .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2]]");
     }
 
     @Test

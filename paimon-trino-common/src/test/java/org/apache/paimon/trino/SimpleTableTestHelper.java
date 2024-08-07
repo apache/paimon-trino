@@ -36,6 +36,7 @@ public class SimpleTableTestHelper {
 
     private final InnerTableWrite writer;
     private final InnerTableCommit commit;
+    private final FileStoreTable table;
 
     public SimpleTableTestHelper(Path path, RowType rowType) throws Exception {
         new SchemaManager(LocalFileIO.create(), path)
@@ -47,6 +48,7 @@ public class SimpleTableTestHelper {
                                 Collections.singletonMap("bucket", "1"),
                                 ""));
         FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), path);
+        this.table = table;
         String user = "user";
         this.writer = table.newWrite(user);
         this.commit = table.newCommit(user);
@@ -58,5 +60,9 @@ public class SimpleTableTestHelper {
 
     public void commit() throws Exception {
         commit.commit(0, writer.prepareCommit(true, 0));
+    }
+
+    public void createTag(String name) {
+        table.createTag(name);
     }
 }
