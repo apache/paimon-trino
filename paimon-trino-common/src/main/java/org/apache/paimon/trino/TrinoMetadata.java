@@ -21,12 +21,15 @@ package org.apache.paimon.trino;
 import org.apache.paimon.CoreOptions;
 import org.apache.paimon.catalog.Catalog;
 import org.apache.paimon.catalog.Identifier;
+import org.apache.paimon.data.BinaryString;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.trino.catalog.TrinoCatalog;
 import org.apache.paimon.utils.StringUtils;
 
+import io.airlift.slice.Slice;
 import io.trino.spi.TrinoException;
 import io.trino.spi.connector.Assignment;
 import io.trino.spi.connector.ColumnHandle;
@@ -49,7 +52,9 @@ import io.trino.spi.security.TrinoPrincipal;
 import io.trino.spi.type.LongTimestampWithTimeZone;
 import io.trino.spi.type.TimestampWithTimeZoneType;
 import io.trino.spi.type.Type;
+import io.trino.spi.type.VarcharType;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,6 +78,7 @@ import static org.apache.paimon.utils.Preconditions.checkArgument;
 
 /** Trino {@link ConnectorMetadata}. */
 public class TrinoMetadata implements ConnectorMetadata {
+    private static final String TAG_PREFIX = "tag-";
 
     protected final TrinoCatalog catalog;
 
@@ -167,9 +173,48 @@ public class TrinoMetadata implements ConnectorMetadata {
                     }
                 case TARGET_ID:
                     {
-                        dynamicOptions.put(
-                                CoreOptions.SCAN_SNAPSHOT_ID.key(),
-                                version.getVersion().toString());
+                        String tagOrVersion;
+                        if (versionType instanceof VarcharType) {
+                            tagOrVersion =
+                                    BinaryString.fromBytes(
+                                                    ((Slice) version.getVersion()).getBytes())
+                                            .toString();
+                        } else {
+                            tagOrVersion = version.getVersion().toString();
+                        }
+
+                        // if value is not number, set tag option
+                        boolean isNumber = StringUtils.isNumeric(tagOrVersion);
+                        if (!isNumber) {
+                            dynamicOptions.put(CoreOptions.SCAN_TAG_NAME.key(), tagOrVersion);
+                        } else {
+                            try {
+                                catalog.initSession(session);
+                                String path =
+                                        catalog.getTable(
+                                                        new Identifier(
+                                                                tableName.getSchemaName(),
+                                                                tableName.getTableName()))
+                                                .options()
+                                                .get("path");
+
+                                if (catalog.fileIO()
+                                        .exists(
+                                                new Path(
+                                                        path
+                                                                + "/tag/"
+                                                                + TAG_PREFIX
+                                                                + tagOrVersion))) {
+                                    dynamicOptions.put(
+                                            CoreOptions.SCAN_TAG_NAME.key(), tagOrVersion);
+                                } else {
+                                    dynamicOptions.put(
+                                            CoreOptions.SCAN_SNAPSHOT_ID.key(), tagOrVersion);
+                                }
+                            } catch (IOException | Catalog.TableNotExistException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                         break;
                     }
             }
