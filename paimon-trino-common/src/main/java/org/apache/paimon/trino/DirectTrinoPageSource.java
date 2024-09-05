@@ -32,6 +32,8 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
     private ConnectorPageSource current;
     private final LinkedList<ConnectorPageSource> pageSourceQueue;
     private long completedBytes;
+    private long previousCurrentReadTimeNanos;
+    private long totalReadTimeNanos;
 
     public DirectTrinoPageSource(LinkedList<ConnectorPageSource> pageSourceQueue) {
         this.pageSourceQueue = pageSourceQueue;
@@ -45,7 +47,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
 
     @Override
     public long getReadTimeNanos() {
-        return current == null ? 0 : current.getReadTimeNanos();
+        return totalReadTimeNanos;
     }
 
     @Override
@@ -60,6 +62,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
                 return null;
             }
             Page dataPage = current.getNextPage();
+            recordTotalReadTimeNanos();
             if (dataPage == null) {
                 advance();
                 return getNextPage();
@@ -84,6 +87,7 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
             throw new RuntimeException("error happens while advance and close old page source.");
         }
         current = pageSourceQueue.poll();
+        previousCurrentReadTimeNanos = 0;
     }
 
     @Override
@@ -113,5 +117,17 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
     @Override
     public Metrics getMetrics() {
         return current == null ? Metrics.EMPTY : current.getMetrics();
+    }
+
+    private void recordTotalReadTimeNanos(){
+        if (current == null){
+            return ;
+        }
+
+        long currentReadTimeNanos = current.getReadTimeNanos();
+        if (previousCurrentReadTimeNanos != currentReadTimeNanos){
+            totalReadTimeNanos += (currentReadTimeNanos-previousCurrentReadTimeNanos);
+            previousCurrentReadTimeNanos = currentReadTimeNanos;
+        }
     }
 }
