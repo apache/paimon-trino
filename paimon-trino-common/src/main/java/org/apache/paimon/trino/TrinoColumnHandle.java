@@ -31,9 +31,12 @@ import static java.util.Objects.requireNonNull;
 
 /** Trino {@link ColumnHandle}. */
 public final class TrinoColumnHandle implements ColumnHandle {
+
+    public static final String TRINO_ROW_ID_NAME = "$row_id";
     private final String columnName;
     private final String typeString;
     private final Type trinoType;
+    private final boolean isRowId;
 
     @JsonCreator
     public TrinoColumnHandle(
@@ -43,6 +46,7 @@ public final class TrinoColumnHandle implements ColumnHandle {
         this.columnName = requireNonNull(columnName, "columnName is null");
         this.typeString = requireNonNull(typeString, "columnType is null");
         this.trinoType = requireNonNull(trinoType, "columnType is null");
+        this.isRowId = TRINO_ROW_ID_NAME.equals(columnName);
     }
 
     public static TrinoColumnHandle of(String columnName, DataType columnType) {
@@ -65,6 +69,11 @@ public final class TrinoColumnHandle implements ColumnHandle {
     @JsonProperty
     public Type getTrinoType() {
         return trinoType;
+    }
+
+    @JsonProperty
+    public boolean isRowId() {
+        return isRowId;
     }
 
     public DataType logicalType() {

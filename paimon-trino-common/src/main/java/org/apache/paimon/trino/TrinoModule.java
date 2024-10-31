@@ -41,6 +41,8 @@ public class TrinoModule implements Module {
         binder.bind(TrinoMetadataFactory.class).in(SINGLETON);
         binder.bind(TrinoSplitManager.class).in(SINGLETON);
         binder.bind(TrinoPageSourceProvider.class).in(SINGLETON);
+        binder.bind(TrinoPageSinkProvider.class).in(SINGLETON);
+        binder.bind(TrinoNodePartitioningProvider.class).in(SINGLETON);
         binder.bind(TrinoSessionProperties.class).in(SINGLETON);
         binder.bind(TrinoTableOptions.class).in(SINGLETON);
     }

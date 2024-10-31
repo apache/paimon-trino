@@ -20,6 +20,8 @@ package org.apache.paimon.trino;
 
 import io.trino.spi.connector.Connector;
 import io.trino.spi.connector.ConnectorMetadata;
+import io.trino.spi.connector.ConnectorNodePartitioningProvider;
+import io.trino.spi.connector.ConnectorPageSinkProvider;
 import io.trino.spi.connector.ConnectorPageSourceProvider;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplitManager;
@@ -38,6 +40,8 @@ public class TrinoConnector implements Connector {
     private final ConnectorMetadata trinoMetadata;
     private final ConnectorSplitManager trinoSplitManager;
     private final ConnectorPageSourceProvider trinoPageSourceProvider;
+    private final ConnectorPageSinkProvider trinoPageSinkProvider;
+    private final ConnectorNodePartitioningProvider trinoNodePartitioningProvider;
     private final List<PropertyMetadata<?>> tableProperties;
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -45,12 +49,19 @@ public class TrinoConnector implements Connector {
             ConnectorMetadata trinoMetadata,
             ConnectorSplitManager trinoSplitManager,
             ConnectorPageSourceProvider trinoPageSourceProvider,
+            ConnectorPageSinkProvider trinoPageSinkProvider,
+            ConnectorNodePartitioningProvider trinoNodePartitioningProvider,
             TrinoTableOptions trinoTableOptions,
             TrinoSessionProperties trinoSessionProperties) {
         this.trinoMetadata = requireNonNull(trinoMetadata, "trinoMetadata is null");
         this.trinoSplitManager = requireNonNull(trinoSplitManager, "trinoSplitManager is null");
         this.trinoPageSourceProvider =
                 requireNonNull(trinoPageSourceProvider, "trinoRecordSetProvider is null");
+        this.trinoPageSinkProvider =
+                requireNonNull(trinoPageSinkProvider, "trinoPageSinkProvider is null");
+        this.trinoNodePartitioningProvider =
+                requireNonNull(
+                        trinoNodePartitioningProvider, "trinoNodePartitioningProvider is null");
         this.tableProperties = trinoTableOptions.getTableProperties();
         this.sessionProperties = trinoSessionProperties.getSessionProperties();
     }
@@ -79,6 +90,11 @@ public class TrinoConnector implements Connector {
     }
 
     @Override
+    public ConnectorPageSinkProvider getPageSinkProvider() {
+        return trinoPageSinkProvider;
+    }
+
+    @Override
     public List<PropertyMetadata<?>> getSessionProperties() {
         return sessionProperties;
     }
@@ -86,5 +102,10 @@ public class TrinoConnector implements Connector {
     @Override
     public List<PropertyMetadata<?>> getTableProperties() {
         return tableProperties;
+    }
+
+    @Override
+    public ConnectorNodePartitioningProvider getNodePartitioningProvider() {
+        return trinoNodePartitioningProvider;
     }
 }

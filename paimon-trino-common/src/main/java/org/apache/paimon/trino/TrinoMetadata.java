@@ -25,8 +25,15 @@ import org.apache.paimon.data.BinaryString;
 import org.apache.paimon.fs.Path;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
+import org.apache.paimon.table.BucketMode;
+import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.Table;
+import org.apache.paimon.table.sink.BatchWriteBuilder;
+import org.apache.paimon.table.sink.CommitMessage;
+import org.apache.paimon.table.sink.CommitMessageSerializer;
 import org.apache.paimon.trino.catalog.TrinoCatalog;
+import org.apache.paimon.types.DataField;
+import org.apache.paimon.types.DataTypes;
 import org.apache.paimon.utils.StringUtils;
 
 import io.airlift.slice.Slice;
@@ -34,9 +41,15 @@ import io.trino.spi.TrinoException;
 import io.trino.spi.connector.Assignment;
 import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ColumnMetadata;
+import io.trino.spi.connector.ConnectorInsertTableHandle;
+import io.trino.spi.connector.ConnectorMergeTableHandle;
 import io.trino.spi.connector.ConnectorMetadata;
+import io.trino.spi.connector.ConnectorOutputMetadata;
+import io.trino.spi.connector.ConnectorOutputTableHandle;
+import io.trino.spi.connector.ConnectorPartitioningHandle;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTableHandle;
+import io.trino.spi.connector.ConnectorTableLayout;
 import io.trino.spi.connector.ConnectorTableMetadata;
 import io.trino.spi.connector.ConnectorTableProperties;
 import io.trino.spi.connector.ConnectorTableVersion;
@@ -44,11 +57,14 @@ import io.trino.spi.connector.Constraint;
 import io.trino.spi.connector.ConstraintApplicationResult;
 import io.trino.spi.connector.LimitApplicationResult;
 import io.trino.spi.connector.ProjectionApplicationResult;
+import io.trino.spi.connector.RetryMode;
+import io.trino.spi.connector.RowChangeParadigm;
 import io.trino.spi.connector.SchemaTableName;
 import io.trino.spi.connector.SchemaTablePrefix;
 import io.trino.spi.expression.ConnectorExpression;
 import io.trino.spi.predicate.Domain;
 import io.trino.spi.security.TrinoPrincipal;
+import io.trino.spi.statistics.ComputedStatistics;
 import io.trino.spi.type.LongTimestampWithTimeZone;
 import io.trino.spi.type.TimestampWithTimeZoneType;
 import io.trino.spi.type.Type;
@@ -56,6 +72,7 @@ import io.trino.spi.type.VarcharType;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,11 +86,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.trino.spi.StandardErrorCode.NOT_SUPPORTED;
+import static io.trino.spi.connector.RowChangeParadigm.DELETE_ROW_AND_INSERT_ROW;
 import static io.trino.spi.type.DateTimeEncoding.unpackMillisUtc;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.paimon.trino.TrinoColumnHandle.TRINO_ROW_ID_NAME;
 import static org.apache.paimon.utils.Preconditions.checkArgument;
 
 /** Trino {@link ConnectorMetadata}. */
@@ -88,6 +107,177 @@ public class TrinoMetadata implements ConnectorMetadata {
 
     public TrinoCatalog catalog() {
         return catalog;
+    }
+
+    // todo support dynamic bucket table
+    @Override
+    public Optional<ConnectorTableLayout> getInsertLayout(
+            ConnectorSession session, ConnectorTableHandle tableHandle) {
+        TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
+        Table table = trinoTableHandle.table(catalog);
+        BucketMode mode =
+                table instanceof FileStoreTable
+                        ? ((FileStoreTable) table).bucketMode()
+                        : BucketMode.FIXED;
+        switch (mode) {
+            case FIXED:
+                return Optional.of(
+                        new ConnectorTableLayout(
+                                new TrinoPartitioningHandle(table.primaryKeys()),
+                                table.primaryKeys(),
+                                false));
+            case DYNAMIC:
+            case GLOBAL_DYNAMIC:
+                if (table.primaryKeys().isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Only primary-key table can support dynamic bucket.");
+                }
+                throw new IllegalArgumentException("Global dynamic bucket mode are not supported");
+            case UNAWARE:
+                if (!table.primaryKeys().isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Only append table can support unaware bucket.");
+                }
+                throw new IllegalArgumentException("Unaware bucket mode are not supported");
+            default:
+                throw new IllegalArgumentException("Unknown bucket mode");
+        }
+    }
+
+    @Override
+    public ConnectorOutputTableHandle beginCreateTable(
+            ConnectorSession session,
+            ConnectorTableMetadata tableMetadata,
+            Optional<ConnectorTableLayout> layout,
+            RetryMode retryMode) {
+        createTable(session, tableMetadata, false);
+        return getTableHandle(session, tableMetadata.getTable(), Collections.emptyMap());
+    }
+
+    @Override
+    public Optional<ConnectorOutputMetadata> finishCreateTable(
+            ConnectorSession session,
+            ConnectorOutputTableHandle tableHandle,
+            Collection<Slice> fragments,
+            Collection<ComputedStatistics> computedStatistics) {
+        if (fragments.isEmpty()) {
+            return Optional.empty();
+        }
+        return commit(session, (TrinoTableHandle) tableHandle, fragments);
+    }
+
+    @Override
+    public ConnectorInsertTableHandle beginInsert(
+            ConnectorSession session,
+            ConnectorTableHandle tableHandle,
+            List<ColumnHandle> columns,
+            RetryMode retryMode) {
+        return (ConnectorInsertTableHandle) tableHandle;
+    }
+
+    @Override
+    public Optional<ConnectorOutputMetadata> finishInsert(
+            ConnectorSession session,
+            ConnectorInsertTableHandle insertHandle,
+            Collection<Slice> fragments,
+            Collection<ComputedStatistics> computedStatistics) {
+        return commit(session, (TrinoTableHandle) insertHandle, fragments);
+    }
+
+    private Optional<ConnectorOutputMetadata> commit(
+            ConnectorSession session, TrinoTableHandle insertHandle, Collection<Slice> fragments) {
+        CommitMessageSerializer serializer = new CommitMessageSerializer();
+        List<CommitMessage> commitMessages =
+                fragments.stream()
+                        .map(
+                                slice -> {
+                                    try {
+                                        return serializer.deserialize(
+                                                serializer.getVersion(), slice.getBytes());
+                                    } catch (IOException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                })
+                        .collect(toList());
+
+        if (commitMessages.isEmpty()) {
+            return Optional.empty();
+        }
+
+        TrinoTableHandle table = insertHandle;
+        BatchWriteBuilder batchWriteBuilder =
+                table.tableWithDynamicOptions(catalog, session).newBatchWriteBuilder();
+        if (TrinoSessionProperties.enableInsertOverwrite(session)) {
+            batchWriteBuilder.withOverwrite();
+        }
+        batchWriteBuilder.newCommit().commit(commitMessages);
+        return Optional.empty();
+    }
+
+    @Override
+    public RowChangeParadigm getRowChangeParadigm(
+            ConnectorSession session, ConnectorTableHandle tableHandle) {
+        return DELETE_ROW_AND_INSERT_ROW;
+    }
+
+    // todo support dynamic bucket table
+    @Override
+    public ColumnHandle getMergeRowIdColumnHandle(
+            ConnectorSession session, ConnectorTableHandle tableHandle) {
+        TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
+        Table table = trinoTableHandle.table(catalog);
+        Set<String> pkSet = table.primaryKeys().stream().collect(Collectors.toSet());
+        DataField[] row =
+                table.rowType().getFields().stream()
+                        .filter(dataField -> pkSet.contains(dataField.name()))
+                        .toArray(DataField[]::new);
+        return TrinoColumnHandle.of(TRINO_ROW_ID_NAME, DataTypes.ROW(row));
+    }
+
+    // todo support dynamic bucket table
+    @Override
+    public Optional<ConnectorPartitioningHandle> getUpdateLayout(
+            ConnectorSession session, ConnectorTableHandle tableHandle) {
+        TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
+        Table table = trinoTableHandle.table(catalog);
+        BucketMode mode =
+                table instanceof FileStoreTable
+                        ? ((FileStoreTable) table).bucketMode()
+                        : BucketMode.FIXED;
+        switch (mode) {
+            case FIXED:
+                return Optional.of(new TrinoMergePartitioningHandle(table.primaryKeys()));
+            case DYNAMIC:
+            case GLOBAL_DYNAMIC:
+                if (table.primaryKeys().isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Only primary-key table can support dynamic bucket.");
+                }
+                throw new IllegalArgumentException("Global dynamic bucket mode are not supported");
+            case UNAWARE:
+                if (!table.primaryKeys().isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Only append table can support unaware bucket.");
+                }
+                throw new IllegalArgumentException("Unaware bucket mode are not supported");
+            default:
+                throw new IllegalArgumentException("Unknown bucket mode");
+        }
+    }
+
+    @Override
+    public ConnectorMergeTableHandle beginMerge(
+            ConnectorSession session, ConnectorTableHandle tableHandle, RetryMode retryMode) {
+        return new TrinoMergeTableHandle((TrinoTableHandle) tableHandle);
+    }
+
+    @Override
+    public void finishMerge(
+            ConnectorSession session,
+            ConnectorMergeTableHandle mergeTableHandle,
+            Collection<Slice> fragments,
+            Collection<ComputedStatistics> computedStatistics) {
+        commit(session, (TrinoTableHandle) mergeTableHandle.getTableHandle(), fragments);
     }
 
     @Override
