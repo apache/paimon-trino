@@ -180,8 +180,8 @@ public class TrinoPageSink implements ConnectorPageSink {
 
         @Override
         public Timestamp getTimestamp(int i, int timestampPrecision) {
-            // todo            return singlePage.getBlock(i).getLong(0,0);
-            return null;
+            long timestampMicros = singlePage.getBlock(i).getLong(0, 0);
+            return Timestamp.fromMicros(timestampMicros);
         }
 
         @Override
@@ -192,7 +192,8 @@ public class TrinoPageSink implements ConnectorPageSink {
 
         @Override
         public InternalArray getArray(int i) {
-            // todo            singlePage.getBlock(i).
+            // todo
+            //            singlePage.getBlock(i).getChildren()
             return null;
         }
 
