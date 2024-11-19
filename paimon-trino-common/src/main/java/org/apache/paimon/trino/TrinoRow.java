@@ -26,12 +26,29 @@ import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.types.RowKind;
 
+import io.airlift.slice.Slice;
 import io.trino.spi.Page;
+import io.trino.spi.type.DecimalType;
+import io.trino.spi.type.Int128;
+import io.trino.spi.type.TypeUtils;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
+import static io.trino.spi.type.BigintType.BIGINT;
+import static io.trino.spi.type.BooleanType.BOOLEAN;
+import static io.trino.spi.type.Decimals.MAX_SHORT_PRECISION;
+import static io.trino.spi.type.DoubleType.DOUBLE;
+import static io.trino.spi.type.IntegerType.INTEGER;
+import static io.trino.spi.type.RealType.REAL;
+import static io.trino.spi.type.SmallintType.SMALLINT;
+import static io.trino.spi.type.TimestampType.TIMESTAMP_MICROS;
+import static io.trino.spi.type.VarbinaryType.VARBINARY;
 import static org.apache.paimon.shade.guava30.com.google.common.base.Verify.verify;
 
 /** TrinoRow {@link InternalRow}. */
-public class TrinoRow implements InternalRow {
+public class TrinoRow implements InternalRow, Serializable {
 
     private final RowKind rowKind;
     private final Page singlePage;
@@ -64,37 +81,47 @@ public class TrinoRow implements InternalRow {
 
     @Override
     public boolean getBoolean(int i) {
-        return singlePage.getBlock(i).getByte(0, 0) != 0;
+        return (boolean) TypeUtils.readNativeValue(BOOLEAN, singlePage.getBlock(i), 0);
     }
 
     @Override
     public byte getByte(int i) {
-        return singlePage.getBlock(i).getByte(0, 0);
+        Slice slice = (Slice) TypeUtils.readNativeValue(VARBINARY, singlePage.getBlock(i), 0);
+        return slice.getByte(0);
     }
 
     @Override
     public short getShort(int i) {
-        return singlePage.getBlock(i).getShort(0, 0);
+        long value = (long) TypeUtils.readNativeValue(SMALLINT, singlePage.getBlock(i), 0);
+        if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
+            throw new IllegalArgumentException("Value out of range for short: " + value);
+        }
+        return (short) value;
     }
 
     @Override
     public int getInt(int i) {
-        return singlePage.getBlock(i).getInt(0, 0);
+        long value = (long) TypeUtils.readNativeValue(INTEGER, singlePage.getBlock(i), 0);
+        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Value out of range for int: " + value);
+        }
+        return (int) value;
     }
 
     @Override
     public long getLong(int i) {
-        return singlePage.getBlock(i).getInt(0, 0);
+        return (long) TypeUtils.readNativeValue(BIGINT, singlePage.getBlock(i), 0);
     }
 
     @Override
     public float getFloat(int i) {
-        return Float.intBitsToFloat(Math.toIntExact(singlePage.getBlock(i).getLong(0, 0)));
+        return Float.intBitsToFloat(
+                Math.toIntExact((long) TypeUtils.readNativeValue(REAL, singlePage.getBlock(i), 0)));
     }
 
     @Override
     public double getDouble(int i) {
-        return Double.longBitsToDouble(singlePage.getBlock(i).getLong(0, 0));
+        return (double) TypeUtils.readNativeValue(DOUBLE, singlePage.getBlock(i), 0);
     }
 
     @Override
@@ -104,20 +131,33 @@ public class TrinoRow implements InternalRow {
 
     @Override
     public Decimal getDecimal(int i, int decimalPrecision, int decimalScale) {
-        return Decimal.fromUnscaledLong(
-                singlePage.getBlock(i).getLong(0, 0), decimalPrecision, decimalScale);
+        Object value =
+                TypeUtils.readNativeValue(
+                        DecimalType.createDecimalType(decimalPrecision, decimalScale),
+                        singlePage.getBlock(i),
+                        0);
+        if (decimalPrecision <= MAX_SHORT_PRECISION) {
+            return Decimal.fromUnscaledLong((Long) value, decimalPrecision, decimalScale);
+        } else {
+            long high = ((Int128) value).getHigh();
+            long low = ((Int128) value).getLow();
+            BigInteger bigIntegerValue =
+                    BigInteger.valueOf(high).shiftLeft(64).add(BigInteger.valueOf(low));
+            BigDecimal bigDecimalValue = new BigDecimal(bigIntegerValue, decimalScale);
+            return Decimal.fromBigDecimal(bigDecimalValue, decimalPrecision, decimalScale);
+        }
     }
 
     @Override
     public Timestamp getTimestamp(int i, int timestampPrecision) {
-        long timestampMicros = singlePage.getBlock(i).getLong(0, 0);
-        return Timestamp.fromMicros(timestampMicros);
+        long value = (long) TypeUtils.readNativeValue(TIMESTAMP_MICROS, singlePage.getBlock(i), 0);
+        return Timestamp.fromMicros(value);
     }
 
     @Override
     public byte[] getBinary(int i) {
-        int length = singlePage.getBlock(i).getSliceLength(0);
-        return singlePage.getBlock(i).getSlice(0, 0, length).getBytes();
+        Slice slice = (Slice) TypeUtils.readNativeValue(VARBINARY, singlePage.getBlock(i), 0);
+        return slice.getBytes();
     }
 
     @Override

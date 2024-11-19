@@ -32,13 +32,10 @@ import io.trino.spi.block.RowBlock;
 import io.trino.spi.connector.BucketFunction;
 import io.trino.spi.type.RowType;
 import io.trino.spi.type.Type;
-import io.trino.spi.type.TypeOperators;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
-
-import static java.util.Objects.requireNonNull;
 
 /** Trino {@link BucketFunction}. */
 public class FixedBucketTableShuffleFunction implements BucketFunction {
@@ -49,11 +46,9 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
     private final Projection pkProjection;
 
     public FixedBucketTableShuffleFunction(
-            TypeOperators typeOperators,
             List<Type> partitionChannelTypes,
             TrinoPartitioningHandle partitioningHandle,
             int workerCount) {
-        requireNonNull(typeOperators, "typeOperators is null");
 
         TableSchema schema = partitioningHandle.getOriginalSchema();
         this.pkProjection =

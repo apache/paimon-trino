@@ -25,20 +25,14 @@ import io.trino.spi.connector.ConnectorPartitioningHandle;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.type.Type;
-import io.trino.spi.type.TypeManager;
-import io.trino.spi.type.TypeOperators;
 
 import java.util.List;
 
 /** Trino {@link ConnectorNodePartitioningProvider}. */
 public class TrinoNodePartitioningProvider implements ConnectorNodePartitioningProvider {
 
-    private final TypeOperators typeOperators;
-
     @Inject
-    public TrinoNodePartitioningProvider(TypeManager typeManager) {
-        this.typeOperators = typeManager.getTypeOperators();
-    }
+    public TrinoNodePartitioningProvider() {}
 
     @Override
     public BucketFunction getBucketFunction(
@@ -49,9 +43,6 @@ public class TrinoNodePartitioningProvider implements ConnectorNodePartitioningP
             int bucketCount) {
         // todo support different types of tables according to different PartitioningHandle
         return new FixedBucketTableShuffleFunction(
-                typeOperators,
-                partitionChannelTypes,
-                (TrinoPartitioningHandle) partitioningHandle,
-                bucketCount);
+                partitionChannelTypes, (TrinoPartitioningHandle) partitioningHandle, bucketCount);
     }
 }

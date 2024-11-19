@@ -489,6 +489,29 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
             commit.commit(2, writer.prepareCommit(true, 2));
         }
 
+        {
+            Path tablePath = new Path(warehouse, "default.db/t103");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "id", DataTypes.INT()),
+                                    new DataField(1, "name", DataTypes.STRING())));
+            new SchemaManager(LocalFileIO.create(), tablePath)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    Collections.emptyList(),
+                                    new HashMap<>() {
+                                        {
+                                            put("file.format", "orc");
+                                            put("primary-key", "id");
+                                            put("bucket", "2");
+                                        }
+                                    },
+                                    ""));
+        }
+
         DistributedQueryRunner queryRunner = null;
         try {
             queryRunner =
@@ -831,6 +854,12 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
     @Test
     public void testFileIndex() {
         assertThat(sql("SELECT * FROM paimon.default.t102 where c = 2")).isEqualTo("[[a2, 2, 2]]");
+    }
+
+    @Test
+    public void testInsertInto() {
+        sql("INSERT INTO paimon.default.t103 VALUES (1,'1'),(2,'2'),(3,'3'),(4,'4'),(5,'5'),(6,'6')");
+        assertThat(sql("SELECT * FROM paimon.default.t103 order by id asc")).isEqualTo("[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]]");
     }
 
     protected String sql(String sql) {

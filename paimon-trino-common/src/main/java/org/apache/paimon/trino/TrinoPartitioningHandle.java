@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.trino.spi.connector.ConnectorPartitioningHandle;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /** Trino {@link ConnectorPartitioningHandle}. */
 public class TrinoPartitioningHandle implements ConnectorPartitioningHandle {
@@ -50,5 +51,17 @@ public class TrinoPartitioningHandle implements ConnectorPartitioningHandle {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        TrinoPartitioningHandle that = (TrinoPartitioningHandle) o;
+        return Arrays.equals(schema, that.getSchema());
     }
 }
