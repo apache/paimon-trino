@@ -18,29 +18,37 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.schema.TableSchema;
+import org.apache.paimon.utils.InstantiationUtil;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.trino.spi.connector.ConnectorPartitioningHandle;
 
-import java.util.List;
+import java.io.IOException;
 
 /** Trino {@link ConnectorPartitioningHandle}. */
 public class TrinoPartitioningHandle implements ConnectorPartitioningHandle {
 
-    private final List<String> partitioning;
+    private final byte[] schema;
 
     @JsonCreator
-    public TrinoPartitioningHandle(@JsonProperty("partitioning") List<String> partitioning) {
-        this.partitioning = partitioning;
+    public TrinoPartitioningHandle(@JsonProperty("schema") byte[] schema) {
+        this.schema = schema;
     }
 
     @JsonProperty
-    public List<String> getPartitioning() {
-        return partitioning;
+    public byte[] getSchema() {
+        return schema;
     }
 
-    @Override
-    public String toString() {
-        return "TrinoPartitioningHandle{" + "partitioning='" + partitioning + '\'' + '}';
+    public TableSchema getOriginalSchema() {
+        try {
+            return InstantiationUtil.deserializeObject(this.schema, getClass().getClassLoader());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

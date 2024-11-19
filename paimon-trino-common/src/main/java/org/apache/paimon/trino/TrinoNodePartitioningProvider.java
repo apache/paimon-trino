@@ -49,6 +49,9 @@ public class TrinoNodePartitioningProvider implements ConnectorNodePartitioningP
             int bucketCount) {
         // todo support different types of tables according to different PartitioningHandle
         return new FixedBucketTableShuffleFunction(
-                typeOperators, partitionChannelTypes, bucketCount);
+                typeOperators,
+                partitionChannelTypes,
+                (TrinoPartitioningHandle) partitioningHandle,
+                bucketCount);
     }
 }

@@ -18,6 +18,14 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.CoreOptions;
+import org.apache.paimon.codegen.CodeGenUtils;
+import org.apache.paimon.codegen.Projection;
+import org.apache.paimon.data.BinaryRow;
+import org.apache.paimon.schema.TableSchema;
+import org.apache.paimon.table.sink.KeyAndBucketExtractor;
+import org.apache.paimon.types.RowKind;
+
 import io.trino.spi.Page;
 import io.trino.spi.block.Block;
 import io.trino.spi.block.RowBlock;
@@ -25,46 +33,36 @@ import io.trino.spi.connector.BucketFunction;
 import io.trino.spi.type.RowType;
 import io.trino.spi.type.Type;
 import io.trino.spi.type.TypeOperators;
-import io.trino.spi.type.TypeUtils;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import static io.trino.spi.function.InvocationConvention.InvocationArgumentConvention.NEVER_NULL;
-import static io.trino.spi.function.InvocationConvention.InvocationReturnConvention.FAIL_ON_NULL;
-import static io.trino.spi.function.InvocationConvention.simpleConvention;
-import static io.trino.spi.type.TypeUtils.NULL_HASH_CODE;
 import static java.util.Objects.requireNonNull;
-import static org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableList.toImmutableList;
 
 /** Trino {@link BucketFunction}. */
 public class FixedBucketTableShuffleFunction implements BucketFunction {
 
+    private final int workerCount;
     private final int bucketCount;
-    private final List<Type> partitionChannelTypes;
-    private final List<MethodHandle> hashCodeInvokers;
     private final boolean isRowId;
+    private final Projection pkProjection;
 
     public FixedBucketTableShuffleFunction(
-            TypeOperators typeOperators, List<Type> partitionChannelTypes, int bucketCount) {
+            TypeOperators typeOperators,
+            List<Type> partitionChannelTypes,
+            TrinoPartitioningHandle partitioningHandle,
+            int workerCount) {
         requireNonNull(typeOperators, "typeOperators is null");
-        this.bucketCount = bucketCount;
-        if (partitionChannelTypes.size() == 1 && partitionChannelTypes.get(0) instanceof RowType) {
-            this.partitionChannelTypes = partitionChannelTypes.get(0).getTypeParameters();
-            isRowId = true;
-        } else {
-            isRowId = false;
-            this.partitionChannelTypes = partitionChannelTypes;
-        }
-        hashCodeInvokers =
-                this.partitionChannelTypes.stream()
-                        .map(
-                                type ->
-                                        typeOperators.getHashCodeOperator(
-                                                type, simpleConvention(FAIL_ON_NULL, NEVER_NULL)))
-                        .collect(toImmutableList());
+
+        TableSchema schema = partitioningHandle.getOriginalSchema();
+        this.pkProjection =
+                CodeGenUtils.newProjection(schema.logicalPrimaryKeysType(), schema.primaryKeys());
+        this.bucketCount = new CoreOptions(schema.options()).bucket();
+        this.workerCount = workerCount;
+        this.isRowId =
+                partitionChannelTypes.size() == 1
+                        && partitionChannelTypes.get(0) instanceof RowType;
     }
 
     @Override
@@ -83,30 +81,12 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
                 throw new RuntimeException(e);
             }
         }
-        long hash = 0;
-        for (int i = 0; i < partitionChannelTypes.size(); i++) {
-            Block block = page.getBlock(i);
-            Object value = TypeUtils.readNativeValue(partitionChannelTypes.get(i), block, position);
-            long valueHash = hashValue(hashCodeInvokers.get(i), value);
-            hash = (31 * hash) + valueHash;
-        }
-        return (int) ((hash & Long.MAX_VALUE) % bucketCount);
-    }
 
-    private static long hashValue(MethodHandle method, Object value) {
-        if (value == null) {
-            return NULL_HASH_CODE;
-        }
-        try {
-            return (long) method.invoke(value);
-        } catch (Throwable throwable) {
-            if (throwable instanceof Error) {
-                throw (Error) throwable;
-            }
-            if (throwable instanceof RuntimeException) {
-                throw (RuntimeException) throwable;
-            }
-            throw new RuntimeException(throwable);
-        }
+        TrinoRow trinoRow = new TrinoRow(page.getSingleValuePage(position), RowKind.INSERT);
+        BinaryRow pk = pkProjection.apply(trinoRow);
+        int bucket =
+                KeyAndBucketExtractor.bucket(
+                        KeyAndBucketExtractor.bucketKeyHashCode(pk), bucketCount);
+        return bucket % workerCount;
     }
 }

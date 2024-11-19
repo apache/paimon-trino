@@ -25,7 +25,6 @@ import org.apache.paimon.data.BinaryString;
 import org.apache.paimon.fs.Path;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
-import org.apache.paimon.table.BucketMode;
 import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.table.sink.BatchWriteBuilder;
@@ -34,6 +33,7 @@ import org.apache.paimon.table.sink.CommitMessageSerializer;
 import org.apache.paimon.trino.catalog.TrinoCatalog;
 import org.apache.paimon.types.DataField;
 import org.apache.paimon.types.DataTypes;
+import org.apache.paimon.utils.InstantiationUtil;
 import org.apache.paimon.utils.StringUtils;
 
 import io.airlift.slice.Slice;
@@ -115,17 +115,23 @@ public class TrinoMetadata implements ConnectorMetadata {
             ConnectorSession session, ConnectorTableHandle tableHandle) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Table table = trinoTableHandle.table(catalog);
-        BucketMode mode =
-                table instanceof FileStoreTable
-                        ? ((FileStoreTable) table).bucketMode()
-                        : BucketMode.FIXED;
-        switch (mode) {
+        if (!(table instanceof FileStoreTable)) {
+            throw new IllegalArgumentException(table.getClass() + " is not supported");
+        }
+        FileStoreTable fileStoreTable = (FileStoreTable) table;
+        switch (fileStoreTable.bucketMode()) {
             case FIXED:
-                return Optional.of(
-                        new ConnectorTableLayout(
-                                new TrinoPartitioningHandle(table.primaryKeys()),
-                                table.primaryKeys(),
-                                false));
+                try {
+                    return Optional.of(
+                            new ConnectorTableLayout(
+                                    new TrinoPartitioningHandle(
+                                            InstantiationUtil.serializeObject(
+                                                    fileStoreTable.schema())),
+                                    table.primaryKeys(),
+                                    false));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             case DYNAMIC:
             case GLOBAL_DYNAMIC:
                 if (table.primaryKeys().isEmpty()) {
@@ -240,13 +246,19 @@ public class TrinoMetadata implements ConnectorMetadata {
             ConnectorSession session, ConnectorTableHandle tableHandle) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Table table = trinoTableHandle.table(catalog);
-        BucketMode mode =
-                table instanceof FileStoreTable
-                        ? ((FileStoreTable) table).bucketMode()
-                        : BucketMode.FIXED;
-        switch (mode) {
+        if (!(table instanceof FileStoreTable)) {
+            throw new IllegalArgumentException(table.getClass() + " is not supported");
+        }
+        FileStoreTable fileStoreTable = (FileStoreTable) table;
+        switch (fileStoreTable.bucketMode()) {
             case FIXED:
-                return Optional.of(new TrinoMergePartitioningHandle(table.primaryKeys()));
+                try {
+                    return Optional.of(
+                            new TrinoPartitioningHandle(
+                                    InstantiationUtil.serializeObject(fileStoreTable.schema())));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             case DYNAMIC:
             case GLOBAL_DYNAMIC:
                 if (table.primaryKeys().isEmpty()) {
