@@ -16,7 +16,7 @@
 # limitations under the License.
 ################################################################################
 
-name: Publish Snapshot JDK17
+name: Publish Snapshot JDK21
 
 on:
   schedule:
@@ -25,7 +25,7 @@ on:
   workflow_dispatch:
 
 env:
-  JDK_VERSION: 17
+  JDK_VERSION: 21
 
 concurrency:
   group: ps-${{ github.event.pull_request.number || github.ref }}
@@ -61,7 +61,7 @@ jobs:
           <toolchain>
            <type>jdk</type>
              <provides>
-               <version>17</version>
+               <version>21</version>
                <vendor>adopt</vendor>
              </provides>
              <configuration>
@@ -81,6 +81,6 @@ jobs:
           echo "<password>$ASF_PASSWORD</password>" >> $tmp_settings
           echo "</server></servers></settings>" >> $tmp_settings
           
-          mvn --settings $tmp_settings clean deploy -Dgpg.skip -Drat.skip -DskipTests -Papache-release -pl paimon-trino-common,paimon-trino-420,paimon-trino-427
+          mvn --settings $tmp_settings clean deploy -Dgpg.skip -Drat.skip -DskipTests -Papache-release -pl paimon-trino-440
           
           rm $tmp_settings
