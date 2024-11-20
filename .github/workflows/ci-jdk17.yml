@@ -28,6 +28,25 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 17
+      - name: Set up Toolchain
+        shell: bash
+        run: |
+          mkdir -p $HOME/.m2 \
+          && cat << EOF > $HOME/.m2/toolchains.xml
+          <?xml version="1.0" encoding="UTF8"?>
+          <toolchains>
+          <toolchain>
+           <type>jdk</type>
+             <provides>
+               <version>21</version>
+               <vendor>adopt</vendor>
+             </provides>
+             <configuration>
+               <jdkHome>${{ env.JAVA_HOME }}</jdkHome>
+             </configuration>
+          </toolchain>
+          </toolchains>
+          EOF
       - name: Build
         run: |
           mvn clean install -P '!toolchain' -pl paimon-trino-440
