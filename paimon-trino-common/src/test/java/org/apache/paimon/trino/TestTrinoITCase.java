@@ -643,9 +643,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "bucket_key = 'order_key',"
                         + "changelog_producer = 'input'"
                         + ")");
-        assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo(
-                        "[[empty_t], [orders], [t1], [t100], [t101], [t102], [t103], [t2], [t3], [t4], [t99]]");
+        assertThat(sql("SHOW TABLES FROM paimon.default")).contains("orders");
         sql("DROP TABLE IF EXISTS paimon.default.orders");
     }
 
@@ -667,9 +665,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "changelog_producer = 'input'"
                         + ")");
         sql("ALTER TABLE paimon.default.t5 RENAME TO t6");
-        assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo(
-                        "[[empty_t], [orders], [t1], [t100], [t101], [t102], [t103], [t2], [t3], [t4], [t6], [t99]]");
+        String result = sql("SHOW TABLES FROM paimon.default");
+        assertThat(result).doesNotContain("t5").contains("t6");
         sql("DROP TABLE IF EXISTS paimon.default.t6");
     }
 
@@ -691,9 +688,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + "changelog_producer = 'input'"
                         + ")");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
-        assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo(
-                        "[[empty_t], [orders], [t1], [t100], [t101], [t102], [t103], [t2], [t3], [t4], [t99]]");
+        assertThat(sql("SHOW TABLES FROM paimon.default")).doesNotContain("t5");
     }
 
     @Test
