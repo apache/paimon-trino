@@ -858,8 +858,10 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
 
     @Test
     public void testInsertInto() {
-        sql("INSERT INTO paimon.default.t103 VALUES (1,'1'),(2,'2'),(3,'3'),(4,'4'),(5,'5'),(6,'6')");
-        assertThat(sql("SELECT * FROM paimon.default.t103 order by id asc")).isEqualTo("[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]]");
+        sql(
+                "INSERT INTO paimon.default.t103 VALUES (1,'1'),(2,'2'),(3,'3'),(4,'4'),(5,'5'),(6,'6')");
+        assertThat(sql("SELECT * FROM paimon.default.t103 order by id asc"))
+                .isEqualTo("[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]]");
     }
 
     protected String sql(String sql) {
