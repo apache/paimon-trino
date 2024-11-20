@@ -645,7 +645,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
                 .isEqualTo(
-                        "[[empty_t], [orders], [t1], [t100], [t101], [t102], [t2], [t3], [t4], [t99]]");
+                        "[[empty_t], [orders], [t1], [t100], [t101], [t102], [t103], [t2], [t3], [t4], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.orders");
     }
 
@@ -669,7 +669,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
         sql("ALTER TABLE paimon.default.t5 RENAME TO t6");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
                 .isEqualTo(
-                        "[[empty_t], [t1], [t100], [t101], [t102], [t2], [t3], [t4], [t6], [t99]]");
+                        "[[empty_t], [orders], [t1], [t100], [t101], [t102], [t103], [t2], [t3], [t4], [t6], [t99]]");
         sql("DROP TABLE IF EXISTS paimon.default.t6");
     }
 
@@ -692,7 +692,8 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                         + ")");
         sql("DROP TABLE IF EXISTS paimon.default.t5");
         assertThat(sql("SHOW TABLES FROM paimon.default"))
-                .isEqualTo("[[empty_t], [t1], [t100], [t101], [t102], [t2], [t3], [t4], [t99]]");
+                .isEqualTo(
+                        "[[empty_t], [orders], [t1], [t100], [t101], [t102], [t103], [t2], [t3], [t4], [t99]]");
     }
 
     @Test
