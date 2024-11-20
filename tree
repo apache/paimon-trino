@@ -1,0 +1,472 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.paimon:paimon-trino-440:jar:1.0-SNAPSHOT
+[WARNING] 'build.plugins.plugin.(groupId:artifactId)' must be unique but found duplicate declaration of plugin org.apache.maven.plugins:maven-compiler-plugin @ org.apache.paimon:paimon-trino:1.0-SNAPSHOT, /Users/yejunhao/project/incubator-paimon-trino/pom.xml, line 165, column 21
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.paimon:paimon-trino:pom:1.0-SNAPSHOT
+[WARNING] 'build.plugins.plugin.(groupId:artifactId)' must be unique but found duplicate declaration of plugin org.apache.maven.plugins:maven-compiler-plugin @ line 165, column 21
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] Paimon : Trino                                                     [pom]
+[INFO] Paimon : Trino : 440                                               [jar]
+[INFO] 
+[INFO] -------------------< org.apache.paimon:paimon-trino >-------------------
+[INFO] Building Paimon : Trino 1.0-SNAPSHOT                               [1/2]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.1.1:tree (default-cli) @ paimon-trino ---
+[INFO] org.apache.paimon:paimon-trino:pom:1.0-SNAPSHOT
+[INFO] +- org.apache.paimon:paimon-bundle:jar:0.8.0:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.8.3:compile
+[INFO] |  \- org.lz4:lz4-java:jar:1.8.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:5.8.1:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:5.8.1:compile
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.2.0:compile
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:1.8.1:compile
+[INFO] |  |  \- org.apiguardian:apiguardian-api:jar:1.1.2:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:5.8.1:compile
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.8.1:runtime
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:1.8.1:runtime
+[INFO] +- com.google.guava:guava:jar:31.1-jre:compile
+[INFO] |  +- com.google.guava:failureaccess:jar:1.0.1:compile
+[INFO] |  +- com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava:compile
+[INFO] |  +- org.checkerframework:checker-qual:jar:3.12.0:compile
+[INFO] |  +- com.google.errorprone:error_prone_annotations:jar:2.11.0:compile
+[INFO] |  \- com.google.j2objc:j2objc-annotations:jar:1.3:compile
+[INFO] +- org.slf4j:slf4j-api:jar:2.0.7:compile
+[INFO] +- org.slf4j:slf4j-jdk14:jar:2.0.7:compile
+[INFO] +- org.apache.commons:commons-lang3:jar:3.3.2:compile
+[INFO] \- com.google.code.findbugs:jsr305:jar:1.3.9:compile
+[INFO] 
+[INFO] -----------------< org.apache.paimon:paimon-trino-440 >-----------------
+[INFO] Building Paimon : Trino : 440 1.0-SNAPSHOT                         [2/2]
+[INFO]   from paimon-trino-440/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.1.1:tree (default-cli) @ paimon-trino-440 ---
+[INFO] org.apache.paimon:paimon-trino-440:jar:1.0-SNAPSHOT
+[INFO] +- io.trino.hadoop:hadoop-apache:jar:3.2.0-18:compile
+[INFO] +- io.trino:trino-plugin-toolkit:jar:440:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-annotations:jar:2.16.1:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-core:jar:2.16.1:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.16.1:compile
+[INFO] |  +- com.google.errorprone:error_prone_annotations:jar:2.25.0:compile
+[INFO] |  +- com.google.inject:guice:jar:7.0.0:compile
+[INFO] |  |  +- jakarta.inject:jakarta.inject-api:jar:2.0.1:compile
+[INFO] |  |  \- aopalliance:aopalliance:jar:1.0:compile
+[INFO] |  +- io.airlift:http-client:jar:241:compile
+[INFO] |  |  +- ch.qos.logback:logback-core:jar:1.4.14:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-client:jar:11.0.19:compile
+[INFO] |  |  |  \- org.eclipse.jetty:jetty-alpn-client:jar:11.0.19:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-http:jar:11.0.19:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-io:jar:11.0.19:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-util:jar:11.0.19:compile
+[INFO] |  |  +- org.eclipse.jetty.http2:http2-client:jar:11.0.19:compile
+[INFO] |  |  |  \- org.eclipse.jetty.http2:http2-common:jar:11.0.19:compile
+[INFO] |  |  |     \- org.eclipse.jetty.http2:http2-hpack:jar:11.0.19:compile
+[INFO] |  |  \- org.eclipse.jetty.http2:http2-http-client-transport:jar:11.0.19:compile
+[INFO] |  |     \- org.eclipse.jetty:jetty-alpn-java-client:jar:11.0.19:compile
+[INFO] |  +- io.airlift:json:jar:241:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-guava:jar:2.16.1:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-joda:jar:2.16.1:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.16.1:compile
+[INFO] |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.16.1:compile
+[INFO] |  +- io.airlift:log:jar:241:compile
+[INFO] |  +- io.airlift:security:jar:241:compile
+[INFO] |  +- io.airlift:stats:jar:241:compile
+[INFO] |  |  \- org.hdrhistogram:HdrHistogram:jar:2.1.9:compile
+[INFO] |  +- io.airlift:units:jar:1.10:compile
+[INFO] |  +- io.trino:trino-cache:jar:440:compile
+[INFO] |  +- io.trino:trino-matching:jar:440:compile
+[INFO] |  +- jakarta.annotation:jakarta.annotation-api:jar:2.1.1:compile
+[INFO] |  +- jakarta.validation:jakarta.validation-api:jar:3.0.2:compile
+[INFO] |  +- joda-time:joda-time:jar:2.12.7:compile
+[INFO] |  +- org.gaul:modernizer-maven-annotations:jar:2.7.0:compile
+[INFO] |  +- org.weakref:jmxutils:jar:1.26:compile
+[INFO] |  \- io.airlift:node:jar:241:compile
+[INFO] +- io.trino:trino-spi:jar:440:compile
+[INFO] |  +- io.opentelemetry:opentelemetry-api:jar:1.35.0:compile
+[INFO] |  \- io.opentelemetry:opentelemetry-context:jar:1.35.0:compile
+[INFO] +- io.trino:trino-hdfs:jar:440:compile
+[INFO] |  +- com.amazonaws:aws-java-sdk-core:jar:1.12.674:compile
+[INFO] |  |  +- org.apache.httpcomponents:httpclient:jar:4.5.13:compile
+[INFO] |  |  \- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:jar:2.12.6:compile
+[INFO] |  +- com.amazonaws:aws-java-sdk-s3:jar:1.12.674:compile
+[INFO] |  |  +- com.amazonaws:aws-java-sdk-kms:jar:1.12.674:compile
+[INFO] |  |  \- com.amazonaws:jmespath-java:jar:1.12.674:compile
+[INFO] |  +- com.amazonaws:aws-java-sdk-sts:jar:1.12.674:compile
+[INFO] |  +- com.google.cloud.bigdataoss:gcs-connector:jar:shaded:hadoop3-2.2.20:compile
+[INFO] |  +- io.airlift:concurrent:jar:241:compile
+[INFO] |  +- io.opentelemetry.instrumentation:opentelemetry-aws-sdk-1.11:jar:2.1.0-alpha:compile
+[INFO] |  |  +- io.opentelemetry.instrumentation:opentelemetry-instrumentation-api:jar:2.1.0:compile
+[INFO] |  |  +- io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-incubator:jar:2.1.0-alpha:compile
+[INFO] |  |  \- io.opentelemetry.contrib:opentelemetry-aws-xray-propagator:jar:1.28.0-alpha:runtime
+[INFO] |  +- io.trino:trino-filesystem:jar:440:compile
+[INFO] |  |  \- com.github.ishugaliy:allgood-consistent-hash:jar:1.0.0:compile
+[INFO] |  |     \- net.openhft:zero-allocation-hashing:jar:0.11:runtime
+[INFO] |  \- io.trino:trino-memory-context:jar:440:compile
+[INFO] +- io.trino:trino-hive:jar:440:compile
+[INFO] |  +- com.amazonaws:aws-java-sdk-glue:jar:1.12.674:compile
+[INFO] |  +- dev.failsafe:failsafe:jar:3.3.2:compile
+[INFO] |  +- io.airlift:aircompressor:jar:0.26:compile
+[INFO] |  +- io.airlift:event:jar:241:compile
+[INFO] |  +- io.airlift:jmx:jar:241:compile
+[INFO] |  +- io.opentelemetry.instrumentation:opentelemetry-apache-httpclient-5.2:jar:2.1.0-alpha:compile
+[INFO] |  +- io.opentelemetry.semconv:opentelemetry-semconv:jar:1.23.1-alpha:compile
+[INFO] |  +- io.trino:trino-filesystem-manager:jar:440:compile
+[INFO] |  |  +- io.trino:trino-filesystem-azure:jar:440:compile
+[INFO] |  |  |  +- com.azure:azure-core:jar:1.46.0:compile
+[INFO] |  |  |  |  +- com.azure:azure-json:jar:1.1.0:compile
+[INFO] |  |  |  |  \- io.projectreactor:reactor-core:jar:3.4.34:compile
+[INFO] |  |  |  +- com.azure:azure-core-http-okhttp:jar:1.11.18:compile
+[INFO] |  |  |  +- com.azure:azure-core-tracing-opentelemetry:jar:1.0.0-beta.42:compile
+[INFO] |  |  |  +- com.azure:azure-identity:jar:1.11.2:compile
+[INFO] |  |  |  |  +- com.microsoft.azure:msal4j:jar:1.14.0:compile
+[INFO] |  |  |  |  \- com.microsoft.azure:msal4j-persistence-extension:jar:1.2.0:compile
+[INFO] |  |  |  +- com.azure:azure-storage-blob:jar:12.25.2:compile
+[INFO] |  |  |  |  \- com.azure:azure-storage-internal-avro:jar:12.10.2:compile
+[INFO] |  |  |  +- com.azure:azure-storage-common:jar:12.24.2:compile
+[INFO] |  |  |  |  \- com.fasterxml.jackson.dataformat:jackson-dataformat-xml:jar:2.13.5:compile
+[INFO] |  |  |  |     +- org.codehaus.woodstox:stax2-api:jar:4.2.1:compile
+[INFO] |  |  |  |     \- com.fasterxml.woodstox:woodstox-core:jar:6.4.0:compile
+[INFO] |  |  |  \- com.azure:azure-storage-file-datalake:jar:12.18.2:compile
+[INFO] |  |  +- io.trino:trino-filesystem-cache-alluxio:jar:440:compile
+[INFO] |  |  |  +- org.alluxio:alluxio-core-client-fs:jar:310:compile
+[INFO] |  |  |  |  +- com.github.stateless4j:stateless4j:jar:2.6.0:compile
+[INFO] |  |  |  |  +- com.google.protobuf:protobuf-java:jar:3.19.6:compile
+[INFO] |  |  |  |  +- commons-io:commons-io:jar:2.7:compile
+[INFO] |  |  |  |  +- io.dropwizard.metrics:metrics-core:jar:4.1.11:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-api:jar:1.54.1:compile
+[INFO] |  |  |  |  +- io.netty:netty-all:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-buffer:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-dns:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-haproxy:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-http:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-http2:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-memcache:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-mqtt:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-redis:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-smtp:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-socks:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-stomp:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-codec-xml:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-common:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-handler:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-native-unix-common:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-handler-proxy:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-handler-ssl-ocsp:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-resolver:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-resolver-dns:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-transport:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-rxtx:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-sctp:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-udt:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-classes-epoll:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-classes-kqueue:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-resolver-dns-classes-macos:jar:4.1.87.Final:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-native-epoll:jar:linux-x86_64:4.1.87.Final:runtime
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-native-epoll:jar:linux-aarch_64:4.1.87.Final:runtime
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-native-kqueue:jar:osx-x86_64:4.1.87.Final:runtime
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-native-kqueue:jar:osx-aarch_64:4.1.87.Final:runtime
+[INFO] |  |  |  |  |  +- io.netty:netty-resolver-dns-native-macos:jar:osx-x86_64:4.1.87.Final:runtime
+[INFO] |  |  |  |  |  \- io.netty:netty-resolver-dns-native-macos:jar:osx-aarch_64:4.1.87.Final:runtime
+[INFO] |  |  |  |  +- org.rocksdb:rocksdbjni:jar:7.0.3:compile
+[INFO] |  |  |  |  \- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.17.1:compile
+[INFO] |  |  |  \- org.alluxio:alluxio-core-common:jar:310:compile
+[INFO] |  |  |     +- com.github.ben-manes.caffeine:caffeine:jar:2.9.3:compile
+[INFO] |  |  |     +- commons-cli:commons-cli:jar:1.4:compile
+[INFO] |  |  |     +- io.dropwizard.metrics:metrics-graphite:jar:4.1.11:compile
+[INFO] |  |  |     +- io.dropwizard.metrics:metrics-jmx:jar:4.1.11:compile
+[INFO] |  |  |     +- io.dropwizard.metrics:metrics-jvm:jar:4.1.11:compile
+[INFO] |  |  |     +- io.prometheus:prometheus-metrics-core:jar:1.0.0:compile
+[INFO] |  |  |     |  +- io.prometheus:prometheus-metrics-model:jar:1.0.0:compile
+[INFO] |  |  |     |  +- io.prometheus:prometheus-metrics-config:jar:1.0.0:compile
+[INFO] |  |  |     |  \- io.prometheus:prometheus-metrics-tracer-initializer:jar:1.0.0:compile
+[INFO] |  |  |     |     +- io.prometheus:prometheus-metrics-tracer-common:jar:1.0.0:compile
+[INFO] |  |  |     |     +- io.prometheus:prometheus-metrics-tracer-otel:jar:1.0.0:compile
+[INFO] |  |  |     |     \- io.prometheus:prometheus-metrics-tracer-otel-agent:jar:1.0.0:compile
+[INFO] |  |  |     +- io.prometheus:prometheus-metrics-exporter-servlet-jakarta:jar:1.0.0:compile
+[INFO] |  |  |     |  \- io.prometheus:prometheus-metrics-exporter-common:jar:1.0.0:compile
+[INFO] |  |  |     |     \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.0.0:compile
+[INFO] |  |  |     |        \- io.prometheus:prometheus-metrics-shaded-protobuf:jar:1.0.0:compile
+[INFO] |  |  |     +- io.prometheus:prometheus-metrics-instrumentation-jvm:jar:1.0.0:compile
+[INFO] |  |  |     +- io.swagger:swagger-annotations:jar:1.6.2:compile
+[INFO] |  |  |     +- org.alluxio:alluxio-core-transport:jar:310:compile
+[INFO] |  |  |     \- org.reflections:reflections:jar:0.9.12:compile
+[INFO] |  |  +- io.trino:trino-filesystem-gcs:jar:440:compile
+[INFO] |  |  |  +- com.google.api:gax:jar:2.43.0:compile
+[INFO] |  |  |  |  +- com.google.api:api-common:jar:2.26.0:compile
+[INFO] |  |  |  |  +- com.google.api.grpc:proto-google-common-protos:jar:2.34.0:compile
+[INFO] |  |  |  |  \- io.opencensus:opencensus-api:jar:0.31.1:compile
+[INFO] |  |  |  +- com.google.auth:google-auth-library-credentials:jar:1.23.0:compile
+[INFO] |  |  |  +- com.google.auth:google-auth-library-oauth2-http:jar:1.23.0:compile
+[INFO] |  |  |  |  +- com.google.auto.value:auto-value-annotations:jar:1.10.4:compile
+[INFO] |  |  |  |  \- com.google.http-client:google-http-client-gson:jar:1.43.3:compile
+[INFO] |  |  |  +- com.google.cloud:google-cloud-core:jar:2.33.0:compile
+[INFO] |  |  |  |  +- com.google.protobuf:protobuf-java-util:jar:3.25.2:compile
+[INFO] |  |  |  |  \- com.google.api.grpc:proto-google-iam-v1:jar:1.29.0:compile
+[INFO] |  |  |  +- com.google.cloud:google-cloud-storage:jar:2.34.0:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-context:jar:1.61.1:compile
+[INFO] |  |  |  |  +- io.opencensus:opencensus-contrib-http-util:jar:0.31.1:compile
+[INFO] |  |  |  |  +- com.google.http-client:google-http-client-jackson2:jar:1.44.1:compile
+[INFO] |  |  |  |  +- com.google.api-client:google-api-client:jar:2.3.0:compile
+[INFO] |  |  |  |  +- com.google.oauth-client:google-oauth-client:jar:1.35.0:compile
+[INFO] |  |  |  |  +- com.google.http-client:google-http-client-apache-v2:jar:1.44.1:compile
+[INFO] |  |  |  |  +- com.google.apis:google-api-services-storage:jar:v1-rev20240209-2.0.0:compile
+[INFO] |  |  |  |  +- com.google.cloud:google-cloud-core-http:jar:2.33.0:compile
+[INFO] |  |  |  |  +- com.google.http-client:google-http-client-appengine:jar:1.44.1:compile
+[INFO] |  |  |  |  +- com.google.api:gax-httpjson:jar:2.43.0:compile
+[INFO] |  |  |  |  +- com.google.cloud:google-cloud-core-grpc:jar:2.33.0:compile
+[INFO] |  |  |  |  +- com.google.api:gax-grpc:jar:2.43.0:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-inprocess:jar:1.61.1:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-alts:jar:1.61.1:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-grpclb:jar:1.61.1:compile
+[INFO] |  |  |  |  +- org.conscrypt:conscrypt-openjdk-uber:jar:2.5.2:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-auth:jar:1.61.1:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-protobuf:jar:1.61.1:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-protobuf-lite:jar:1.61.1:runtime
+[INFO] |  |  |  |  +- com.google.api.grpc:proto-google-cloud-storage-v2:jar:2.34.0-alpha:compile
+[INFO] |  |  |  |  +- com.google.api.grpc:grpc-google-cloud-storage-v2:jar:2.34.0-alpha:compile
+[INFO] |  |  |  |  +- com.google.api.grpc:gapic-google-cloud-storage-v2:jar:2.34.0-alpha:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-netty-shaded:jar:1.61.1:runtime
+[INFO] |  |  |  |  +- io.grpc:grpc-core:jar:1.61.1:compile
+[INFO] |  |  |  |  +- com.google.android:annotations:jar:4.1.1.4:runtime
+[INFO] |  |  |  |  +- org.codehaus.mojo:animal-sniffer-annotations:jar:1.23:runtime
+[INFO] |  |  |  |  +- io.perfmark:perfmark-api:jar:0.27.0:runtime
+[INFO] |  |  |  |  +- io.grpc:grpc-stub:jar:1.61.1:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-googleapis:jar:1.61.1:runtime
+[INFO] |  |  |  |  +- io.grpc:grpc-xds:jar:1.61.1:runtime
+[INFO] |  |  |  |  +- io.opencensus:opencensus-proto:jar:0.2.0:runtime
+[INFO] |  |  |  |  +- io.grpc:grpc-util:jar:1.61.1:runtime
+[INFO] |  |  |  |  +- io.grpc:grpc-services:jar:1.61.1:runtime
+[INFO] |  |  |  |  +- com.google.re2j:re2j:jar:1.7:runtime
+[INFO] |  |  |  |  \- io.grpc:grpc-rls:jar:1.61.1:runtime
+[INFO] |  |  |  +- com.google.http-client:google-http-client:jar:1.44.1:compile
+[INFO] |  |  |  +- org.threeten:threetenbp:jar:1.6.8:compile
+[INFO] |  |  |  \- io.opentelemetry:opentelemetry-opencensus-shim:jar:1.35.0-alpha:runtime
+[INFO] |  |  |     +- io.opentelemetry:opentelemetry-extension-trace-propagators:jar:1.35.0:runtime
+[INFO] |  |  |     +- io.opencensus:opencensus-impl-core:jar:0.31.1:runtime
+[INFO] |  |  |     \- io.opencensus:opencensus-exporter-metrics-util:jar:0.31.1:runtime
+[INFO] |  |  \- io.trino:trino-filesystem-s3:jar:440:compile
+[INFO] |  |     +- io.opentelemetry.instrumentation:opentelemetry-aws-sdk-2.2:jar:2.1.0-alpha:compile
+[INFO] |  |     +- software.amazon.awssdk:apache-client:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:metrics-spi:jar:2.25.4:compile
+[INFO] |  |     |  \- software.amazon.awssdk:annotations:jar:2.25.4:compile
+[INFO] |  |     +- software.amazon.awssdk:auth:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:identity-spi:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:profiles:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:json-utils:jar:2.25.4:compile
+[INFO] |  |     |  |  \- software.amazon.awssdk:third-party-jackson-core:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:http-auth-aws:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:http-auth:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:http-auth-spi:jar:2.25.4:compile
+[INFO] |  |     |  \- software.amazon.eventstream:eventstream:jar:1.0.1:compile
+[INFO] |  |     +- software.amazon.awssdk:aws-core:jar:2.25.4:compile
+[INFO] |  |     |  \- software.amazon.awssdk:endpoints-spi:jar:2.25.4:compile
+[INFO] |  |     +- software.amazon.awssdk:http-client-spi:jar:2.25.4:compile
+[INFO] |  |     |  \- org.reactivestreams:reactive-streams:jar:1.0.4:compile
+[INFO] |  |     +- software.amazon.awssdk:regions:jar:2.25.4:compile
+[INFO] |  |     +- software.amazon.awssdk:s3:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:aws-xml-protocol:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:protocol-core:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:arns:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:crt-core:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:checksums:jar:2.25.4:compile
+[INFO] |  |     |  \- software.amazon.awssdk:checksums-spi:jar:2.25.4:compile
+[INFO] |  |     +- software.amazon.awssdk:sdk-core:jar:2.25.4:compile
+[INFO] |  |     +- software.amazon.awssdk:sts:jar:2.25.4:compile
+[INFO] |  |     |  +- software.amazon.awssdk:aws-query-protocol:jar:2.25.4:compile
+[INFO] |  |     |  \- software.amazon.awssdk:netty-nio-client:jar:2.25.4:runtime
+[INFO] |  |     \- software.amazon.awssdk:utils:jar:2.25.4:compile
+[INFO] |  +- io.trino:trino-hive-formats:jar:440:compile
+[INFO] |  |  \- com.github.luben:zstd-jni:jar:1.5.5-11:runtime
+[INFO] |  +- io.trino:trino-orc:jar:440:compile
+[INFO] |  |  \- io.trino.orc:orc-protobuf:jar:14:compile
+[INFO] |  +- io.trino:trino-parquet:jar:440:compile
+[INFO] |  |  \- org.apache.parquet:parquet-encoding:jar:1.13.1:compile
+[INFO] |  +- io.trino.coral:coral:jar:2.2.14-1:compile
+[INFO] |  |  \- com.google.code.gson:gson:jar:2.9.0:compile
+[INFO] |  +- io.trino.hive:hive-thrift:jar:2:compile
+[INFO] |  +- it.unimi.dsi:fastutil:jar:8.5.13:compile
+[INFO] |  +- org.apache.avro:avro:jar:1.11.3:compile
+[INFO] |  |  \- org.apache.commons:commons-compress:jar:1.22:compile
+[INFO] |  +- org.apache.httpcomponents.client5:httpclient5:jar:5.2.1:compile
+[INFO] |  |  \- org.apache.httpcomponents.core5:httpcore5-h2:jar:5.2:compile
+[INFO] |  +- org.apache.httpcomponents.core5:httpcore5:jar:5.2.1:compile
+[INFO] |  +- org.apache.parquet:parquet-column:jar:1.13.1:compile
+[INFO] |  +- org.apache.parquet:parquet-format-structures:jar:1.13.1:compile
+[INFO] |  +- org.apache.thrift:libthrift:jar:0.19.0:compile
+[INFO] |  +- io.airlift:log-manager:jar:241:compile
+[INFO] |  |  +- org.apache.logging.log4j:log4j-to-slf4j:jar:2.17.1:runtime
+[INFO] |  |  |  \- org.apache.logging.log4j:log4j-api:jar:2.17.1:compile
+[INFO] |  |  +- org.slf4j:jcl-over-slf4j:jar:2.0.9:runtime
+[INFO] |  |  \- org.slf4j:log4j-over-slf4j:jar:2.0.9:runtime
+[INFO] |  +- io.opentelemetry:opentelemetry-sdk-trace:jar:1.35.0:runtime
+[INFO] |  |  +- io.opentelemetry:opentelemetry-sdk-common:jar:1.35.0:runtime
+[INFO] |  |  \- io.opentelemetry:opentelemetry-extension-incubator:jar:1.35.0-alpha:runtime
+[INFO] |  +- org.apache.httpcomponents:httpcore:jar:4.4.13:compile
+[INFO] |  +- org.apache.parquet:parquet-common:jar:1.13.1:compile
+[INFO] |  +- org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:jar:5.0.2:compile
+[INFO] |  \- org.jetbrains:annotations:jar:24.1.0:compile
+[INFO] +- io.airlift:bootstrap:jar:241:compile
+[INFO] +- io.airlift:configuration:jar:241:compile
+[INFO] |  +- net.bytebuddy:byte-buddy:jar:1.14.10:compile
+[INFO] |  \- org.hibernate.validator:hibernate-validator:jar:8.0.1.Final:compile
+[INFO] |     +- org.jboss.logging:jboss-logging:jar:3.4.3.Final:compile
+[INFO] |     \- com.fasterxml:classmate:jar:1.5.1:compile
+[INFO] +- io.airlift:slice:jar:2.2:provided
+[INFO] |  \- org.openjdk.jol:jol-core:jar:0.16:provided
+[INFO] +- io.trino:trino-client:jar:440:test
+[INFO] |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.16.1:compile
+[INFO] |  +- com.squareup.okhttp3:okhttp:jar:4.12.0:compile
+[INFO] |  |  +- com.squareup.okio:okio:jar:3.6.0:compile
+[INFO] |  |  |  \- com.squareup.okio:okio-jvm:jar:3.6.0:compile
+[INFO] |  |  |     \- org.jetbrains.kotlin:kotlin-stdlib-common:jar:1.9.10:compile
+[INFO] |  |  \- org.jetbrains.kotlin:kotlin-stdlib-jdk8:jar:1.8.21:compile
+[INFO] |  |     +- org.jetbrains.kotlin:kotlin-stdlib:jar:1.8.21:compile
+[INFO] |  |     \- org.jetbrains.kotlin:kotlin-stdlib-jdk7:jar:1.8.21:compile
+[INFO] |  \- com.squareup.okhttp3:okhttp-urlconnection:jar:4.12.0:test
+[INFO] +- io.trino:trino-main:jar:440:test
+[INFO] |  +- com.clearspring.analytics:stream:jar:2.9.8:test
+[INFO] |  +- com.esri.geometry:esri-geometry-api:jar:2.2.4:test
+[INFO] |  +- com.github.oshi:oshi-core:jar:6.4.13:test
+[INFO] |  |  \- net.java.dev.jna:jna:jar:5.14.0:compile
+[INFO] |  +- com.nimbusds:nimbus-jose-jwt:jar:9.37.3:runtime
+[INFO] |  |  \- com.github.stephenc.jcip:jcip-annotations:jar:1.0-1:runtime
+[INFO] |  +- com.nimbusds:oauth2-oidc-sdk:jar:jdk11:11.10.1:runtime
+[INFO] |  |  +- com.nimbusds:content-type:jar:2.3:runtime
+[INFO] |  |  +- net.minidev:json-smart:jar:2.5.0:compile
+[INFO] |  |  |  \- net.minidev:accessors-smart:jar:2.5.0:compile
+[INFO] |  |  \- com.nimbusds:lang-tag:jar:1.7:runtime
+[INFO] |  +- commons-codec:commons-codec:jar:1.16.1:compile
+[INFO] |  +- io.airlift:bytecode:jar:1.5:test
+[INFO] |  |  +- org.ow2.asm:asm-tree:jar:9.4:test
+[INFO] |  |  \- org.ow2.asm:asm-util:jar:9.4:test
+[INFO] |  |     \- org.ow2.asm:asm-analysis:jar:9.4:test
+[INFO] |  +- io.airlift:discovery:jar:241:compile
+[INFO] |  +- io.airlift:http-server:jar:241:test
+[INFO] |  |  +- org.eclipse.jetty:jetty-jmx:jar:11.0.19:test
+[INFO] |  |  +- org.eclipse.jetty:jetty-security:jar:11.0.19:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-server:jar:11.0.19:compile
+[INFO] |  |  +- org.eclipse.jetty:jetty-servlet:jar:11.0.19:compile
+[INFO] |  |  \- org.eclipse.jetty.http2:http2-server:jar:11.0.19:test
+[INFO] |  +- io.airlift:jaxrs:jar:241:test
+[INFO] |  |  +- com.fasterxml.jackson.dataformat:jackson-dataformat-smile:jar:2.16.1:test
+[INFO] |  |  +- org.glassfish.jersey.containers:jersey-container-servlet-core:jar:3.1.5:test
+[INFO] |  |  +- org.glassfish.jersey.core:jersey-common:jar:3.1.5:test
+[INFO] |  |  |  \- org.glassfish.hk2:osgi-resource-locator:jar:1.0.3:test
+[INFO] |  |  +- org.glassfish.jersey.core:jersey-server:jar:3.1.5:test
+[INFO] |  |  |  \- org.glassfish.jersey.core:jersey-client:jar:3.1.5:test
+[INFO] |  |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.1:test
+[INFO] |  |  |  \- jakarta.activation:jakarta.activation-api:jar:2.1.2:test
+[INFO] |  |  +- org.glassfish.jaxb:jaxb-runtime:jar:4.0.4:test
+[INFO] |  |  |  \- org.glassfish.jaxb:jaxb-core:jar:4.0.4:test
+[INFO] |  |  |     +- org.eclipse.angus:angus-activation:jar:2.0.1:test
+[INFO] |  |  |     +- org.glassfish.jaxb:txw2:jar:4.0.4:test
+[INFO] |  |  |     \- com.sun.istack:istack-commons-runtime:jar:4.1.2:test
+[INFO] |  |  +- org.glassfish.jersey.containers:jersey-container-servlet:jar:3.1.5:test
+[INFO] |  |  \- org.glassfish.jersey.inject:jersey-hk2:jar:3.1.5:test
+[INFO] |  |     +- org.glassfish.hk2:hk2-locator:jar:3.0.5:test
+[INFO] |  |     |  +- org.glassfish.hk2:hk2-api:jar:3.0.5:test
+[INFO] |  |     |  \- org.glassfish.hk2:hk2-utils:jar:3.0.5:test
+[INFO] |  |     \- org.javassist:javassist:jar:3.29.2-GA:compile
+[INFO] |  +- io.airlift:jmx-http:jar:241:test
+[INFO] |  +- io.airlift:joni:jar:2.1.5.3:test
+[INFO] |  +- io.airlift:openmetrics:jar:241:test
+[INFO] |  +- io.airlift:trace-token:jar:241:compile
+[INFO] |  +- io.airlift:tracing:jar:241:runtime
+[INFO] |  |  +- io.opentelemetry:opentelemetry-exporter-otlp:jar:1.31.0:runtime
+[INFO] |  |  |  +- io.opentelemetry:opentelemetry-sdk-metrics:jar:1.31.0:runtime
+[INFO] |  |  |  +- io.opentelemetry:opentelemetry-sdk-logs:jar:1.31.0:runtime
+[INFO] |  |  |  |  \- io.opentelemetry:opentelemetry-api-events:jar:1.31.0-alpha:runtime
+[INFO] |  |  |  +- io.opentelemetry:opentelemetry-exporter-otlp-common:jar:1.31.0:runtime
+[INFO] |  |  |  |  \- io.opentelemetry:opentelemetry-exporter-common:jar:1.31.0:runtime
+[INFO] |  |  |  +- io.opentelemetry:opentelemetry-exporter-sender-okhttp:jar:1.31.0:runtime
+[INFO] |  |  |  \- io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:jar:1.31.0:runtime
+[INFO] |  |  \- io.opentelemetry:opentelemetry-sdk:jar:1.31.0:runtime
+[INFO] |  +- io.airlift.discovery:discovery-server:jar:1.36:test
+[INFO] |  |  +- io.airlift:jmx-http-rpc:jar:234:test
+[INFO] |  |  +- org.iq80.leveldb:leveldb-api:jar:0.12:test
+[INFO] |  |  +- org.iq80.leveldb:leveldb:jar:0.12:test
+[INFO] |  |  \- io.airlift:event-http:jar:234:test
+[INFO] |  +- io.jsonwebtoken:jjwt-api:jar:0.12.5:test
+[INFO] |  +- io.jsonwebtoken:jjwt-impl:jar:0.12.5:test
+[INFO] |  +- io.jsonwebtoken:jjwt-jackson:jar:0.12.5:test
+[INFO] |  +- io.opentelemetry:opentelemetry-sdk-testing:jar:1.35.0:test
+[INFO] |  +- io.trino:trino-array:jar:440:compile
+[INFO] |  +- io.trino:trino-geospatial-toolkit:jar:440:test
+[INFO] |  |  \- org.locationtech.jts.io:jts-io-common:jar:1.19.0:test
+[INFO] |  |     \- com.googlecode.json-simple:json-simple:jar:1.1.1:test
+[INFO] |  +- io.trino:trino-parser:jar:440:test
+[INFO] |  |  +- io.trino:trino-grammar:jar:440:test
+[INFO] |  |  \- org.antlr:antlr4-runtime:jar:4.13.1:test
+[INFO] |  +- io.trino:trino-re2j:jar:1.7:test
+[INFO] |  +- jakarta.ws.rs:jakarta.ws.rs-api:jar:3.1.0:test
+[INFO] |  +- org.apache.commons:commons-math3:jar:3.6.1:test
+[INFO] |  +- org.apache.lucene:lucene-analysis-common:jar:9.10.0:test
+[INFO] |  |  \- org.apache.lucene:lucene-core:jar:9.10.0:test
+[INFO] |  +- org.locationtech.jts:jts-core:jar:1.19.0:test
+[INFO] |  +- org.ow2.asm:asm:jar:9.6:compile
+[INFO] |  +- org.pcollections:pcollections:jar:4.0.1:test
+[INFO] |  +- org.roaringbitmap:RoaringBitmap:jar:1.0.1:test
+[INFO] |  \- net.java.dev.jna:jna-platform:jar:5.14.0:test
+[INFO] +- io.trino:trino-testing:jar:440:test
+[INFO] |  +- io.airlift:testing:jar:241:test
+[INFO] |  +- io.trino:trino-main:test-jar:tests:440:test
+[INFO] |  +- io.trino:trino-testing-containers:jar:440:test
+[INFO] |  |  +- com.github.docker-java:docker-java-api:jar:3.3.6:test
+[INFO] |  |  +- io.minio:minio:jar:8.5.8:test
+[INFO] |  |  |  +- com.carrotsearch.thirdparty:simple-xml-safe:jar:2.7.1:test
+[INFO] |  |  |  \- org.bouncycastle:bcprov-jdk18on:jar:1.76:test
+[INFO] |  |  +- org.rnorth.duct-tape:duct-tape:jar:1.0.8:test
+[INFO] |  |  \- org.testcontainers:testcontainers:jar:1.19.7:test
+[INFO] |  |     +- junit:junit:jar:4.13.2:test
+[INFO] |  |     |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] |  |     \- com.github.docker-java:docker-java-transport-zerodep:jar:3.3.6:test
+[INFO] |  |        \- com.github.docker-java:docker-java-transport:jar:3.3.6:test
+[INFO] |  +- io.trino:trino-testing-services:jar:440:test
+[INFO] |  +- io.trino:trino-tpch:jar:440:test
+[INFO] |  +- io.trino.tpch:tpch:jar:1.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.25.3:test
+[INFO] |  +- org.jdbi:jdbi3-core:jar:3.45.0:test
+[INFO] |  |  \- io.leangen.geantyref:geantyref:jar:1.3.15:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:5.10.2:compile
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.3.0:compile
+[INFO] |  |  +- org.junit.platform:junit-platform-commons:jar:1.10.2:compile
+[INFO] |  |  \- org.apiguardian:apiguardian-api:jar:1.1.2:compile
+[INFO] |  \- com.h2database:h2:jar:2.2.224:test
+[INFO] +- org.apache.paimon:paimon-bundle:jar:0.8.0:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.8.3:compile
+[INFO] |  \- org.lz4:lz4-java:jar:1.8.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter:jar:5.8.1:compile
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:5.8.1:compile
+[INFO] |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.8.1:runtime
+[INFO] |     \- org.junit.platform:junit-platform-engine:jar:1.8.1:runtime
+[INFO] +- com.google.guava:guava:jar:31.1-jre:compile
+[INFO] |  +- com.google.guava:failureaccess:jar:1.0.1:compile
+[INFO] |  +- com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava:compile
+[INFO] |  +- org.checkerframework:checker-qual:jar:3.12.0:compile
+[INFO] |  \- com.google.j2objc:j2objc-annotations:jar:1.3:compile
+[INFO] +- org.slf4j:slf4j-api:jar:2.0.7:compile
+[INFO] +- org.slf4j:slf4j-jdk14:jar:2.0.7:compile
+[INFO] +- org.apache.commons:commons-lang3:jar:3.3.2:compile
+[INFO] \- com.google.code.findbugs:jsr305:jar:1.3.9:compile
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for Paimon : Trino 1.0-SNAPSHOT:
+[INFO] 
+[INFO] Paimon : Trino ..................................... SUCCESS [  0.439 s]
+[INFO] Paimon : Trino : 440 ............................... SUCCESS [  1.448 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.065 s
+[INFO] Finished at: 2024-11-20T17:45:18+08:00
+[INFO] ------------------------------------------------------------------------
