@@ -50,7 +50,7 @@ import io.trino.testing.AbstractTestQueryFramework;
 import io.trino.testing.DistributedQueryRunner;
 import io.trino.testing.MaterializedResult;
 import io.trino.testing.QueryRunner;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.time.Instant;
@@ -70,18 +70,12 @@ import static org.apache.paimon.data.BinaryString.fromString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** ITCase for trino connector. */
-public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
+public class TestTrinoITCase extends AbstractTestQueryFramework {
 
     private static final String CATALOG = "paimon";
     private static final String DB = "default";
 
     protected long t2FirstCommitTimestamp;
-
-    private int trinoVersion;
-
-    public TestTrinoITCase(int trinoVersion) {
-        this.trinoVersion = trinoVersion;
-    }
 
     @Override
     protected QueryRunner createQueryRunner() throws Exception {

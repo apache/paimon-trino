@@ -37,6 +37,7 @@ import io.trino.filesystem.TrinoOutputFile;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,8 +70,16 @@ public class TrinoFileIO implements FileIO {
     public PositionOutputStream newOutputStream(Path path, boolean overwrite) throws IOException {
         TrinoOutputFile trinoOutputFile =
                 trinoFileSystem.newOutputFile(Location.of(path.toString()));
-        return new PositionOutputStreamWrapper(
-                overwrite ? trinoOutputFile.createOrOverwrite() : trinoOutputFile.create());
+
+        try {
+            return new PositionOutputStreamWrapper(trinoOutputFile.create());
+        } catch (FileAlreadyExistsException e) {
+            if (overwrite) {
+                trinoFileSystem.deleteFile(Location.of(path.toString()));
+                return new PositionOutputStreamWrapper(trinoOutputFile.create());
+            }
+            throw e;
+        }
     }
 
     @Override

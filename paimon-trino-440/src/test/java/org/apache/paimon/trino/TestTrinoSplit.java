@@ -18,10 +18,24 @@
 
 package org.apache.paimon.trino;
 
-/** {@link TestTrinoITCase} for Trino 427. */
-public class TestTrino440ITCase extends TestTrinoITCase {
+import io.airlift.json.JsonCodec;
+import org.junit.jupiter.api.Test;
 
-    public TestTrino440ITCase() {
-        super(440);
+import java.util.Arrays;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/** Test for {@link TrinoSplit}. */
+public class TestTrinoSplit {
+
+    private final JsonCodec<TrinoSplit> codec = JsonCodec.jsonCodec(TrinoSplit.class);
+
+    @Test
+    public void testJsonRoundTrip() throws Exception {
+        byte[] serializedTable = TrinoTestUtils.getSerializedTable();
+        TrinoSplit expected = new TrinoSplit(Arrays.toString(serializedTable), 0.1);
+        String json = codec.toJson(expected);
+        TrinoSplit actual = codec.fromJson(json);
+        assertThat(actual.getSplitSerialized()).isEqualTo(expected.getSplitSerialized());
     }
 }
