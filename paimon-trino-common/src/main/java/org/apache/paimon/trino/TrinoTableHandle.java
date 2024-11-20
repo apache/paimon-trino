@@ -28,6 +28,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ColumnMetadata;
+import io.trino.spi.connector.ConnectorInsertTableHandle;
+import io.trino.spi.connector.ConnectorOutputTableHandle;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTableMetadata;
@@ -44,7 +46,8 @@ import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 /** Trino {@link ConnectorTableHandle}. */
-public class TrinoTableHandle implements ConnectorTableHandle {
+public class TrinoTableHandle
+        implements ConnectorTableHandle, ConnectorInsertTableHandle, ConnectorOutputTableHandle {
 
     private final String schemaName;
     private final String tableName;

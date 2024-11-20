@@ -32,6 +32,7 @@ import io.trino.filesystem.FileIterator;
 import io.trino.filesystem.Location;
 import io.trino.filesystem.TrinoFileSystem;
 import io.trino.filesystem.TrinoInputFile;
+import io.trino.filesystem.TrinoOutputFile;
 
 import javax.annotation.Nullable;
 
@@ -65,9 +66,11 @@ public class TrinoFileIO implements FileIO {
     }
 
     @Override
-    public PositionOutputStream newOutputStream(Path path, boolean b) throws IOException {
+    public PositionOutputStream newOutputStream(Path path, boolean overwrite) throws IOException {
+        TrinoOutputFile trinoOutputFile =
+                trinoFileSystem.newOutputFile(Location.of(path.toString()));
         return new PositionOutputStreamWrapper(
-                trinoFileSystem.newOutputFile(Location.of(path.toString())).create());
+                overwrite ? trinoOutputFile.createOrOverwrite() : trinoOutputFile.create());
     }
 
     @Override
@@ -122,7 +125,7 @@ public class TrinoFileIO implements FileIO {
     }
 
     @Override
-    public boolean delete(Path path, boolean b) throws IOException {
+    public boolean delete(Path path, boolean recursive) throws IOException {
         Location location = Location.of(path.toString());
         if (trinoFileSystem.directoryExists(location).orElse(false)) {
             trinoFileSystem.deleteDirectory(location);

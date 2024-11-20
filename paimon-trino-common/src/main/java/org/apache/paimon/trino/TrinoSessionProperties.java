@@ -27,6 +27,7 @@ import java.util.List;
 
 import static io.trino.spi.session.PropertyMetadata.doubleProperty;
 import static io.trino.spi.session.PropertyMetadata.longProperty;
+import static io.trino.spi.type.VarcharType.VARCHAR;
 import static org.apache.paimon.CoreOptions.SCAN_SNAPSHOT_ID;
 import static org.apache.paimon.CoreOptions.SCAN_TIMESTAMP_MILLIS;
 
@@ -36,6 +37,8 @@ public class TrinoSessionProperties {
     public static final String SCAN_TIMESTAMP = "scan_timestamp_millis";
     public static final String SCAN_SNAPSHOT = "scan_snapshot_id";
     public static final String MINIMUM_SPLIT_WEIGHT = "minimum_split_weight";
+    public static final String INSERT_EXISTING_PARTITIONS_BEHAVIOR =
+            "insert_existing_partitions_behavior";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -57,6 +60,18 @@ public class TrinoSessionProperties {
                         .add(
                                 doubleProperty(
                                         MINIMUM_SPLIT_WEIGHT, "Minimum split weight", 0.05, false))
+                        .add(
+                                new PropertyMetadata<>(
+                                        INSERT_EXISTING_PARTITIONS_BEHAVIOR,
+                                        "Behavior on insert existing partitions",
+                                        VARCHAR,
+                                        InsertExistingPartitionsBehavior.class,
+                                        InsertExistingPartitionsBehavior.APPEND,
+                                        false,
+                                        value ->
+                                                InsertExistingPartitionsBehavior.valueOf(
+                                                        (String) value),
+                                        InsertExistingPartitionsBehavior::toString))
                         .build();
     }
 
@@ -74,5 +89,18 @@ public class TrinoSessionProperties {
 
     public static Double getMinimumSplitWeight(ConnectorSession session) {
         return session.getProperty(MINIMUM_SPLIT_WEIGHT, Double.class);
+    }
+
+    public static boolean enableInsertOverwrite(ConnectorSession session) {
+        return session.getProperty(
+                        INSERT_EXISTING_PARTITIONS_BEHAVIOR, InsertExistingPartitionsBehavior.class)
+                == InsertExistingPartitionsBehavior.OVERWRITE;
+    }
+
+    /** Insert existing partitions behavior. */
+    public enum InsertExistingPartitionsBehavior {
+        ERROR,
+        APPEND,
+        OVERWRITE,
     }
 }

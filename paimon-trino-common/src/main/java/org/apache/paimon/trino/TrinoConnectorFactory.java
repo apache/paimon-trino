@@ -31,6 +31,7 @@ import io.trino.filesystem.manager.FileSystemModule;
 import io.trino.hdfs.HdfsModule;
 import io.trino.hdfs.authentication.HdfsAuthenticationModule;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata;
+import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorPageSinkProvider;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorPageSourceProvider;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorSplitManager;
 import io.trino.plugin.hive.NodeVersion;
@@ -129,6 +130,10 @@ public class TrinoConnectorFactory implements ConnectorFactory {
             TrinoSplitManager trinoSplitManager = injector.getInstance(TrinoSplitManager.class);
             TrinoPageSourceProvider trinoPageSourceProvider =
                     injector.getInstance(TrinoPageSourceProvider.class);
+            TrinoPageSinkProvider trinoPageSinkProvider =
+                    injector.getInstance(TrinoPageSinkProvider.class);
+            TrinoNodePartitioningProvider trinoNodePartitioningProvider =
+                    injector.getInstance(TrinoNodePartitioningProvider.class);
             TrinoSessionProperties trinoSessionProperties =
                     injector.getInstance(TrinoSessionProperties.class);
             TrinoTableOptions trinoTableOptions = injector.getInstance(TrinoTableOptions.class);
@@ -138,6 +143,9 @@ public class TrinoConnectorFactory implements ConnectorFactory {
                     new ClassLoaderSafeConnectorSplitManager(trinoSplitManager, classLoader),
                     new ClassLoaderSafeConnectorPageSourceProvider(
                             trinoPageSourceProvider, classLoader),
+                    new ClassLoaderSafeConnectorPageSinkProvider(
+                            trinoPageSinkProvider, classLoader),
+                    trinoNodePartitioningProvider,
                     trinoTableOptions,
                     trinoSessionProperties);
         }

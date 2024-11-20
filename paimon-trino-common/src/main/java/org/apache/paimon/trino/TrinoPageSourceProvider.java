@@ -71,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.trino.memory.context.AggregatedMemoryContext.newSimpleAggregatedMemoryContext;
@@ -106,14 +107,52 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Table table = trinoTableHandle.tableWithDynamicOptions(trinoCatalog, session);
         return runWithContextClassLoader(
-                () ->
-                        createPageSource(
+                () -> {
+                    Optional<TrinoColumnHandle> rowId =
+                            columns.stream()
+                                    .map(TrinoColumnHandle.class::cast)
+                                    .filter(column -> column.isRowId())
+                                    .findFirst();
+                    if (rowId.isPresent()) {
+                        List<ColumnHandle> dataColumns =
+                                columns.stream()
+                                        .map(TrinoColumnHandle.class::cast)
+                                        .filter(column -> !column.isRowId())
+                                        .collect(Collectors.toList());
+                        Set<String> rowIdFileds =
+                                ((io.trino.spi.type.RowType) rowId.get().getTrinoType())
+                                        .getFields().stream()
+                                                .map(io.trino.spi.type.RowType.Field::getName)
+                                                .map(Optional::get)
+                                                .collect(Collectors.toSet());
+
+                        HashMap<String, Integer> fieldToIndex = new HashMap<>();
+                        for (int i = 0; i < dataColumns.size(); i++) {
+                            TrinoColumnHandle trinoColumnHandle =
+                                    (TrinoColumnHandle) dataColumns.get(i);
+                            if (rowIdFileds.contains(trinoColumnHandle.getColumnName())) {
+                                fieldToIndex.put(trinoColumnHandle.getColumnName(), i);
+                            }
+                        }
+                        return TrinoMergePageSourceWrapper.wrap(
+                                createPageSource(
+                                        session,
+                                        table,
+                                        trinoTableHandle.getFilter(),
+                                        (TrinoSplit) split,
+                                        dataColumns,
+                                        trinoTableHandle.getLimit()),
+                                fieldToIndex);
+                    } else {
+                        return createPageSource(
                                 session,
                                 table,
                                 trinoTableHandle.getFilter(),
                                 (TrinoSplit) split,
                                 columns,
-                                trinoTableHandle.getLimit()),
+                                trinoTableHandle.getLimit());
+                    }
+                },
                 TrinoPageSourceProvider.class.getClassLoader());
     }
 
