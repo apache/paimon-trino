@@ -108,14 +108,14 @@ public class TestTrinoType {
                 .isEqualTo("timestamp(6)");
 
         Type timestampType0 =
-                TrinoTypeUtils.fromPaimonType(new org.apache.paimon.types.TimestampType(0));
+                TrinoTypeUtils.fromPaimonType(new org.apache.paimon.types.TimestampType(3));
         assertThat(Objects.requireNonNull(timestampType0).getDisplayName())
-                .isEqualTo("timestamp(0)");
+                .isEqualTo("timestamp(3)");
 
         Type localZonedTimestampType =
                 TrinoTypeUtils.fromPaimonType(DataTypes.TIMESTAMP_WITH_LOCAL_TIME_ZONE());
         assertThat(Objects.requireNonNull(localZonedTimestampType).getDisplayName())
-                .isEqualTo("timestamp(3) with time zone");
+                .isEqualTo("timestamp(6) with time zone");
 
         Type arrayType = TrinoTypeUtils.fromPaimonType(DataTypes.ARRAY(DataTypes.STRING()));
         assertThat(Objects.requireNonNull(arrayType).getDisplayName()).isEqualTo("array(varchar)");
