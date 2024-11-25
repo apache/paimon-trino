@@ -484,7 +484,7 @@ public class TestTrinoITCase extends AbstractTestQueryFramework {
         }
 
         {
-            Path tablePath = new Path(warehouse, "default.db/t103");
+            Path tablePath = new Path(warehouse, "default.db/fixed_bucket_table_wi_pk");
             RowType rowType =
                     new RowType(
                             Arrays.asList(
@@ -501,6 +501,50 @@ public class TestTrinoITCase extends AbstractTestQueryFramework {
                                             put("file.format", "orc");
                                             put("primary-key", "id");
                                             put("bucket", "2");
+                                        }
+                                    },
+                                    ""));
+        }
+
+        {
+            Path tablePath = new Path(warehouse, "default.db/fixed_bucket_table_wo_pk");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "id", DataTypes.INT()),
+                                    new DataField(1, "name", DataTypes.STRING())));
+            new SchemaManager(LocalFileIO.create(), tablePath)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    Collections.emptyList(),
+                                    new HashMap<>() {
+                                        {
+                                            put("file.format", "orc");
+                                            put("bucket", "2");
+                                            put("bucket-key", "id");
+                                        }
+                                    },
+                                    ""));
+        }
+
+        {
+            Path tablePath = new Path(warehouse, "default.db/unaware_table");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "id", DataTypes.INT()),
+                                    new DataField(1, "name", DataTypes.STRING())));
+            new SchemaManager(LocalFileIO.create(), tablePath)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    Collections.emptyList(),
+                                    new HashMap<>() {
+                                        {
+                                            put("file.format", "orc");
                                         }
                                     },
                                     ""));
@@ -847,11 +891,27 @@ public class TestTrinoITCase extends AbstractTestQueryFramework {
     }
 
     @Test
-    public void testInsertInto() {
+    public void testInsertIntoFixedBucketTableWiPk() {
         sql(
-                "INSERT INTO paimon.default.t103 VALUES (1,'1'),(2,'2'),(3,'3'),(4,'4'),(5,'5'),(6,'6')");
-        assertThat(sql("SELECT * FROM paimon.default.t103 order by id asc"))
+                "INSERT INTO paimon.default.fixed_bucket_table_wi_pk VALUES (1,'1'),(2,'2'),(3,'3'),(4,'4'),(5,'5'),(6,'6')");
+        assertThat(sql("SELECT * FROM paimon.default.fixed_bucket_table_wi_pk order by id asc"))
                 .isEqualTo("[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]]");
+    }
+
+    @Test
+    public void testInsertIntoFixedBucketTableWoPk() {
+        sql(
+                "INSERT INTO paimon.default.fixed_bucket_table_wo_pk VALUES (1,'1'),(2,'2'),(3,'3'),(4,'4'),(1,'1'),(2,'2'),(3,'3'),(4,'4')");
+        assertThat(sql("SELECT * FROM paimon.default.fixed_bucket_table_wo_pk order by id asc"))
+                .isEqualTo("[[1, 1], [1, 1], [2, 2], [2, 2], [3, 3], [3, 3], [4, 4], [4, 4]]");
+    }
+
+    @Test
+    public void testInsertIntoUnawareTable() {
+        sql(
+                "INSERT INTO paimon.default.unaware_table VALUES (1,'1'),(2,'2'),(3,'3'),(4,'4'),(1,'1'),(2,'2'),(3,'3'),(4,'4')");
+        assertThat(sql("SELECT * FROM paimon.default.unaware_table order by id asc"))
+                .isEqualTo("[[1, 1], [1, 1], [2, 2], [2, 2], [3, 3], [3, 3], [4, 4], [4, 4]]");
     }
 
     protected String sql(String sql) {

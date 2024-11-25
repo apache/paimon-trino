@@ -18,6 +18,7 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.table.BucketMode;
 import org.apache.paimon.utils.InstantiationUtil;
 
 import io.airlift.json.JsonCodec;
@@ -34,7 +35,8 @@ public class TestTrinoPartitioningHandle {
     @Test
     public void testTrinoPartitioningHandle() throws Exception {
         byte[] schemaData = InstantiationUtil.serializeObject("test_schema");
-        TrinoPartitioningHandle expected = new TrinoPartitioningHandle(schemaData);
+        TrinoPartitioningHandle expected =
+                new TrinoPartitioningHandle(schemaData, BucketMode.FIXED);
         testRoundTrip(expected);
     }
 
