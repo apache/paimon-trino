@@ -40,9 +40,20 @@ public class TrinoNodePartitioningProvider implements ConnectorNodePartitioningP
             ConnectorSession session,
             ConnectorPartitioningHandle partitioningHandle,
             List<Type> partitionChannelTypes,
-            int bucketCount) {
-        // todo support different types of tables according to different PartitioningHandle
-        return new FixedBucketTableShuffleFunction(
-                partitionChannelTypes, (TrinoPartitioningHandle) partitioningHandle, bucketCount);
+            int workerCount) {
+        // todo support dynamic bucket tables
+        TrinoPartitioningHandle trinoPartitioningHandle =
+                (TrinoPartitioningHandle) partitioningHandle;
+        switch (trinoPartitioningHandle.getBucketMode()) {
+            case FIXED:
+                return new FixedBucketTableShuffleFunction(
+                        partitionChannelTypes, trinoPartitioningHandle, workerCount);
+            case UNAWARE:
+                return new UnawareTableShuffleFunction(
+                        partitionChannelTypes, trinoPartitioningHandle, workerCount);
+            default:
+                throw new UnsupportedOperationException(
+                        "Unsupported bucket mode: " + trinoPartitioningHandle.getBucketMode());
+        }
     }
 }

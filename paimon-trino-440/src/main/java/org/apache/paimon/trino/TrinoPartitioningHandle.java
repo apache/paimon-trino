@@ -19,6 +19,7 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.schema.TableSchema;
+import org.apache.paimon.table.BucketMode;
 import org.apache.paimon.utils.InstantiationUtil;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -32,15 +33,24 @@ import java.util.Arrays;
 public class TrinoPartitioningHandle implements ConnectorPartitioningHandle {
 
     private final byte[] schema;
+    private final BucketMode bucketMode;
 
     @JsonCreator
-    public TrinoPartitioningHandle(@JsonProperty("schema") byte[] schema) {
+    public TrinoPartitioningHandle(
+            @JsonProperty("schema") byte[] schema,
+            @JsonProperty("bucketMode") BucketMode bucketMode) {
         this.schema = schema;
+        this.bucketMode = bucketMode;
     }
 
     @JsonProperty
     public byte[] getSchema() {
         return schema;
+    }
+
+    @JsonProperty
+    public BucketMode getBucketMode() {
+        return bucketMode;
     }
 
     public TableSchema getOriginalSchema() {

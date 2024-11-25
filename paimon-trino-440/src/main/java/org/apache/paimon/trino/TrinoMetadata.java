@@ -92,6 +92,8 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.paimon.table.BucketMode.FIXED;
+import static org.apache.paimon.table.BucketMode.UNAWARE;
 import static org.apache.paimon.trino.TrinoColumnHandle.TRINO_ROW_ID_NAME;
 import static org.apache.paimon.utils.Preconditions.checkArgument;
 
@@ -126,8 +128,9 @@ public class TrinoMetadata implements ConnectorMetadata {
                             new ConnectorTableLayout(
                                     new TrinoPartitioningHandle(
                                             InstantiationUtil.serializeObject(
-                                                    fileStoreTable.schema())),
-                                    table.primaryKeys(),
+                                                    fileStoreTable.schema()),
+                                            FIXED),
+                                    fileStoreTable.schema().bucketKeys(),
                                     false));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -140,11 +143,18 @@ public class TrinoMetadata implements ConnectorMetadata {
                 }
                 throw new IllegalArgumentException("Global dynamic bucket mode are not supported");
             case UNAWARE:
-                if (!table.primaryKeys().isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Only append table can support unaware bucket.");
+                try {
+                    return Optional.of(
+                            new ConnectorTableLayout(
+                                    new TrinoPartitioningHandle(
+                                            InstantiationUtil.serializeObject(
+                                                    fileStoreTable.schema()),
+                                            UNAWARE),
+                                    fileStoreTable.schema().partitionKeys(),
+                                    true));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-                throw new IllegalArgumentException("Unaware bucket mode are not supported");
             default:
                 throw new IllegalArgumentException("Unknown bucket mode");
         }
@@ -232,6 +242,14 @@ public class TrinoMetadata implements ConnectorMetadata {
             ConnectorSession session, ConnectorTableHandle tableHandle) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Table table = trinoTableHandle.table(catalog);
+        try {
+            if (table.getClass()
+                    == Class.forName("org.apache.paimon.table.AppendOnlyFileStoreTable")) {
+                throw new IllegalArgumentException("Append-only table does not support upsert");
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         Set<String> pkSet = table.primaryKeys().stream().collect(Collectors.toSet());
         DataField[] row =
                 table.rowType().getFields().stream()
@@ -255,7 +273,8 @@ public class TrinoMetadata implements ConnectorMetadata {
                 try {
                     return Optional.of(
                             new TrinoPartitioningHandle(
-                                    InstantiationUtil.serializeObject(fileStoreTable.schema())));
+                                    InstantiationUtil.serializeObject(fileStoreTable.schema()),
+                                    FIXED));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
