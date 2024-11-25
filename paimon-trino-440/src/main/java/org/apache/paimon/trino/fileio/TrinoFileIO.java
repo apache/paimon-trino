@@ -147,6 +147,11 @@ public class TrinoFileIO implements FileIO {
     public boolean delete(Path path, boolean recursive) throws IOException {
         Location location = Location.of(path.toString());
         if (trinoFileSystem.directoryExists(location).orElse(false)) {
+            if (!recursive) {
+                if (trinoFileSystem.listFiles(location).hasNext()) {
+                    throw new IOException("Directory " + location + " is not empty");
+                }
+            }
             trinoFileSystem.deleteDirectory(location);
             return true;
         } else if (existFile(location)) {
