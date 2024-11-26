@@ -37,7 +37,7 @@ public class UnawareTableShuffleFunction implements BucketFunction {
     private static final Logger LOG = LoggerFactory.getLogger(UnawareTableShuffleFunction.class);
     private final int workerCount;
     private final boolean hasPartitionKeys;
-    private final Projection partitionProjection;
+    private final ThreadLocal<Projection> projectionContext;
 
     public UnawareTableShuffleFunction(
             List<Type> partitionChannelTypes,
@@ -45,8 +45,11 @@ public class UnawareTableShuffleFunction implements BucketFunction {
             int workerCount) {
         this.hasPartitionKeys = partitionChannelTypes.size() > 0;
         TableSchema schema = partitioningHandle.getOriginalSchema();
-        this.partitionProjection =
-                CodeGenUtils.newProjection(schema.logicalPartitionType(), schema.partitionKeys());
+        this.projectionContext =
+                ThreadLocal.withInitial(
+                        () ->
+                                CodeGenUtils.newProjection(
+                                        schema.logicalPartitionType(), schema.partitionKeys()));
         this.workerCount = workerCount;
     }
 
@@ -56,7 +59,7 @@ public class UnawareTableShuffleFunction implements BucketFunction {
             return 0;
         } else {
             TrinoRow trinoRow = new TrinoRow(page.getSingleValuePage(position), RowKind.INSERT);
-            BinaryRow partition = partitionProjection.apply(trinoRow);
+            BinaryRow partition = projectionContext.get().apply(trinoRow);
             return partition.hashCode() % workerCount;
         }
     }

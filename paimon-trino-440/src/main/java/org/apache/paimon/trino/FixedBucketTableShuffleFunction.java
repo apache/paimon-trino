@@ -43,7 +43,7 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
     private final int workerCount;
     private final int bucketCount;
     private final boolean isRowId;
-    private final Projection pkProjection;
+    private final ThreadLocal<Projection> projectionContext;
 
     public FixedBucketTableShuffleFunction(
             List<Type> partitionChannelTypes,
@@ -51,8 +51,11 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
             int workerCount) {
 
         TableSchema schema = partitioningHandle.getOriginalSchema();
-        this.pkProjection =
-                CodeGenUtils.newProjection(schema.logicalPrimaryKeysType(), schema.primaryKeys());
+        this.projectionContext =
+                ThreadLocal.withInitial(
+                        () ->
+                                CodeGenUtils.newProjection(
+                                        schema.logicalPrimaryKeysType(), schema.primaryKeys()));
         this.bucketCount = new CoreOptions(schema.options()).bucket();
         this.workerCount = workerCount;
         this.isRowId =
@@ -78,7 +81,7 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
         }
 
         TrinoRow trinoRow = new TrinoRow(page.getSingleValuePage(position), RowKind.INSERT);
-        BinaryRow pk = pkProjection.apply(trinoRow);
+        BinaryRow pk = projectionContext.get().apply(trinoRow);
         int bucket =
                 KeyAndBucketExtractor.bucket(
                         KeyAndBucketExtractor.bucketKeyHashCode(pk), bucketCount);
