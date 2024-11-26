@@ -92,18 +92,11 @@ public class TrinoPageSinkProvider implements ConnectorPageSinkProvider {
         BucketMode mode =
                 table instanceof FileStoreTable
                         ? ((FileStoreTable) table).bucketMode()
-                        : BucketMode.FIXED;
+                        : BucketMode.HASH_FIXED;
         switch (mode) {
-            case FIXED:
-            case UNAWARE:
+            case HASH_FIXED:
+            case BUCKET_UNAWARE:
                 break;
-            case DYNAMIC:
-            case GLOBAL_DYNAMIC:
-                if (table.primaryKeys().isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Only primary-key table can support dynamic bucket.");
-                }
-                throw new IllegalArgumentException("Global dynamic bucket mode are not supported");
             default:
                 throw new IllegalArgumentException("Unknown bucket mode: " + mode);
         }

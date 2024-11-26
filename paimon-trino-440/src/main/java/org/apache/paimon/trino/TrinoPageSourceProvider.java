@@ -205,7 +205,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                                                 new Path(indexFile.path()),
                                                 ((FileStoreTable) table).fileIO(),
                                                 rowType)) {
-                                    if (!fileIndexPredicate.testPredicate(paimonFilter.get())) {
+                                    if (!fileIndexPredicate.evaluate(paimonFilter.get()).remain()) {
                                         continue;
                                     }
                                 }

@@ -93,8 +93,6 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.apache.paimon.table.BucketMode.FIXED;
-import static org.apache.paimon.table.BucketMode.UNAWARE;
 import static org.apache.paimon.trino.TrinoColumnHandle.TRINO_ROW_ID_NAME;
 import static org.apache.paimon.utils.Preconditions.checkArgument;
 
@@ -124,19 +122,18 @@ public class TrinoMetadata implements ConnectorMetadata {
         FileStoreTable storeTable = (FileStoreTable) table;
         BucketMode bucketMode = storeTable.bucketMode();
         switch (bucketMode) {
-            case FIXED:
+            case HASH_FIXED:
                 try {
                     return Optional.of(
                             new ConnectorTableLayout(
                                     new TrinoPartitioningHandle(
-                                            InstantiationUtil.serializeObject(storeTable.schema()),
-                                            FIXED),
+                                            InstantiationUtil.serializeObject(storeTable.schema())),
                                     storeTable.schema().bucketKeys(),
                                     false));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-            case UNAWARE:
+            case BUCKET_UNAWARE:
                 return Optional.empty();
             default:
                 throw new IllegalArgumentException("Unknown table bucket mode: " + bucketMode);
@@ -230,7 +227,7 @@ public class TrinoMetadata implements ConnectorMetadata {
         }
         FileStoreTable storeTable = (FileStoreTable) table;
         BucketMode bucketMode = storeTable.bucketMode();
-        if (bucketMode != FIXED) {
+        if (bucketMode != BucketMode.HASH_FIXED) {
             throw new IllegalArgumentException("Unsupported table bucket mode: " + bucketMode);
         }
         Set<String> pkSet = new HashSet<>(table.primaryKeys());
@@ -252,13 +249,13 @@ public class TrinoMetadata implements ConnectorMetadata {
         }
         FileStoreTable storeTable = (FileStoreTable) table;
         BucketMode bucketMode = storeTable.bucketMode();
-        if (bucketMode != FIXED) {
+        if (bucketMode != BucketMode.HASH_FIXED) {
             throw new IllegalArgumentException("Unsupported table bucket mode: " + bucketMode);
         }
         try {
             return Optional.of(
                     new TrinoPartitioningHandle(
-                            InstantiationUtil.serializeObject(storeTable.schema()), FIXED));
+                            InstantiationUtil.serializeObject(storeTable.schema())));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -282,7 +279,12 @@ public class TrinoMetadata implements ConnectorMetadata {
     @Override
     public boolean schemaExists(ConnectorSession session, String schemaName) {
         catalog.initSession(session);
-        return catalog.databaseExists(schemaName);
+        try {
+            catalog.getDatabase(schemaName);
+            return true;
+        } catch (Catalog.DatabaseNotExistException e) {
+            return false;
+        }
     }
 
     @Override
@@ -427,11 +429,14 @@ public class TrinoMetadata implements ConnectorMetadata {
             SchemaTableName tableName,
             Map<String, String> dynamicOptions) {
         catalog.initSession(session);
-        return catalog.tableExists(
-                        Identifier.create(tableName.getSchemaName(), tableName.getTableName()))
-                ? new TrinoTableHandle(
-                        tableName.getSchemaName(), tableName.getTableName(), dynamicOptions)
-                : null;
+        try {
+            catalog.getTable(
+                    Identifier.create(tableName.getSchemaName(), tableName.getTableName()));
+            return new TrinoTableHandle(
+                    tableName.getSchemaName(), tableName.getTableName(), dynamicOptions);
+        } catch (Catalog.TableNotExistException e) {
+            return null;
+        }
     }
 
     @Override
