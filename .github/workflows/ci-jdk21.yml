@@ -49,4 +49,4 @@ jobs:
           EOF
       - name: Build
         run: |
-          mvn clean install -P '!toolchain' -pl paimon-trino-440
+          mvn clean install -P '!toolchain'
