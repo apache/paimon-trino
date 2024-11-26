@@ -18,6 +18,8 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.table.BucketMode;
+
 import com.google.inject.Inject;
 import io.trino.spi.connector.BucketFunction;
 import io.trino.spi.connector.ConnectorNodePartitioningProvider;
@@ -44,16 +46,11 @@ public class TrinoNodePartitioningProvider implements ConnectorNodePartitioningP
         // todo support dynamic bucket tables
         TrinoPartitioningHandle trinoPartitioningHandle =
                 (TrinoPartitioningHandle) partitioningHandle;
-        switch (trinoPartitioningHandle.getBucketMode()) {
-            case FIXED:
-                return new FixedBucketTableShuffleFunction(
-                        partitionChannelTypes, trinoPartitioningHandle, workerCount);
-            case UNAWARE:
-                return new UnawareTableShuffleFunction(
-                        partitionChannelTypes, trinoPartitioningHandle, workerCount);
-            default:
-                throw new UnsupportedOperationException(
-                        "Unsupported bucket mode: " + trinoPartitioningHandle.getBucketMode());
+        if (trinoPartitioningHandle.getBucketMode() == BucketMode.FIXED) {
+            return new FixedBucketTableShuffleFunction(
+                    partitionChannelTypes, trinoPartitioningHandle, workerCount);
         }
+        throw new UnsupportedOperationException(
+                "Unsupported table bucket mode: " + trinoPartitioningHandle.getBucketMode());
     }
 }
