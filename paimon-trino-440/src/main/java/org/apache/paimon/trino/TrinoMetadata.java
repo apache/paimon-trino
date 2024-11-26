@@ -118,9 +118,10 @@ public class TrinoMetadata implements ConnectorMetadata {
             ConnectorSession session, ConnectorTableHandle tableHandle) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Table table = trinoTableHandle.table(catalog);
-        if (!(table instanceof FileStoreTable storeTable)) {
+        if (!(table instanceof FileStoreTable)) {
             throw new IllegalArgumentException(table.getClass() + " is not supported");
         }
+        FileStoreTable storeTable = (FileStoreTable) table;
         BucketMode bucketMode = storeTable.bucketMode();
         switch (bucketMode) {
             case FIXED:
@@ -224,9 +225,10 @@ public class TrinoMetadata implements ConnectorMetadata {
             ConnectorSession session, ConnectorTableHandle tableHandle) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Table table = trinoTableHandle.table(catalog);
-        if (!(table instanceof FileStoreTable storeTable)) {
+        if (!(table instanceof FileStoreTable)) {
             throw new IllegalArgumentException(table.getClass() + " is not supported");
         }
+        FileStoreTable storeTable = (FileStoreTable) table;
         BucketMode bucketMode = storeTable.bucketMode();
         if (bucketMode != FIXED) {
             throw new IllegalArgumentException("Unsupported table bucket mode: " + bucketMode);
@@ -245,9 +247,10 @@ public class TrinoMetadata implements ConnectorMetadata {
             ConnectorSession session, ConnectorTableHandle tableHandle) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Table table = trinoTableHandle.table(catalog);
-        if (!(table instanceof FileStoreTable storeTable)) {
+        if (!(table instanceof FileStoreTable)) {
             throw new IllegalArgumentException(table.getClass() + " is not supported");
         }
+        FileStoreTable storeTable = (FileStoreTable) table;
         BucketMode bucketMode = storeTable.bucketMode();
         if (bucketMode != FIXED) {
             throw new IllegalArgumentException("Unsupported table bucket mode: " + bucketMode);
