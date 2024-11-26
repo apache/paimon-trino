@@ -95,9 +95,7 @@ public class TrinoPageSinkProvider implements ConnectorPageSinkProvider {
                         : BucketMode.FIXED;
         switch (mode) {
             case FIXED:
-                if (table.primaryKeys().isEmpty()) {
-                    throw new IllegalArgumentException("Only support primary-key table.");
-                }
+            case UNAWARE:
                 break;
             case DYNAMIC:
             case GLOBAL_DYNAMIC:
@@ -106,14 +104,8 @@ public class TrinoPageSinkProvider implements ConnectorPageSinkProvider {
                             "Only primary-key table can support dynamic bucket.");
                 }
                 throw new IllegalArgumentException("Global dynamic bucket mode are not supported");
-            case UNAWARE:
-                if (!table.primaryKeys().isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Only append table can support unaware bucket.");
-                }
-                throw new IllegalArgumentException("Unaware bucket mode are not supported");
             default:
-                throw new IllegalArgumentException("Unknown bucket mode");
+                throw new IllegalArgumentException("Unknown bucket mode: " + mode);
         }
     }
 
