@@ -38,7 +38,6 @@ under the License.
 
     <properties>
         <paimon.version>1.0-SNAPSHOT</paimon.version>
-        <target.java.version>11</target.java.version>
         <target.java.version>21</target.java.version>
         <jdk.test.version>21</jdk.test.version>
         <trino.version>440</trino.version>
