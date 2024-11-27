@@ -21,33 +21,14 @@ under the License.
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <modules>
-        <module>paimon-trino-440</module>
-    </modules>
-
     <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>23</version>
+        <groupId>org.apache.paimon</groupId>
+        <artifactId>paimon-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.paimon</groupId>
-    <artifactId>paimon-trino</artifactId>
-    <name>Paimon : Trino</name>
-    <version>1.0-SNAPSHOT</version>
-
-    <packaging>pom</packaging>
-
-    <url>https://paimon.apache.org</url>
-    <inceptionYear>2023</inceptionYear>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
+    <artifactId>paimon-trino-${trino.version}</artifactId>
+    <name>Paimon : Trino : ${trino.version}</name>
 
     <scm>
         <url>https://github.com/apache/paimon-trino</url>
@@ -57,9 +38,15 @@ under the License.
 
     <properties>
         <paimon.version>1.0-SNAPSHOT</paimon.version>
-        <target.java.version>11</target.java.version>
+        <target.java.version>21</target.java.version>
+        <jdk.test.version>21</jdk.test.version>
+        <trino.version>440</trino.version>
+        <airlift.version>241</airlift.version>
+        <slice.version>2.2</slice.version>
+        <maven.toolchains.plugin.version>3.1.0</maven.toolchains.plugin.version>
+        <hadoop.apache.version>3.2.0-18</hadoop.apache.version>
         <junit5.version>5.8.1</junit5.version>
-        <slf4j.version>2.0.7</slf4j.version>
+        <slf4j.version>2.0.13</slf4j.version>
         <guava.version>31.1-jre</guava.version>
         <commons-lang3.version>3.3.2</commons-lang3.version>
         <findbugs.version>1.3.9</findbugs.version>
@@ -67,25 +54,6 @@ under the License.
         <maven.compiler.version>3.10.1</maven.compiler.version>
         <spotless.version>2.43.0</spotless.version>
         <spotless.delimiter>package</spotless.delimiter>
-        <spotless.license.header>
-            /*
-            * Licensed to the Apache Software Foundation (ASF) under one
-            * or more contributor license agreements.  See the NOTICE file
-            * distributed with this work for additional information
-            * regarding copyright ownership.  The ASF licenses this file
-            * to you under the Apache License, Version 2.0 (the
-            * "License"); you may not use this file except in compliance
-            * with the License.  You may obtain a copy of the License at
-            *
-            *     http://www.apache.org/licenses/LICENSE-2.0
-            *
-            * Unless required by applicable law or agreed to in writing, software
-            * distributed under the License is distributed on an "AS IS" BASIS,
-            * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-            * See the License for the specific language governing permissions and
-            * limitations under the License.
-            */
-        </spotless.license.header>
     </properties>
 
     <dependencies>
@@ -106,15 +74,98 @@ under the License.
         </dependency>
 
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit5.version}</version>
+            <groupId>io.trino.hadoop</groupId>
+            <artifactId>hadoop-apache</artifactId>
+            <version>${hadoop.apache.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-plugin-toolkit</artifactId>
+            <version>${trino.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-spi</artifactId>
+            <version>${trino.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.openjdk.jol</groupId>
+                    <artifactId>jol-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-hdfs</artifactId>
+            <version>${trino.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-hive</artifactId>
+            <version>${trino.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>${airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>configuration</artifactId>
+            <version>${airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>slice</artifactId>
+            <version>${slice.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- for testing -->
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-client</artifactId>
+            <version>${trino.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-main</artifactId>
+            <version>${trino.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-testing</artifactId>
+            <version>${trino.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- log and util-->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -147,7 +198,6 @@ under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven.compiler.version}</version>
             </plugin>
 
             <plugin>
@@ -164,107 +214,16 @@ under the License.
                     <java>
                         <googleJavaFormat>
                             <version>1.17.0</version>
+                            <style>AOSP</style>
                         </googleJavaFormat>
+
+                        <!-- \# refers to the static imports -->
+                        <importOrder>
+                            <order>org.apache.paimon,org.apache.paimon.shaded,,javax,java,scala,\#</order>
+                        </importOrder>
+
+                        <removeUnusedImports/>
                     </java>
-                </configuration>
-            </plugin>
-
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
-                <configuration>
-                    <source>${target.java.version}</source>
-                    <target>${target.java.version}</target>
-                    <!-- The semantics of this option are reversed, see MCOMPILER-209. -->
-                    <useIncrementalCompilation>false</useIncrementalCompilation>
-                    <compilerArgs>
-                        <!-- Prevents recompilation due to missing package-info.class, see MCOMPILER-205 -->
-                        <arg>-Xpkginfo:always</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.rat</groupId>
-                <artifactId>apache-rat-plugin</artifactId>
-                <version>0.15</version>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <excludeSubProjects>false</excludeSubProjects>
-                    <numUnapprovedLicenses>0</numUnapprovedLicenses>
-                    <licenses>
-                        <!-- Enforce this license:
-                          Licensed to the Apache Software Foundation (ASF) under one
-                          or more contributor license agreements.  See the NOTICE file
-                          distributed with this work for additional information
-                          regarding copyright ownership.  The ASF licenses this file
-                          to you under the Apache License, Version 2.0 (the
-                          "License"); you may not use this file except in compliance
-                          with the License.  You may obtain a copy of the License at
-                            http://www.apache.org/licenses/LICENSE-2.0
-                          Unless required by applicable law or agreed to in writing,
-                          software distributed under the License is distributed on an
-                          "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-                          KIND, either express or implied.  See the License for the
-                          specific language governing permissions and limitations
-                          under the License.
-                        -->
-                        <license implementation="org.apache.rat.analysis.license.SimplePatternBasedLicense">
-                            <licenseFamilyCategory>AL2</licenseFamilyCategory>
-                            <licenseFamilyName>Apache License 2.0</licenseFamilyName>
-                            <notes/>
-                            <patterns>
-                                <pattern>Licensed to the Apache Software Foundation (ASF) under one</pattern>
-                            </patterns>
-                        </license>
-                    </licenses>
-                    <licenseFamilies>
-                        <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
-                            <familyName>Apache License 2.0</familyName>
-                        </licenseFamily>
-                    </licenseFamilies>
-                    <excludes>
-                        <!-- Additional files like .gitignore etc.-->
-                        <exclude>**/.*/**</exclude>
-                        <exclude>**/*.prefs</exclude>
-                        <exclude>**/*.log</exclude>
-                        <!-- Administrative files in the main trunk. -->
-                        <exclude>**/README.md</exclude>
-                        <exclude>**/CODE_OF_CONDUCT.md</exclude>
-                        <exclude>.github/**</exclude>
-                        <!-- IDE files. -->
-                        <exclude>**/*.iml</exclude>
-                        <exclude>**/.idea/**</exclude>
-                        <!-- Generated content -->
-                        <exclude>**/target/**</exclude>
-                        <exclude>docs/static/font-awesome/**</exclude>
-                        <exclude>docs/resources/**</exclude>
-                        <exclude>docs/public/**</exclude>
-                        <exclude>docs/themes/book/**</exclude>
-                        <exclude>docs/assets/github.css</exclude>
-                        <exclude>docs/static/js/anchor.min.js</exclude>
-                        <exclude>docs/layouts/shortcodes/generated/**</exclude>
-                        <exclude>**/*.svg</exclude>
-                        <exclude>**/dependency-reduced-pom.xml</exclude>
-                        <!-- Bundled license files -->
-                        <exclude>**/LICENSE*</exclude>
-                        <!-- artifacts created during release process -->
-                        <exclude>release/**</exclude>
-                        <!-- antlr grammar files -->
-                        <exclude>paimon-common/src/main/antlr4/**</exclude>
-                        <!-- Test files -->
-                        <exclude>paimon-common/src/test/resources/codesplit/**</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
 
@@ -284,259 +243,96 @@ under the License.
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
+                <artifactId>maven-jar-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-maven</id>
                         <goals>
-                            <goal>enforce</goal>
+                            <goal>test-jar</goal>
                         </goals>
-                        <configuration>
-                            <rules>
-                                <requireMavenVersion>
-                                    <!-- enforce at least mvn version 3.1.1 (see FLINK-12447) -->
-                                    <version>[3.1.1,)</version>
-                                </requireMavenVersion>
-                               <!-- <requireJavaVersion>
-                                    <version>${target.java.version}</version>
-                                </requireJavaVersion>-->
-                            </rules>
-                        </configuration>
                     </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
                     <execution>
-                        <id>ban-unsafe-snakeyaml</id>
+                        <id>shade-paimon</id>
+                        <phase>package</phase>
                         <goals>
-                            <goal>enforce</goal>
+                            <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <rules>
-                                <bannedDependencies>
-                                    <excludes>
-                                        <exclude>org.yaml:snakeyaml:(,1.26]</exclude>
-                                    </excludes>
-                                    <includes>
-                                        <!-- Snakeyaml is pulled in by many modules without using it in production,
-                                          so there's no benefit in us investing time into bumping these. -->
-                                        <include>org.yaml:snakeyaml:(,1.26]:*:test</include>
-                                    </includes>
-                                </bannedDependencies>
-                            </rules>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>ban-unsafe-jackson</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <bannedDependencies>
-                                    <excludes>
-                                        <exclude>com.fasterxml.jackson*:*:(,2.7.0]</exclude>
-                                    </excludes>
-                                </bannedDependencies>
-                            </rules>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>forbid-log4j-1</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <bannedDependencies>
-                                    <excludes>
-                                        <exclude>log4j:log4j</exclude>
-                                        <exclude>org.slf4j:slf4j-log4j12</exclude>
-                                    </excludes>
-                                </bannedDependencies>
-                            </rules>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>dependency-convergence</id>
-                        <!-- disabled by default as it interacts badly with shade-plugin -->
-                        <phase>none</phase>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <dependencyConvergence/>
-                            </rules>
+                            <artifactSet>
+                                <includes combine.children="append">
+                                    <include>org.apache.paimon:paimon-bundle</include>
+                                    <include>com.google.guava:guava</include>
+                                    <include>org.xerial.snappy:snappy-java</include>
+                                    <include>org.slf4j:slf4j-api</include>
+                                    <include>org.apache.logging.log4j:log4j-api</include>
+                                    <include>org.apache.logging.log4j:log4j-core</include>
+                                    <include>org.apache.logging.log4j:log4j-slf4j-impl</include>
+                                    <include>org.apache.logging.log4j:log4j-1.2-api</include>
+                                    <include>org.apache.commons:commons-lang3</include>
+                                </includes>
+                            </artifactSet>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.5.5</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/assembly/paimon.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.commonjava.maven.plugins</groupId>
+                <artifactId>directory-maven-plugin</artifactId>
+                <version>1.0</version>
+                <executions>
+                    <execution>
+                        <id>directories</id>
+                        <goals>
+                            <goal>directory-of</goal>
+                        </goals>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>1.7</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.0</version>
-                    <configuration>
-                        <source>${target.java.version}</source>
-                        <target>${target.java.version}</target>
-                        <!-- The semantics of this option are reversed, see MCOMPILER-209. -->
-                        <useIncrementalCompilation>false</useIncrementalCompilation>
-                        <compilerArgs>
-                            <!-- Prevents recompilation due to missing package-info.class, see MCOMPILER-205 -->
-                            <arg>-Xpkginfo:always</arg>
-                        </compilerArgs>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>2.17</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>com.puppycrawl.tools</groupId>
-                            <artifactId>checkstyle</artifactId>
-                            <!-- Note: match version with docs/flinkDev/ide_setup.md -->
-                            <version>8.14</version>
-                        </dependency>
-                    </dependencies>
-                    <executions>
-                        <execution>
-                            <id>validate</id>
-                            <phase>validate</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <suppressionsLocation>/tools/maven/suppressions.xml</suppressionsLocation>
-                        <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                        <configLocation>/tools/maven/checkstyle.xml</configLocation>
-                        <logViolationsToConsole>true</logViolationsToConsole>
-                        <failOnViolation>true</failOnViolation>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>com.diffplug.spotless</groupId>
-                    <artifactId>spotless-maven-plugin</artifactId>
-                    <version>${spotless.version}</version>
-                    <configuration>
-                        <java>
-                            <googleJavaFormat>
-                                <version>1.7</version>
-                                <style>AOSP</style>
-                            </googleJavaFormat>
-
-                            <!-- \# refers to the static imports -->
-                            <importOrder>
-                                <order>org.apache.paimon,org.apache.paimon.shaded,,javax,java,scala,\#</order>
-                            </importOrder>
-
-                            <removeUnusedImports/>
-                        </java>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>spotless-check</id>
-                            <phase>validate</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9.1</version><!--$NO-MVN-MAN-VER$-->
-                    <configuration>
-                        <quiet>true</quiet>
-                        <detectOfflineLinks>false</detectOfflineLinks>
-                        <additionalJOptions combine.children="append">
-                            <additionalJOption>-Xdoclint:none</additionalJOption>
-                        </additionalJOptions>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>3.0.0-M1</version>
-                </plugin>
-
-                <!-- Pin the version of the maven shade plugin -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-shade-plugin</artifactId>
-                    <version>3.4.1</version>
-                </plugin>
-
-                <!-- configure scala style -->
-                <plugin>
-                    <groupId>org.scalastyle</groupId>
-                    <artifactId>scalastyle-maven-plugin</artifactId>
-                    <version>1.0.0</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <verbose>false</verbose>
-                        <failOnViolation>true</failOnViolation>
-                        <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                        <failOnWarning>false</failOnWarning>
-                        <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-                        <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-                        <outputFile>${project.basedir}/target/scalastyle-output.xml</outputFile>
-                        <inputEncoding>UTF-8</inputEncoding>
-                        <outputEncoding>UTF-8</outputEncoding>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <!-- Inherited from Apache parent, but not actually used. Disable to reduce noise. -->
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-site-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>attach-descriptor</id>
-                            <phase>none</phase>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-remote-resources-plugin</artifactId>
-                    <version>1.7.0</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>process</goal>
-                            </goals>
-                            <configuration>
-                                <resourceBundles>
-                                    <resourceBundle>org.apache.apache.resources:apache-incubator-disclaimer-resource-bundle:1.5</resourceBundle>
-                                </resourceBundles>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
+    <profiles>
+        <profile>
+            <id>apache-build</id>
+            <repositories>
+                <repository>
+                    <id>apache-releases</id>
+                    <name>apache releases</name>
+                    <url>https://repository.apache.org/content/repositories/releases/</url>
+                </repository>
+                <repository>
+                    <id>apache-snapshots</id>
+                    <name>apache snapshots</name>
+                    <url>https://repository.apache.org/content/repositories/snapshots/</url>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
 
 </project>
