@@ -25,22 +25,10 @@ under the License.
         <groupId>org.apache.paimon</groupId>
         <artifactId>paimon-parent</artifactId>
         <version>1.0-SNAPSHOT</version>
-        <relativePath/>
     </parent>
 
     <artifactId>paimon-trino-${trino.version}</artifactId>
     <name>Paimon : Trino : ${trino.version}</name>
-
-    <url>https://paimon.apache.org</url>
-    <inceptionYear>2024</inceptionYear>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
 
     <scm>
         <url>https://github.com/apache/paimon-trino</url>
@@ -327,9 +315,14 @@ under the License.
 
     <repositories>
         <repository>
-            <id>apache-repo</id>
-            <url>https://repo.maven.apache.org/maven2</url>
+            <id>apache-releases</id>
+            <name>apache releases</name>
+            <url>https://repository.apache.org/content/repositories/releases/</url>
+        </repository>
+        <repository>
+            <id>apache-snapshots</id>
+            <name>apache snapshots</name>
+            <url>https://repository.apache.org/content/repositories/snapshots/</url>
         </repository>
     </repositories>
-
 </project>
