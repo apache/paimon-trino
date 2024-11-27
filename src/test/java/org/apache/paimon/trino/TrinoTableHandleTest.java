@@ -18,30 +18,41 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.utils.InstantiationUtil;
-
 import io.airlift.json.JsonCodec;
+import io.trino.spi.predicate.TupleDomain;
 import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
+import java.util.Optional;
+import java.util.OptionalLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Test for {@link TrinoPartitioningHandle}. */
-public class TestTrinoPartitioningHandle {
+/** Test for {@link TrinoTableHandle}. */
+public class TrinoTableHandleTest {
 
-    private final JsonCodec<TrinoPartitioningHandle> codec =
-            JsonCodec.jsonCodec(TrinoPartitioningHandle.class);
+    private final JsonCodec<TrinoTableHandle> codec = JsonCodec.jsonCodec(TrinoTableHandle.class);
 
     @Test
-    public void testTrinoPartitioningHandle() throws Exception {
-        byte[] schemaData = InstantiationUtil.serializeObject("test_schema");
-        TrinoPartitioningHandle expected = new TrinoPartitioningHandle(schemaData);
+    public void testPrestoTableHandle() throws Exception {
+        TrinoTableHandle expected =
+                new TrinoTableHandle(
+                        "test",
+                        "user",
+                        Collections.emptyMap(),
+                        TupleDomain.all(),
+                        Optional.empty(),
+                        OptionalLong.empty());
         testRoundTrip(expected);
     }
 
-    private void testRoundTrip(TrinoPartitioningHandle expected) {
+    private void testRoundTrip(TrinoTableHandle expected) {
         String json = codec.toJson(expected);
-        TrinoPartitioningHandle actual = codec.fromJson(json);
+        TrinoTableHandle actual = codec.fromJson(json);
         assertThat(actual).isEqualTo(expected);
-        assertThat(actual.getSchema()).isEqualTo(expected.getSchema());
+        assertThat(actual.getSchemaName()).isEqualTo(expected.getSchemaName());
+        assertThat(actual.getTableName()).isEqualTo(expected.getTableName());
+        assertThat(actual.getFilter()).isEqualTo(expected.getFilter());
+        assertThat(actual.getProjectedColumns()).isEqualTo(expected.getProjectedColumns());
     }
 }

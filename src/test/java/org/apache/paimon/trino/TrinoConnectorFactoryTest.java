@@ -31,7 +31,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Test for {@link TrinoConnectorFactory}. */
-public class TestTrinoConnectorFactory {
+public class TrinoConnectorFactoryTest {
 
     @TempDir java.nio.file.Path tempFile;
 

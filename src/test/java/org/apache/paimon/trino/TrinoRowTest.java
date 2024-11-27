@@ -48,7 +48,7 @@ import static io.trino.type.DateTimes.MICROSECONDS_PER_MILLISECOND;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 /** Test for {@link TrinoRow}. */
-public class TestTrinoRow {
+public class TrinoRowTest {
 
     @Test
     void test() {

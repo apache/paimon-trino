@@ -16,41 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.paimon.trino.fileio;
+package org.apache.paimon.trino;
 
-import org.apache.paimon.fs.FileStatus;
-import org.apache.paimon.fs.Path;
+import io.airlift.json.JsonCodec;
+import org.junit.jupiter.api.Test;
 
-/** File status for trino file. */
-public class TrinoFileStatus implements FileStatus {
+import java.util.Arrays;
 
-    private final long len;
-    private final Path path;
-    private final long modificationTmie;
+import static org.assertj.core.api.Assertions.assertThat;
 
-    public TrinoFileStatus(long len, Path path, long modificationTmie) {
-        this.len = len;
-        this.path = path;
-        this.modificationTmie = modificationTmie;
-    }
+/** Test for {@link TrinoSplit}. */
+public class TrinoSplitTest {
 
-    @Override
-    public long getLen() {
-        return len;
-    }
+    private final JsonCodec<TrinoSplit> codec = JsonCodec.jsonCodec(TrinoSplit.class);
 
-    @Override
-    public boolean isDir() {
-        return false;
-    }
-
-    @Override
-    public Path getPath() {
-        return path;
-    }
-
-    @Override
-    public long getModificationTime() {
-        return modificationTmie;
+    @Test
+    public void testJsonRoundTrip() throws Exception {
+        byte[] serializedTable = TrinoTestUtils.getSerializedTable();
+        TrinoSplit expected = new TrinoSplit(Arrays.toString(serializedTable), 0.1);
+        String json = codec.toJson(expected);
+        TrinoSplit actual = codec.fromJson(json);
+        assertThat(actual.getSplitSerialized()).isEqualTo(expected.getSplitSerialized());
     }
 }

@@ -21,7 +21,7 @@ package org.apache.paimon.trino;
 import org.junit.jupiter.api.Test;
 
 /** The test of TestTrinoFilterExtractor. */
-public class TestTrinoFilterExtractor {
+public class TrinoFilterExtractorTest {
 
     @Test
     public void testExtractTrinoColumnHandleForExpressionFilter() {

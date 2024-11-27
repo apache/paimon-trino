@@ -32,7 +32,7 @@ import static io.trino.type.InternalTypeManager.TESTING_TYPE_MANAGER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Test for {@link TrinoColumnHandle}. */
-public class TestTrinoColumnHandle {
+public class TrinoColumnHandleTest {
 
     @Test
     public void testTrinoColumnHandle() {

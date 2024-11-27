@@ -24,7 +24,7 @@ import io.trino.testing.AbstractDistributedEngineOnlyQueries;
 import io.trino.testing.QueryRunner;
 
 /** The test of TrinoDistributedQuery. */
-public class TestTrinoDistributedQuery extends AbstractDistributedEngineOnlyQueries {
+public class TrinoDistributedQueryTest extends AbstractDistributedEngineOnlyQueries {
 
     @Override
     protected QueryRunner createQueryRunner() throws Exception {

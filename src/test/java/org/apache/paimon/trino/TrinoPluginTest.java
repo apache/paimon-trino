@@ -34,7 +34,7 @@ import static org.apache.paimon.shade.guava30.com.google.common.collect.Iterable
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Test for {@link TrinoPlugin}. */
-public class TestTrinoPlugin {
+public class TrinoPluginTest {
     @Test
     public void testCreatePrestoConnector() throws IOException {
         String warehouse =
