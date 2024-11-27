@@ -49,4 +49,4 @@ jobs:
           EOF
       - name: Build
         run: |
-          mvn clean install -P '!toolchain'
+          mvn clean install -P '!toolchain' -Papache-build
