@@ -25,13 +25,14 @@ under the License.
         <groupId>org.apache.paimon</groupId>
         <artifactId>paimon-parent</artifactId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath/>
     </parent>
 
     <artifactId>paimon-trino-${trino.version}</artifactId>
     <name>Paimon : Trino : ${trino.version}</name>
 
     <url>https://paimon.apache.org</url>
-    <inceptionYear>2023</inceptionYear>
+    <inceptionYear>2024</inceptionYear>
 
     <licenses>
         <license>
