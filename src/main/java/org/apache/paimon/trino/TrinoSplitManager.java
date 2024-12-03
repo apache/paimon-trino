@@ -21,7 +21,6 @@ package org.apache.paimon.trino;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.table.source.ReadBuilder;
 import org.apache.paimon.table.source.Split;
-import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import com.google.inject.Inject;
 import io.trino.spi.connector.ConnectorSession;
@@ -40,14 +39,12 @@ import static java.util.Objects.requireNonNull;
 /** Trino {@link ConnectorSplitManager}. */
 public class TrinoSplitManager implements ConnectorSplitManager {
 
-    private final TrinoCatalog trinoCatalog;
+    private final TrinoMetadataFactory trinoMetadataFactory;
 
     @Inject
     public TrinoSplitManager(TrinoMetadataFactory trinoMetadataFactory) {
-        this.trinoCatalog =
-                requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null")
-                        .create()
-                        .catalog();
+        this.trinoMetadataFactory =
+                requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null");
     }
 
     @Override
@@ -66,7 +63,9 @@ public class TrinoSplitManager implements ConnectorSplitManager {
         // TODO what is constraint?
 
         TrinoTableHandle tableHandle = (TrinoTableHandle) connectorTableHandle;
-        Table table = tableHandle.tableWithDynamicOptions(trinoCatalog, session);
+        Table table =
+                tableHandle.tableWithDynamicOptions(
+                        trinoMetadataFactory.create(session.getIdentity()).catalog(), session);
         ReadBuilder readBuilder = table.newReadBuilder();
         new TrinoFilterConverter(table.rowType())
                 .convert(tableHandle.getFilter())

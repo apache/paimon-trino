@@ -31,7 +31,6 @@ import org.apache.paimon.table.source.IndexFile;
 import org.apache.paimon.table.source.RawFile;
 import org.apache.paimon.table.source.ReadBuilder;
 import org.apache.paimon.table.source.Split;
-import org.apache.paimon.trino.catalog.TrinoCatalog;
 import org.apache.paimon.types.DataField;
 import org.apache.paimon.types.RowType;
 
@@ -83,16 +82,14 @@ import static org.apache.paimon.trino.ClassLoaderUtils.runWithContextClassLoader
 public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
 
     private final TrinoFileSystemFactory fileSystemFactory;
-    private final TrinoCatalog trinoCatalog;
+    private final TrinoMetadataFactory trinoMetadataFactory;
 
     @Inject
     public TrinoPageSourceProvider(
             TrinoFileSystemFactory fileSystemFactory, TrinoMetadataFactory trinoMetadataFactory) {
         this.fileSystemFactory = requireNonNull(fileSystemFactory, "fileSystemFactory is null");
-        this.trinoCatalog =
-                requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null")
-                        .create()
-                        .catalog();
+        this.trinoMetadataFactory =
+                requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null");
     }
 
     @Override
@@ -103,9 +100,10 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             ConnectorTableHandle tableHandle,
             List<ColumnHandle> columns,
             DynamicFilter dynamicFilter) {
-        trinoCatalog.initSession(session);
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
-        Table table = trinoTableHandle.tableWithDynamicOptions(trinoCatalog, session);
+        Table table =
+                trinoTableHandle.tableWithDynamicOptions(
+                        trinoMetadataFactory.create(session.getIdentity()).catalog(), session);
         return runWithContextClassLoader(
                 () -> {
                     Optional<TrinoColumnHandle> rowId =

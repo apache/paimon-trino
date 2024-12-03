@@ -18,6 +18,8 @@
 
 package org.apache.paimon.trino;
 
+import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata;
+import io.trino.plugin.hive.HiveTransactionHandle;
 import io.trino.spi.connector.Connector;
 import io.trino.spi.connector.ConnectorMetadata;
 import io.trino.spi.connector.ConnectorNodePartitioningProvider;
@@ -31,13 +33,13 @@ import io.trino.spi.transaction.IsolationLevel;
 
 import java.util.List;
 
-import static io.trino.spi.transaction.IsolationLevel.READ_COMMITTED;
+import static io.trino.spi.transaction.IsolationLevel.SERIALIZABLE;
 import static io.trino.spi.transaction.IsolationLevel.checkConnectorSupports;
 import static java.util.Objects.requireNonNull;
 
 /** Trino {@link Connector}. */
 public class TrinoConnector implements Connector {
-    private final ConnectorMetadata trinoMetadata;
+    private final TrinoTransactionManager transactionManager;
     private final ConnectorSplitManager trinoSplitManager;
     private final ConnectorPageSourceProvider trinoPageSourceProvider;
     private final ConnectorPageSinkProvider trinoPageSinkProvider;
@@ -46,14 +48,14 @@ public class TrinoConnector implements Connector {
     private final List<PropertyMetadata<?>> sessionProperties;
 
     public TrinoConnector(
-            ConnectorMetadata trinoMetadata,
+            TrinoTransactionManager transactionManager,
             ConnectorSplitManager trinoSplitManager,
             ConnectorPageSourceProvider trinoPageSourceProvider,
             ConnectorPageSinkProvider trinoPageSinkProvider,
             ConnectorNodePartitioningProvider trinoNodePartitioningProvider,
             TrinoTableOptions trinoTableOptions,
             TrinoSessionProperties trinoSessionProperties) {
-        this.trinoMetadata = requireNonNull(trinoMetadata, "trinoMetadata is null");
+        this.transactionManager = requireNonNull(transactionManager, "transactionManager is null");
         this.trinoSplitManager = requireNonNull(trinoSplitManager, "trinoSplitManager is null");
         this.trinoPageSourceProvider =
                 requireNonNull(trinoPageSourceProvider, "trinoRecordSetProvider is null");
@@ -69,14 +71,28 @@ public class TrinoConnector implements Connector {
     @Override
     public ConnectorTransactionHandle beginTransaction(
             IsolationLevel isolationLevel, boolean readOnly, boolean autoCommit) {
-        checkConnectorSupports(READ_COMMITTED, isolationLevel);
-        return TrinoTransactionHandle.INSTANCE;
+        checkConnectorSupports(SERIALIZABLE, isolationLevel);
+        ConnectorTransactionHandle transaction = new HiveTransactionHandle(autoCommit);
+        transactionManager.begin(transaction);
+        return transaction;
+    }
+
+    @Override
+    public void commit(ConnectorTransactionHandle transaction) {
+        transactionManager.commit(transaction);
+    }
+
+    @Override
+    public void rollback(ConnectorTransactionHandle transaction) {
+        transactionManager.rollback(transaction);
     }
 
     @Override
     public ConnectorMetadata getMetadata(
             ConnectorSession session, ConnectorTransactionHandle transactionHandle) {
-        return trinoMetadata;
+        ConnectorMetadata metadata =
+                transactionManager.get(transactionHandle, session.getIdentity());
+        return new ClassLoaderSafeConnectorMetadata(metadata, getClass().getClassLoader());
     }
 
     @Override
