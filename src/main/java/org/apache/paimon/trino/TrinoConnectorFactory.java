@@ -28,9 +28,6 @@ import io.airlift.json.JsonModule;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.trino.filesystem.manager.FileSystemModule;
-import io.trino.hdfs.HdfsModule;
-import io.trino.hdfs.authentication.HdfsAuthenticationModule;
-import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorPageSinkProvider;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorPageSourceProvider;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorSplitManager;
@@ -50,8 +47,6 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -100,10 +95,10 @@ public class TrinoConnectorFactory implements ConnectorFactory {
                     new Bootstrap(
                             new JsonModule(),
                             new TrinoModule(config),
-                            new HdfsModule(),
-                            new HdfsAuthenticationModule(),
-                            // bind the trino file system module
-                            newFileSystemModule(catalogName, context),
+                            new FileSystemModule(
+                                    catalogName,
+                                    context.getNodeManager(),
+                                    context.getOpenTelemetry()),
                             binder -> {
                                 binder.bind(NodeVersion.class)
                                         .toInstance(
@@ -126,7 +121,8 @@ public class TrinoConnectorFactory implements ConnectorFactory {
                             .setOptionalConfigurationProperties(config)
                             .initialize();
 
-            TrinoMetadata trinoMetadata = injector.getInstance(TrinoMetadataFactory.class).create();
+            TrinoTransactionManager transactionManager =
+                    injector.getInstance(TrinoTransactionManager.class);
             TrinoSplitManager trinoSplitManager = injector.getInstance(TrinoSplitManager.class);
             TrinoPageSourceProvider trinoPageSourceProvider =
                     injector.getInstance(TrinoPageSourceProvider.class);
@@ -139,7 +135,7 @@ public class TrinoConnectorFactory implements ConnectorFactory {
             TrinoTableOptions trinoTableOptions = injector.getInstance(TrinoTableOptions.class);
 
             return new TrinoConnector(
-                    new ClassLoaderSafeConnectorMetadata(trinoMetadata, classLoader),
+                    transactionManager,
                     new ClassLoaderSafeConnectorSplitManager(trinoSplitManager, classLoader),
                     new ClassLoaderSafeConnectorPageSourceProvider(
                             trinoPageSourceProvider, classLoader),
@@ -181,22 +177,5 @@ public class TrinoConnectorFactory implements ConnectorFactory {
     public static class EmptyModule implements Module {
         @Override
         public void configure(Binder binder) {}
-    }
-
-    private static FileSystemModule newFileSystemModule(
-            String catalogName, ConnectorContext context) {
-        Constructor<?> constructor = FileSystemModule.class.getConstructors()[0];
-        try {
-            if (constructor.getParameterCount() == 0) {
-                return (FileSystemModule) constructor.newInstance();
-            } else {
-                // for trino 440
-                return (FileSystemModule)
-                        constructor.newInstance(
-                                catalogName, context.getNodeManager(), context.getOpenTelemetry());
-            }
-        } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

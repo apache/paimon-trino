@@ -39,6 +39,7 @@ public class TrinoModule implements Module {
     public void configure(Binder binder) {
         binder.bind(Options.class).toInstance(new Options(config));
         binder.bind(TrinoMetadataFactory.class).in(SINGLETON);
+        binder.bind(TrinoTransactionManager.class).in(SINGLETON);
         binder.bind(TrinoSplitManager.class).in(SINGLETON);
         binder.bind(TrinoPageSourceProvider.class).in(SINGLETON);
         binder.bind(TrinoPageSinkProvider.class).in(SINGLETON);

@@ -20,6 +20,7 @@ package org.apache.paimon.trino;
 
 import org.apache.paimon.CoreOptions;
 import org.apache.paimon.catalog.Catalog;
+import org.apache.paimon.catalog.Database;
 import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.data.BinaryString;
 import org.apache.paimon.fs.Path;
@@ -31,7 +32,6 @@ import org.apache.paimon.table.Table;
 import org.apache.paimon.table.sink.BatchWriteBuilder;
 import org.apache.paimon.table.sink.CommitMessage;
 import org.apache.paimon.table.sink.CommitMessageSerializer;
-import org.apache.paimon.trino.catalog.TrinoCatalog;
 import org.apache.paimon.types.DataField;
 import org.apache.paimon.types.DataTypes;
 import org.apache.paimon.utils.InstantiationUtil;
@@ -100,13 +100,13 @@ import static org.apache.paimon.utils.Preconditions.checkArgument;
 public class TrinoMetadata implements ConnectorMetadata {
     private static final String TAG_PREFIX = "tag-";
 
-    protected final TrinoCatalog catalog;
+    protected final Catalog catalog;
 
-    public TrinoMetadata(TrinoCatalog catalog) {
+    public TrinoMetadata(Catalog catalog) {
         this.catalog = catalog;
     }
 
-    public TrinoCatalog catalog() {
+    public Catalog catalog() {
         return catalog;
     }
 
@@ -278,9 +278,8 @@ public class TrinoMetadata implements ConnectorMetadata {
 
     @Override
     public boolean schemaExists(ConnectorSession session, String schemaName) {
-        catalog.initSession(session);
         try {
-            catalog.getDatabase(schemaName);
+            Database database = catalog.getDatabase(schemaName);
             return true;
         } catch (Catalog.DatabaseNotExistException e) {
             return false;
@@ -289,7 +288,6 @@ public class TrinoMetadata implements ConnectorMetadata {
 
     @Override
     public List<String> listSchemaNames(ConnectorSession session) {
-        catalog.initSession(session);
         return catalog.listDatabases();
     }
 
@@ -304,7 +302,6 @@ public class TrinoMetadata implements ConnectorMetadata {
                 "schemaName cannot be null or empty");
 
         try {
-            catalog.initSession(session);
             catalog.createDatabase(schemaName, true);
         } catch (Catalog.DatabaseAlreadyExistException e) {
             throw new RuntimeException(format("database already existed: '%s'", schemaName));
@@ -317,7 +314,6 @@ public class TrinoMetadata implements ConnectorMetadata {
                 !StringUtils.isNullOrWhitespaceOnly(schemaName),
                 "schemaName cannot be null or empty");
         try {
-            catalog.initSession(session);
             catalog.dropDatabase(schemaName, false, true);
         } catch (Catalog.DatabaseNotEmptyException e) {
             throw new RuntimeException(format("database is not empty: '%s'", schemaName));
@@ -380,7 +376,6 @@ public class TrinoMetadata implements ConnectorMetadata {
                             dynamicOptions.put(CoreOptions.SCAN_TAG_NAME.key(), tagOrVersion);
                         } else {
                             try {
-                                catalog.initSession(session);
                                 String path =
                                         catalog.getTable(
                                                         new Identifier(
@@ -428,7 +423,6 @@ public class TrinoMetadata implements ConnectorMetadata {
             ConnectorSession session,
             SchemaTableName tableName,
             Map<String, String> dynamicOptions) {
-        catalog.initSession(session);
         try {
             catalog.getTable(
                     Identifier.create(tableName.getSchemaName(), tableName.getTableName()));
@@ -442,7 +436,6 @@ public class TrinoMetadata implements ConnectorMetadata {
     @Override
     public ConnectorTableMetadata getTableMetadata(
             ConnectorSession session, ConnectorTableHandle tableHandle) {
-        catalog.initSession(session);
         return ((TrinoTableHandle) tableHandle).tableMetadata(catalog);
     }
 
@@ -461,7 +454,6 @@ public class TrinoMetadata implements ConnectorMetadata {
         options.forEach((key, value) -> changes.add(SchemaChange.setOption(key, value)));
         // TODO: remove options, SET PROPERTIES x = DEFAULT
         try {
-            catalog.initSession(session);
             catalog.alterTable(identifier, changes, false);
         } catch (Exception e) {
             throw new RuntimeException(
@@ -471,7 +463,6 @@ public class TrinoMetadata implements ConnectorMetadata {
 
     @Override
     public List<SchemaTableName> listTables(ConnectorSession session, Optional<String> schemaName) {
-        catalog.initSession(session);
         List<SchemaTableName> tables = new ArrayList<>();
         schemaName
                 .map(Collections::singletonList)
@@ -499,7 +490,6 @@ public class TrinoMetadata implements ConnectorMetadata {
         Identifier identifier = Identifier.create(table.getSchemaName(), table.getTableName());
 
         try {
-            catalog.initSession(session);
             catalog.createTable(identifier, prepareSchema(tableMetadata), false);
         } catch (Catalog.DatabaseNotExistException e) {
             throw new RuntimeException(format("database not exists: '%s'", table.getSchemaName()));
@@ -534,7 +524,6 @@ public class TrinoMetadata implements ConnectorMetadata {
             SchemaTableName newTableName) {
         TrinoTableHandle oldTableHandle = (TrinoTableHandle) tableHandle;
         try {
-            catalog.initSession(session);
             catalog.renameTable(
                     new Identifier(oldTableHandle.getSchemaName(), oldTableHandle.getTableName()),
                     new Identifier(newTableName.getSchemaName(), newTableName.getTableName()),
@@ -552,7 +541,6 @@ public class TrinoMetadata implements ConnectorMetadata {
     public void dropTable(ConnectorSession session, ConnectorTableHandle tableHandle) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         try {
-            catalog.initSession(session);
             catalog.dropTable(
                     new Identifier(
                             trinoTableHandle.getSchemaName(), trinoTableHandle.getTableName()),
@@ -609,7 +597,6 @@ public class TrinoMetadata implements ConnectorMetadata {
                 SchemaChange.addColumn(
                         column.getName(), TrinoTypeUtils.toPaimonType(column.getType())));
         try {
-            catalog.initSession(session);
             catalog.alterTable(identifier, changes, false);
         } catch (Exception e) {
             throw new RuntimeException(
@@ -630,7 +617,6 @@ public class TrinoMetadata implements ConnectorMetadata {
         List<SchemaChange> changes = new ArrayList<>();
         changes.add(SchemaChange.renameColumn(trinoColumnHandle.getColumnName(), target));
         try {
-            catalog.initSession(session);
             catalog.alterTable(identifier, changes, false);
         } catch (Exception e) {
             throw new RuntimeException(
@@ -648,7 +634,6 @@ public class TrinoMetadata implements ConnectorMetadata {
         List<SchemaChange> changes = new ArrayList<>();
         changes.add(SchemaChange.dropColumn(trinoColumnHandle.getColumnName()));
         try {
-            catalog.initSession(session);
             catalog.alterTable(identifier, changes, false);
         } catch (Exception e) {
             throw new RuntimeException(
@@ -659,7 +644,6 @@ public class TrinoMetadata implements ConnectorMetadata {
     @Override
     public Optional<ConstraintApplicationResult<ConnectorTableHandle>> applyFilter(
             ConnectorSession session, ConnectorTableHandle handle, Constraint constraint) {
-        catalog.initSession(session);
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) handle;
         Optional<TrinoFilterExtractor.TrinoFilter> extract =
                 TrinoFilterExtractor.extract(catalog, trinoTableHandle, constraint);
@@ -739,5 +723,9 @@ public class TrinoMetadata implements ConnectorMetadata {
         table = table.copy(OptionalLong.of(limit));
 
         return Optional.of(new LimitApplicationResult<>(table, false, false));
+    }
+
+    public void rollback() {
+        // TODO: cleanup open transaction
     }
 }

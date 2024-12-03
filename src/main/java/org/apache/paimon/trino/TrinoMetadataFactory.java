@@ -18,37 +18,41 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.catalog.Catalog;
+import org.apache.paimon.catalog.CatalogContext;
+import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.options.Options;
-import org.apache.paimon.trino.catalog.TrinoCatalog;
+import org.apache.paimon.security.SecurityContext;
+import org.apache.paimon.trino.fileio.TrinoFileIOLoader;
 
 import com.google.inject.Inject;
+import io.trino.filesystem.TrinoFileSystem;
 import io.trino.filesystem.TrinoFileSystemFactory;
-import io.trino.hdfs.ConfigurationUtils;
-import io.trino.hdfs.HdfsConfig;
-import io.trino.hdfs.HdfsConfigurationInitializer;
-import org.apache.hadoop.conf.Configuration;
+import io.trino.spi.security.ConnectorIdentity;
 
 /** A factory to create {@link TrinoMetadata}. */
 public class TrinoMetadataFactory {
 
-    private final TrinoCatalog catalog;
+    private final Options options;
+    private final TrinoFileSystemFactory trinoFileSystemFactory;
 
     @Inject
-    public TrinoMetadataFactory(
-            Options options,
-            HdfsConfigurationInitializer hdfsConfigurationInitializer,
-            HdfsConfig hdfsConfig,
-            TrinoFileSystemFactory fileSystemFactory) {
-        Configuration configuration = null;
-        if (!hdfsConfig.getResourceConfigFiles().isEmpty()) {
-            configuration = ConfigurationUtils.getInitialConfiguration();
-            hdfsConfigurationInitializer.initializeConfiguration(configuration);
-        }
-
-        this.catalog = new TrinoCatalog(options, configuration, fileSystemFactory);
+    public TrinoMetadataFactory(Options options, TrinoFileSystemFactory fileSystemFactory) {
+        this.options = options;
+        this.trinoFileSystemFactory = fileSystemFactory;
     }
 
-    public TrinoMetadata create() {
+    public TrinoMetadata create(ConnectorIdentity identity) {
+        TrinoFileSystem trinoFileSystem = trinoFileSystemFactory.create(identity);
+        CatalogContext catalogContext =
+                CatalogContext.create(options, new TrinoFileIOLoader(trinoFileSystem), null);
+        try {
+            SecurityContext.install(catalogContext);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        Catalog catalog = CatalogFactory.createCatalog(catalogContext);
+
         return new TrinoMetadata(catalog);
     }
 }

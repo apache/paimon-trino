@@ -18,9 +18,9 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.catalog.Catalog;
 import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableList;
 import org.apache.paimon.shade.guava30.com.google.common.collect.Maps;
-import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import io.airlift.slice.Slice;
 import io.trino.spi.connector.ColumnHandle;
@@ -56,7 +56,7 @@ public class TrinoFilterExtractor {
 
     /** Extract filter from trino , include ExpressionFilter. */
     public static Optional<TrinoFilter> extract(
-            TrinoCatalog catalog, TrinoTableHandle trinoTableHandle, Constraint constraint) {
+            Catalog catalog, TrinoTableHandle trinoTableHandle, Constraint constraint) {
 
         TupleDomain<TrinoColumnHandle> oldFilter = trinoTableHandle.getFilter();
         TupleDomain<TrinoColumnHandle> newFilter =

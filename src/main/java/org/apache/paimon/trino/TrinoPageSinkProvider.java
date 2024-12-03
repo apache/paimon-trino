@@ -23,7 +23,6 @@ import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.Table;
 import org.apache.paimon.table.sink.BatchTableWrite;
 import org.apache.paimon.table.sink.BatchWriteBuilder;
-import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import com.google.inject.Inject;
 import io.trino.spi.connector.ConnectorInsertTableHandle;
@@ -42,14 +41,12 @@ import static org.apache.paimon.trino.ClassLoaderUtils.runWithContextClassLoader
 /** Trino {@link ConnectorPageSinkProvider}. */
 public class TrinoPageSinkProvider implements ConnectorPageSinkProvider {
 
-    private final TrinoCatalog trinoCatalog;
+    private final TrinoMetadataFactory trinoMetadataFactory;
 
     @Inject
     public TrinoPageSinkProvider(TrinoMetadataFactory trinoMetadataFactory) {
-        this.trinoCatalog =
-                requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null")
-                        .create()
-                        .catalog();
+        this.trinoMetadataFactory =
+                requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null");
     }
 
     @Override
@@ -72,8 +69,9 @@ public class TrinoPageSinkProvider implements ConnectorPageSinkProvider {
 
     private ConnectorPageSink createPageSink(
             TrinoTableHandle tableHandle, ConnectorSession session) {
-        trinoCatalog.initSession(session);
-        Table table = tableHandle.tableWithDynamicOptions(trinoCatalog, session);
+        Table table =
+                tableHandle.tableWithDynamicOptions(
+                        trinoMetadataFactory.create(session.getIdentity()).catalog(), session);
         validataBucketMode(table);
 
         return runWithContextClassLoader(
@@ -109,7 +107,9 @@ public class TrinoPageSinkProvider implements ConnectorPageSinkProvider {
             ConnectorMergeTableHandle mergeHandle,
             ConnectorPageSinkId pageSinkId) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) mergeHandle.getTableHandle();
-        Table table = trinoTableHandle.tableWithDynamicOptions(trinoCatalog, session);
+        Table table =
+                trinoTableHandle.tableWithDynamicOptions(
+                        trinoMetadataFactory.create(session.getIdentity()).catalog(), session);
         return new TrinoMergeSink(
                 createPageSink(trinoTableHandle, session), table.rowType().getFields().size());
     }
