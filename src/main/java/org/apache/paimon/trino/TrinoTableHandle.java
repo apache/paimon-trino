@@ -22,7 +22,6 @@ import org.apache.paimon.CoreOptions;
 import org.apache.paimon.catalog.Catalog;
 import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.table.Table;
-import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -114,7 +113,7 @@ public class TrinoTableHandle
         return limit;
     }
 
-    public Table tableWithDynamicOptions(TrinoCatalog catalog, ConnectorSession session) {
+    public Table tableWithDynamicOptions(Catalog catalog, ConnectorSession session) {
         Table paimonTable = table(catalog);
 
         // see TrinoConnector.getSessionProperties
@@ -132,7 +131,7 @@ public class TrinoTableHandle
         return dynamicOptions.size() > 0 ? paimonTable.copy(dynamicOptions) : paimonTable;
     }
 
-    public Table table(TrinoCatalog catalog) {
+    public Table table(Catalog catalog) {
         if (table != null) {
             return table;
         }
@@ -144,7 +143,7 @@ public class TrinoTableHandle
         return table;
     }
 
-    public ConnectorTableMetadata tableMetadata(TrinoCatalog catalog) {
+    public ConnectorTableMetadata tableMetadata(Catalog catalog) {
         return new ConnectorTableMetadata(
                 SchemaTableName.schemaTableName(schemaName, tableName),
                 columnMetadatas(catalog),
@@ -152,7 +151,7 @@ public class TrinoTableHandle
                 Optional.empty());
     }
 
-    public List<ColumnMetadata> columnMetadatas(TrinoCatalog catalog) {
+    public List<ColumnMetadata> columnMetadatas(Catalog catalog) {
         return table(catalog).rowType().getFields().stream()
                 .map(
                         column ->
@@ -165,7 +164,7 @@ public class TrinoTableHandle
                 .collect(Collectors.toList());
     }
 
-    public TrinoColumnHandle columnHandle(TrinoCatalog catalog, String field) {
+    public TrinoColumnHandle columnHandle(Catalog catalog, String field) {
         Table paimonTable = table(catalog);
         List<String> lowerCaseFieldNames = FieldNameUtils.fieldNames(paimonTable.rowType());
         List<String> originFieldNames = paimonTable.rowType().getFieldNames();

@@ -25,7 +25,6 @@ import io.trino.spi.connector.ConnectorPageSource;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Optional;
 
 /** Trino {@link ConnectorPageSource}. */
 public class TrinoMergePageSourceWrapper implements ConnectorPageSource {
@@ -61,27 +60,26 @@ public class TrinoMergePageSourceWrapper implements ConnectorPageSource {
 
     @Override
     public Page getNextPage() {
-        Page nextPage = pageSource.getNextPage();
-        if (nextPage == null) {
+        Page originPage = pageSource.getNextPage();
+        if (originPage == null) {
             return null;
         }
-        int rowCount = nextPage.getPositionCount();
+        int positionCount = originPage.getPositionCount();
 
-        Block[] newBlocks = new Block[nextPage.getChannelCount() + 1];
+        Block[] newBlocks = new Block[originPage.getChannelCount() + 1];
         Block[] rowIdBlocks = new Block[fieldToIndex.size()];
-        for (int i = 0, idx = 0; i < nextPage.getChannelCount(); i++) {
-            Block block = nextPage.getBlock(i);
+        for (int i = 0, idx = 0; i < originPage.getChannelCount(); i++) {
+            Block block = originPage.getBlock(i);
             newBlocks[i] = block;
             if (fieldToIndex.containsValue(i)) {
                 rowIdBlocks[idx] = block;
                 idx++;
             }
         }
-        newBlocks[nextPage.getChannelCount()] =
-                RowBlock.fromNotNullSuppressedFieldBlocks(
-                        rowCount, Optional.of(new boolean[fieldToIndex.size()]), rowIdBlocks);
+        newBlocks[originPage.getChannelCount()] =
+                RowBlock.fromFieldBlocks(positionCount, rowIdBlocks);
 
-        return new Page(rowCount, newBlocks);
+        return new Page(positionCount, newBlocks);
     }
 
     @Override
