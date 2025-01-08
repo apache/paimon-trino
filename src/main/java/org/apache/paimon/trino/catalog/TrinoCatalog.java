@@ -23,8 +23,8 @@ import org.apache.paimon.catalog.CatalogContext;
 import org.apache.paimon.catalog.CatalogFactory;
 import org.apache.paimon.catalog.Database;
 import org.apache.paimon.catalog.Identifier;
+import org.apache.paimon.catalog.PropertyChange;
 import org.apache.paimon.fs.FileIO;
-import org.apache.paimon.fs.Path;
 import org.apache.paimon.manifest.PartitionEntry;
 import org.apache.paimon.options.Options;
 import org.apache.paimon.schema.Schema;
@@ -110,6 +110,11 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
+    public boolean caseSensitive() {
+        return current.caseSensitive();
+    }
+
+    @Override
     public FileIO fileIO() {
         if (!inited) {
             throw new RuntimeException("Not inited yet.");
@@ -140,13 +145,14 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
-    public Table getTable(Identifier identifier) throws TableNotExistException {
-        return current.getTable(identifier);
+    public void alterDatabase(String s, List<PropertyChange> list, boolean b)
+            throws DatabaseNotExistException {
+        current.alterDatabase(s, list, b);
     }
 
     @Override
-    public Path getTableLocation(Identifier identifier) {
-        return current.getTableLocation(identifier);
+    public Table getTable(Identifier identifier) throws TableNotExistException {
+        return current.getTable(identifier);
     }
 
     @Override
@@ -212,10 +218,5 @@ public class TrinoCatalog implements Catalog {
     public void alterTable(Identifier identifier, SchemaChange change, boolean ignoreIfNotExists)
             throws TableNotExistException, ColumnAlreadyExistException, ColumnNotExistException {
         current.alterTable(identifier, change, ignoreIfNotExists);
-    }
-
-    @Override
-    public boolean allowUpperCase() {
-        return current.allowUpperCase();
     }
 }
