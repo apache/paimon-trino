@@ -31,6 +31,7 @@ import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.connector.Constraint;
 import io.trino.spi.connector.DynamicFilter;
+import io.trino.spi.function.table.ConnectorTableFunctionHandle;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,15 +58,25 @@ public class TrinoSplitManager implements ConnectorSplitManager {
             ConnectorTableHandle table,
             DynamicFilter dynamicFilter,
             Constraint constraint) {
-        return getSplits(table, session);
+        return getSplits((TrinoTableHandle) table, session);
+    }
+
+    @Override
+    public ConnectorSplitSource getSplits(
+            ConnectorTransactionHandle transaction,
+            ConnectorSession session,
+            ConnectorTableFunctionHandle function) {
+        if (function instanceof TrinoTableHandle functionHandle) {
+            return getSplits(functionHandle, session);
+        }
+        throw new IllegalStateException("Unknown table function: " + function);
     }
 
     protected ConnectorSplitSource getSplits(
-            ConnectorTableHandle connectorTableHandle, ConnectorSession session) {
+            TrinoTableHandle tableHandle, ConnectorSession session) {
         // TODO dynamicFilter?
         // TODO what is constraint?
 
-        TrinoTableHandle tableHandle = (TrinoTableHandle) connectorTableHandle;
         Table table = tableHandle.tableWithDynamicOptions(trinoCatalog, session);
         ReadBuilder readBuilder = table.newReadBuilder();
         new TrinoFilterConverter(table.rowType())
@@ -89,6 +100,6 @@ public class TrinoSplitManager implements ConnectorSplitManager {
                                                                 minimumSplitWeight),
                                                         1.0)))
                         .collect(Collectors.toList()),
-                ((TrinoTableHandle) connectorTableHandle).getLimit());
+                tableHandle.getLimit());
     }
 }
