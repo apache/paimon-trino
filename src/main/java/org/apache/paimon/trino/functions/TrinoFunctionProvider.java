@@ -27,6 +27,7 @@ import io.trino.spi.function.FunctionProvider;
 import io.trino.spi.function.table.ConnectorTableFunctionHandle;
 import io.trino.spi.function.table.TableFunctionProcessorProvider;
 
+/** TrinoFunctionProvider. */
 public class TrinoFunctionProvider implements FunctionProvider {
 
     private final TableChangesFunctionProcessorProvider tableChangesFunctionProcessorProvider;
