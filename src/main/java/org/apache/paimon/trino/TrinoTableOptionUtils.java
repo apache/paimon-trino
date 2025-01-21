@@ -124,7 +124,7 @@ public class TrinoTableOptionUtils {
         }
     }
 
-    private static String convertOptionKey(String key) {
+    public static String convertOptionKey(String key) {
         String regex = "[.\\-]";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(key);

@@ -22,6 +22,7 @@ import org.apache.paimon.utils.StringUtils;
 
 import com.google.inject.Binder;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.json.JsonModule;
@@ -40,6 +41,8 @@ import io.trino.spi.classloader.ThreadContextClassLoader;
 import io.trino.spi.connector.Connector;
 import io.trino.spi.connector.ConnectorContext;
 import io.trino.spi.connector.ConnectorFactory;
+import io.trino.spi.function.FunctionProvider;
+import io.trino.spi.function.table.ConnectorTableFunction;
 import io.trino.spi.type.TypeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +57,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /** Trino {@link ConnectorFactory}. */
 public class TrinoConnectorFactory implements ConnectorFactory {
@@ -137,6 +141,9 @@ public class TrinoConnectorFactory implements ConnectorFactory {
             TrinoSessionProperties trinoSessionProperties =
                     injector.getInstance(TrinoSessionProperties.class);
             TrinoTableOptions trinoTableOptions = injector.getInstance(TrinoTableOptions.class);
+            Set<ConnectorTableFunction> connectorTableFunctions =
+                    injector.getInstance(new Key<>() {});
+            FunctionProvider functionProvider = injector.getInstance(FunctionProvider.class);
 
             return new TrinoConnector(
                     new ClassLoaderSafeConnectorMetadata(trinoMetadata, classLoader),
@@ -147,7 +154,9 @@ public class TrinoConnectorFactory implements ConnectorFactory {
                             trinoPageSinkProvider, classLoader),
                     trinoNodePartitioningProvider,
                     trinoTableOptions,
-                    trinoSessionProperties);
+                    trinoSessionProperties,
+                    connectorTableFunctions,
+                    functionProvider);
         }
     }
 

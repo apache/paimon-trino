@@ -49,6 +49,7 @@ import org.apache.paimon.types.VarCharType;
 import io.trino.testing.AbstractTestQueryFramework;
 import io.trino.testing.DistributedQueryRunner;
 import io.trino.testing.MaterializedResult;
+import io.trino.testing.QueryFailedException;
 import io.trino.testing.QueryRunner;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +69,7 @@ import static io.trino.testing.TestingSession.testSessionBuilder;
 import static java.time.ZoneOffset.UTC;
 import static org.apache.paimon.data.BinaryString.fromString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /** ITCase for trino connector. */
 public class TrinoITCase extends AbstractTestQueryFramework {
@@ -852,6 +854,32 @@ public class TrinoITCase extends AbstractTestQueryFramework {
                                 "SELECT * FROM paimon.default.t2 FOR TIMESTAMP AS OF TIMESTAMP "
                                         + timestampLiteral(System.currentTimeMillis(), 6)))
                 .isEqualTo("[[1, 2, 1, 1], [3, 4, 2, 2], [5, 6, 3, 3], [7, 8, 4, 4]]");
+    }
+
+    @Test
+    public void testIncrementalRead() {
+        assertThatExceptionOfType(QueryFailedException.class)
+                .isThrownBy(
+                        () ->
+                                sql(
+                                        "SELECT * FROM TABLE(paimon.system.table_changes(schema_name=>'default',table_name=>'t2'))"))
+                .withMessage(
+                        "Either INCREMENTAL_BETWEEN or INCREMENTAL_BETWEEN_TIMESTAMP must be provided");
+        assertThat(
+                        sql(
+                                "SELECT * FROM TABLE(paimon.system.table_changes(schema_name=>'default',table_name=>'t2',incremental_between=>'1,2'))"))
+                .isEqualTo("[[5, 6, 3, 3], [7, 8, 4, 4]]");
+        assertThat(
+                        sql(
+                                "SELECT * FROM TABLE(paimon.system.table_changes(schema_name=>'default',table_name=>'t2',incremental_between=>'1,tag-2'))"))
+                .isEqualTo("[[5, 6, 3, 3], [7, 8, 4, 4]]");
+        assertThat(
+                        sql(
+                                "SELECT * FROM TABLE(paimon.system.table_changes(schema_name=>'default',table_name=>'t2',incremental_between_timestamp=>'%s,%s'))"
+                                        .formatted(
+                                                t2FirstCommitTimestamp,
+                                                System.currentTimeMillis())))
+                .isEqualTo("[[5, 6, 3, 3], [7, 8, 4, 4]]");
     }
 
     @Test

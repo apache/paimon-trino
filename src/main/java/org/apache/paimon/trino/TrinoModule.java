@@ -19,13 +19,20 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.options.Options;
+import org.apache.paimon.trino.functions.TrinoFunctionProvider;
+import org.apache.paimon.trino.functions.tablechanges.TableChangesFunctionProcessorProvider;
+import org.apache.paimon.trino.functions.tablechanges.TableChangesFunctionProvider;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
+import io.trino.spi.function.FunctionProvider;
+import io.trino.spi.function.table.ConnectorTableFunction;
 
 import java.util.Map;
 
 import static com.google.inject.Scopes.SINGLETON;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 /** Module for binding instance. */
 public class TrinoModule implements Module {
@@ -45,5 +52,11 @@ public class TrinoModule implements Module {
         binder.bind(TrinoNodePartitioningProvider.class).in(SINGLETON);
         binder.bind(TrinoSessionProperties.class).in(SINGLETON);
         binder.bind(TrinoTableOptions.class).in(SINGLETON);
+        newSetBinder(binder, ConnectorTableFunction.class)
+                .addBinding()
+                .toProvider(TableChangesFunctionProvider.class)
+                .in(Scopes.SINGLETON);
+        binder.bind(FunctionProvider.class).to(TrinoFunctionProvider.class).in(Scopes.SINGLETON);
+        binder.bind(TableChangesFunctionProcessorProvider.class).in(SINGLETON);
     }
 }
