@@ -215,8 +215,8 @@ public class TableChangesFunction extends AbstractConnectorTableFunction {
 
     private static boolean argumentExists(Map<String, Argument> arguments, String key) {
         Argument argument = arguments.get(key);
-        if (argument instanceof ScalarArgument scalarArgument) {
-            return !scalarArgument.getNullableValue().isNull();
+        if (argument instanceof ScalarArgument) {
+            return !((ScalarArgument) argument).getNullableValue().isNull();
         }
         throw new IllegalArgumentException("Unsupported argument type: " + argument);
     }

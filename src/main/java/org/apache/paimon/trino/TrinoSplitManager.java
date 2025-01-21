@@ -66,8 +66,8 @@ public class TrinoSplitManager implements ConnectorSplitManager {
             ConnectorTransactionHandle transaction,
             ConnectorSession session,
             ConnectorTableFunctionHandle function) {
-        if (function instanceof TrinoTableHandle functionHandle) {
-            return getSplits(functionHandle, session);
+        if (function instanceof TrinoTableHandle) {
+            return getSplits((TrinoTableHandle) function, session);
         }
         throw new IllegalStateException("Unknown table function: " + function);
     }
