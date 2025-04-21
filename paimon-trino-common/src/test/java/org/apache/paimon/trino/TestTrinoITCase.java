@@ -172,7 +172,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                     rowType.getFields(),
                                     Collections.emptyList(),
                                     Collections.singletonList("i"),
-                                    new HashMap<>(),
+                                    Map.of("bucket", "1"),
                                     ""));
             FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath4);
             InnerTableWrite writer = table.newWrite("user");
@@ -263,7 +263,7 @@ public abstract class TestTrinoITCase extends AbstractTestQueryFramework {
                                             "timestamp_tz",
                                             "decimal",
                                             "varbinary"),
-                                    Collections.emptyMap(),
+                                    Map.of("bucket", "1"),
                                     ""));
             FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath6);
             InnerTableWrite writer = table.newWrite("user");

@@ -30,6 +30,7 @@ import org.apache.paimon.table.sink.InnerTableWrite;
 import org.apache.paimon.types.RowType;
 
 import java.util.Collections;
+import java.util.Map;
 
 /** A simple table test helper to write and commit. */
 public class SimpleTableTestHelper {
@@ -44,7 +45,7 @@ public class SimpleTableTestHelper {
                                 rowType.getFields(),
                                 Collections.emptyList(),
                                 Collections.singletonList("a"),
-                                Collections.emptyMap(),
+                                Map.of("bucket", "1"),
                                 ""));
         FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), path);
         String user = "user";
