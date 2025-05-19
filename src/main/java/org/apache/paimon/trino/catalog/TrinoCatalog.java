@@ -18,15 +18,10 @@
 
 package org.apache.paimon.trino.catalog;
 
-import org.apache.paimon.catalog.Catalog;
-import org.apache.paimon.catalog.CatalogContext;
-import org.apache.paimon.catalog.CatalogFactory;
-import org.apache.paimon.catalog.Database;
-import org.apache.paimon.catalog.Identifier;
+import org.apache.paimon.catalog.*;
 import org.apache.paimon.fs.FileIO;
-import org.apache.paimon.fs.Path;
-import org.apache.paimon.manifest.PartitionEntry;
 import org.apache.paimon.options.Options;
+import org.apache.paimon.partition.Partition;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
 import org.apache.paimon.security.SecurityContext;
@@ -110,6 +105,11 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
+    public boolean caseSensitive() {
+        return false;
+    }
+
+    @Override
     public FileIO fileIO() {
         if (!inited) {
             throw new RuntimeException("Not inited yet.");
@@ -134,19 +134,20 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
-    public void dropDatabase(String s, boolean b, boolean b1)
+    public void dropDatabase(String name, boolean ignoreIfNotExists, boolean cascade)
             throws DatabaseNotExistException, DatabaseNotEmptyException {
-        current.dropDatabase(s, b, b1);
+        current.dropDatabase(name, ignoreIfNotExists, cascade);
+    }
+
+    @Override
+    public void alterDatabase(String name, List<PropertyChange> changes, boolean ignoreIfNotExists) throws DatabaseNotExistException {
+
+        current.alterDatabase(name, changes, ignoreIfNotExists);
     }
 
     @Override
     public Table getTable(Identifier identifier) throws TableNotExistException {
         return current.getTable(identifier);
-    }
-
-    @Override
-    public Path getTableLocation(Identifier identifier) {
-        return current.getTableLocation(identifier);
     }
 
     @Override
@@ -190,7 +191,7 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
-    public List<PartitionEntry> listPartitions(Identifier identifier)
+    public List<Partition> listPartitions(Identifier identifier)
             throws TableNotExistException {
         return current.listPartitions(identifier);
     }
@@ -212,10 +213,5 @@ public class TrinoCatalog implements Catalog {
     public void alterTable(Identifier identifier, SchemaChange change, boolean ignoreIfNotExists)
             throws TableNotExistException, ColumnAlreadyExistException, ColumnNotExistException {
         current.alterTable(identifier, change, ignoreIfNotExists);
-    }
-
-    @Override
-    public boolean allowUpperCase() {
-        return current.allowUpperCase();
     }
 }
