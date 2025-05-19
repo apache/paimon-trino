@@ -37,9 +37,10 @@ under the License.
     </scm>
 
     <properties>
-        <paimon.version>1.0-SNAPSHOT</paimon.version>
-        <target.java.version>21</target.java.version>
-        <jdk.test.version>21</jdk.test.version>
+        <paimon.version>1.0.1</paimon.version>
+        <java.version>21</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
         <trino.version>440</trino.version>
         <airlift.version>241</airlift.version>
         <slice.version>2.2</slice.version>
@@ -194,9 +195,21 @@ under the License.
 
     <build>
         <plugins>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <!-- The semantics of this option are reversed, see MCOMPILER-209. -->
+                    <useIncrementalCompilation>false</useIncrementalCompilation>
+                    <compilerArgs>
+                        <!-- Prevents recompilation due to missing package-info.class, see MCOMPILER-205 -->
+                        <arg>-Xpkginfo:always</arg>
+                    </compilerArgs>
+                </configuration>
             </plugin>
 
             <plugin>
