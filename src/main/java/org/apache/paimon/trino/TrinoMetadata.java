@@ -676,7 +676,7 @@ public class TrinoMetadata implements ConnectorMetadata {
                     new ConstraintApplicationResult<>(
                             trinoTableHandle.copy(trinoFilter.getFilter()),
                             trinoFilter.getRemainFilter(),
-                            null,
+                            constraint.getExpression(),
                             false));
         } else {
             return Optional.empty();
