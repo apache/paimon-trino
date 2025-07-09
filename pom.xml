@@ -37,7 +37,7 @@ under the License.
     </scm>
 
     <properties>
-        <paimon.version>1.0-SNAPSHOT</paimon.version>
+        <paimon.version>1.0.0</paimon.version>
         <target.java.version>21</target.java.version>
         <jdk.test.version>21</jdk.test.version>
         <trino.version>476</trino.version>

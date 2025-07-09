@@ -34,6 +34,7 @@ import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTableMetadata;
 import io.trino.spi.connector.SchemaTableName;
+import io.trino.spi.function.table.ConnectorTableFunctionHandle;
 import io.trino.spi.predicate.TupleDomain;
 
 import java.util.Collections;
@@ -47,7 +48,10 @@ import java.util.stream.Collectors;
 
 /** Trino {@link ConnectorTableHandle}. */
 public class TrinoTableHandle
-        implements ConnectorTableHandle, ConnectorInsertTableHandle, ConnectorOutputTableHandle {
+        implements ConnectorTableHandle,
+                ConnectorInsertTableHandle,
+                ConnectorOutputTableHandle,
+                ConnectorTableFunctionHandle {
 
     private final String schemaName;
     private final String tableName;
@@ -75,7 +79,7 @@ public class TrinoTableHandle
             @JsonProperty("tableName") String tableName,
             @JsonProperty("dynamicOptions") Map<String, String> dynamicOptions,
             @JsonProperty("filter") TupleDomain<TrinoColumnHandle> filter,
-            @JsonProperty("projection") Optional<List<ColumnHandle>> projectedColumns,
+            @JsonProperty("projectedColumns") Optional<List<ColumnHandle>> projectedColumns,
             @JsonProperty("limit") OptionalLong limit) {
         this.schemaName = schemaName;
         this.tableName = tableName;

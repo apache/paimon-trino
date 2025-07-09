@@ -18,6 +18,8 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableSet;
+
 import io.trino.spi.connector.Connector;
 import io.trino.spi.connector.ConnectorMetadata;
 import io.trino.spi.connector.ConnectorNodePartitioningProvider;
@@ -26,10 +28,14 @@ import io.trino.spi.connector.ConnectorPageSourceProvider;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplitManager;
 import io.trino.spi.connector.ConnectorTransactionHandle;
+import io.trino.spi.function.FunctionProvider;
+import io.trino.spi.function.table.ConnectorTableFunction;
 import io.trino.spi.session.PropertyMetadata;
 import io.trino.spi.transaction.IsolationLevel;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static io.trino.spi.transaction.IsolationLevel.READ_COMMITTED;
 import static io.trino.spi.transaction.IsolationLevel.checkConnectorSupports;
@@ -44,6 +50,8 @@ public class TrinoConnector implements Connector {
     private final ConnectorNodePartitioningProvider trinoNodePartitioningProvider;
     private final List<PropertyMetadata<?>> tableProperties;
     private final List<PropertyMetadata<?>> sessionProperties;
+    private final Set<ConnectorTableFunction> tableFunctions;
+    private final FunctionProvider functionProvider;
 
     public TrinoConnector(
             ConnectorMetadata trinoMetadata,
@@ -52,7 +60,9 @@ public class TrinoConnector implements Connector {
             ConnectorPageSinkProvider trinoPageSinkProvider,
             ConnectorNodePartitioningProvider trinoNodePartitioningProvider,
             TrinoTableOptions trinoTableOptions,
-            TrinoSessionProperties trinoSessionProperties) {
+            TrinoSessionProperties trinoSessionProperties,
+            Set<ConnectorTableFunction> tableFunctions,
+            FunctionProvider functionProvider) {
         this.trinoMetadata = requireNonNull(trinoMetadata, "trinoMetadata is null");
         this.trinoSplitManager = requireNonNull(trinoSplitManager, "trinoSplitManager is null");
         this.trinoPageSourceProvider =
@@ -64,6 +74,9 @@ public class TrinoConnector implements Connector {
                         trinoNodePartitioningProvider, "trinoNodePartitioningProvider is null");
         this.tableProperties = trinoTableOptions.getTableProperties();
         this.sessionProperties = trinoSessionProperties.getSessionProperties();
+        this.tableFunctions =
+                ImmutableSet.copyOf(requireNonNull(tableFunctions, "tableFunctions is null"));
+        this.functionProvider = requireNonNull(functionProvider, "functionProvider is null");
     }
 
     @Override
@@ -107,5 +120,15 @@ public class TrinoConnector implements Connector {
     @Override
     public ConnectorNodePartitioningProvider getNodePartitioningProvider() {
         return trinoNodePartitioningProvider;
+    }
+
+    @Override
+    public Set<ConnectorTableFunction> getTableFunctions() {
+        return tableFunctions;
+    }
+
+    @Override
+    public Optional<FunctionProvider> getFunctionProvider() {
+        return Optional.of(functionProvider);
     }
 }
