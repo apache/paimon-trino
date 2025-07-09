@@ -40,11 +40,11 @@ under the License.
         <paimon.version>1.0.0</paimon.version>
         <target.java.version>21</target.java.version>
         <jdk.test.version>21</jdk.test.version>
-        <trino.version>440</trino.version>
-        <airlift.version>241</airlift.version>
+        <trino.version>476</trino.version>
+        <airlift.version>336</airlift.version>
         <slice.version>2.2</slice.version>
         <maven.toolchains.plugin.version>3.1.0</maven.toolchains.plugin.version>
-        <hadoop.apache.version>3.2.0-18</hadoop.apache.version>
+        <hadoop.apache.version>3.3.5-3</hadoop.apache.version>
         <junit5.version>5.8.1</junit5.version>
         <slf4j.version>2.0.13</slf4j.version>
         <guava.version>31.1-jre</guava.version>
@@ -97,11 +97,6 @@ under the License.
             </exclusions>
         </dependency>
 
-        <dependency>
-            <groupId>io.trino</groupId>
-            <artifactId>trino-hdfs</artifactId>
-            <version>${trino.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>io.trino</groupId>

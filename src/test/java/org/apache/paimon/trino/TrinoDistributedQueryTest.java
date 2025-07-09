@@ -18,10 +18,9 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableMap;
-
 import io.trino.testing.AbstractDistributedEngineOnlyQueries;
 import io.trino.testing.QueryRunner;
+import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableMap;
 
 /** The test of TrinoDistributedQuery. */
 public class TrinoDistributedQueryTest extends AbstractDistributedEngineOnlyQueries {
@@ -541,10 +540,6 @@ public class TrinoDistributedQueryTest extends AbstractDistributedEngineOnlyQuer
         throw new RuntimeException("TODO: test not implemented yet");
     }
 
-    @Override
-    public void testLargePivot() {
-        throw new RuntimeException("TODO: test not implemented yet");
-    }
 
     @Override
     public void testLimitAll() {

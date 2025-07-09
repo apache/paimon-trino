@@ -18,13 +18,12 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.table.source.Split;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.trino.spi.HostAddress;
 import io.trino.spi.SplitWeight;
 import io.trino.spi.connector.ConnectorSplit;
+import org.apache.paimon.table.source.Split;
 
 import java.util.Collections;
 import java.util.List;
@@ -72,10 +71,6 @@ public class TrinoSplit implements ConnectorSplit {
         return Collections.emptyList();
     }
 
-    @Override
-    public Object getInfo() {
-        return Collections.emptyMap();
-    }
 
     @Override
     public SplitWeight getSplitWeight() {
