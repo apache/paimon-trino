@@ -55,7 +55,7 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
                 ThreadLocal.withInitial(
                         () ->
                                 CodeGenUtils.newProjection(
-                                        schema.logicalPrimaryKeysType(), schema.primaryKeys()));
+                                        schema.logicalBucketKeyType(), schema.bucketKeys()));
         this.bucketCount = new CoreOptions(schema.options()).bucket();
         this.workerCount = workerCount;
         this.isRowId =
