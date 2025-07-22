@@ -18,9 +18,35 @@
 
 package org.apache.paimon.trino;
 
+import org.testng.annotations.Test;
+
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 /** {@link TestTrinoITCase} for Trino 388. */
 public class TestTrino388ITCase extends TestTrinoITCase {
     public TestTrino388ITCase() {
         super(388);
+    }
+
+    @Test
+    public void testIncrementalRead() {
+        assertThatExceptionOfType(RuntimeException.class)
+                .isThrownBy(
+                        () ->
+                                sql(
+                                        "SELECT * FROM TABLE(paimon.system.table_changes(schema_name=>'default',table_name=>'t2'))"))
+                .withMessage(
+                        "Either INCREMENTAL_BETWEEN or INCREMENTAL_BETWEEN_TIMESTAMP must be provided");
+        assertThat(
+                        sql(
+                                "SELECT * FROM TABLE(paimon.system.table_changes(schema_name=>'default',table_name=>'t2',incremental_between=>'1,2'))"))
+                .isEqualTo("[[5, 6, 3, 3], [7, 8, 4, 4]]");
+        assertThat(
+                        sql(
+                                String.format(
+                                        "SELECT * FROM TABLE(paimon.system.table_changes(schema_name=>'default',table_name=>'t2',incremental_between_timestamp=>'%s,%s'))",
+                                        t2FirstCommitTimestamp, System.currentTimeMillis())))
+                .isEqualTo("[[5, 6, 3, 3], [7, 8, 4, 4]]");
     }
 }
