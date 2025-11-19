@@ -23,12 +23,12 @@ package org.apache.paimon.trino.catalog;
 import org.apache.paimon.catalog.Catalog;
 import org.apache.paimon.catalog.CatalogContext;
 import org.apache.paimon.catalog.CatalogFactory;
-import org.apache.paimon.catalog.CatalogLockContext;
-import org.apache.paimon.catalog.CatalogLockFactory;
+import org.apache.paimon.catalog.Database;
 import org.apache.paimon.catalog.Identifier;
+import org.apache.paimon.catalog.PropertyChange;
 import org.apache.paimon.fs.FileIO;
-import org.apache.paimon.metastore.MetastoreClient;
 import org.apache.paimon.options.Options;
+import org.apache.paimon.partition.Partition;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
 import org.apache.paimon.security.SecurityContext;
@@ -43,7 +43,6 @@ import org.apache.hadoop.conf.Configuration;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /** Trino catalog, use it after set session. */
 public class TrinoCatalog implements Catalog {
@@ -120,31 +119,37 @@ public class TrinoCatalog implements Catalog {
         return current.fileIO();
     }
 
-    @Override
-    public Optional<CatalogLockFactory> lockFactory() {
-        return current.lockFactory();
-    }
+    //    @Override
+    //    public Optional<CatalogLockFactory> lockFactory() {
+    //        return current.lockFactory();
+    //    }
 
     @Override
     public List<String> listDatabases() {
         return current.listDatabases();
     }
 
-    @Override
-    public boolean databaseExists(String s) {
-        return current.databaseExists(s);
-    }
+    //    @Override
+    //    public boolean databaseExists(String s) {
+    //        return current.databaseExists(s);
+    //    }
 
     @Override
     public void createDatabase(String s, boolean b, Map<String, String> map)
-            throws DatabaseAlreadyExistException {
+            throws Catalog.DatabaseAlreadyExistException {
         current.createDatabase(s, b, map);
     }
 
     @Override
-    public Map<String, String> loadDatabaseProperties(String s) throws DatabaseNotExistException {
-        return current.loadDatabaseProperties(s);
+    public Database getDatabase(String s) throws DatabaseNotExistException {
+        return current.getDatabase(s);
     }
+
+    //    @Override
+    //    public Map<String, String> loadDatabaseProperties(String s) throws
+    // DatabaseNotExistException {
+    //        return current.loadDatabaseProperties(s);
+    //    }
 
     @Override
     public void dropDatabase(String s, boolean b, boolean b1)
@@ -153,7 +158,13 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
-    public Table getTable(Identifier identifier) throws TableNotExistException {
+    public void alterDatabase(String s, List<PropertyChange> list, boolean b)
+            throws DatabaseNotExistException {
+        current.alterDatabase(s, list, b);
+    }
+
+    @Override
+    public Table getTable(Identifier identifier) throws Catalog.TableNotExistException {
         return current.getTable(identifier);
     }
 
@@ -186,9 +197,20 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
+    public void createPartition(Identifier identifier, Map<String, String> map)
+            throws TableNotExistException {
+        current.createPartition(identifier, map);
+    }
+
+    @Override
     public void dropPartition(Identifier identifier, Map<String, String> partitions)
             throws TableNotExistException, PartitionNotExistException {
         current.dropPartition(identifier, partitions);
+    }
+
+    @Override
+    public List<Partition> listPartitions(Identifier identifier) throws TableNotExistException {
+        return current.listPartitions(identifier);
     }
 
     @Override
@@ -198,15 +220,15 @@ public class TrinoCatalog implements Catalog {
         }
     }
 
-    @Override
-    public Optional<CatalogLockContext> lockContext() {
-        return current.lockContext();
-    }
-
-    @Override
-    public Optional<MetastoreClient.Factory> metastoreClientFactory(Identifier identifier) {
-        return current.metastoreClientFactory(identifier);
-    }
+    //    @Override
+    //    public Optional<CatalogLockContext> lockContext() {
+    //        return current.lockContext();
+    //    }
+    //
+    //    @Override
+    //    public Optional<MetastoreClient.Factory> metastoreClientFactory(Identifier identifier) {
+    //        return current.metastoreClientFactory(identifier);
+    //    }
 
     @Override
     public void createDatabase(String name, boolean ignoreIfExists)
@@ -214,10 +236,10 @@ public class TrinoCatalog implements Catalog {
         current.createDatabase(name, ignoreIfExists);
     }
 
-    @Override
-    public boolean tableExists(Identifier identifier) {
-        return current.tableExists(identifier);
-    }
+    //    @Override
+    //    public boolean tableExists(Identifier identifier) {
+    //        return current.tableExists(identifier);
+    //    }
 
     @Override
     public void alterTable(Identifier identifier, SchemaChange change, boolean ignoreIfNotExists)

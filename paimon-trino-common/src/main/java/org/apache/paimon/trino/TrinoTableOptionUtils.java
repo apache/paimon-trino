@@ -108,8 +108,6 @@ public class TrinoTableOptionUtils {
 
     private static Class<?> buildClass(String className) {
         switch (className) {
-            case "FileFormatType":
-                return CoreOptions.FileFormatType.class;
             case "MergeEngine":
                 return CoreOptions.MergeEngine.class;
             case "ChangelogProducer":

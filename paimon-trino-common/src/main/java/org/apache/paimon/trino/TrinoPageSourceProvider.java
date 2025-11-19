@@ -82,16 +82,14 @@ import static org.apache.paimon.trino.ClassLoaderUtils.runWithContextClassLoader
 public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
 
     private final TrinoFileSystemFactory fileSystemFactory;
-    private final TrinoCatalog trinoCatalog;
+    private final TrinoMetadataFactory trinoMetadataFactory;
 
     @Inject
     public TrinoPageSourceProvider(
             TrinoFileSystemFactory fileSystemFactory, TrinoMetadataFactory trinoMetadataFactory) {
         this.fileSystemFactory = requireNonNull(fileSystemFactory, "fileSystemFactory is null");
-        this.trinoCatalog =
-                requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null")
-                        .create()
-                        .catalog();
+        this.trinoMetadataFactory =
+                requireNonNull(trinoMetadataFactory, "trinoMetadataFactory is null");
     }
 
     @Override
@@ -102,9 +100,11 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             ConnectorTableHandle tableHandle,
             List<ColumnHandle> columns,
             DynamicFilter dynamicFilter) {
-        trinoCatalog.initSession(session);
+        TrinoMetadata metadata = trinoMetadataFactory.create();
+        TrinoCatalog catalog = metadata.catalog();
+        catalog.initSession(session);
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
-        Table table = trinoTableHandle.tableWithDynamicOptions(trinoCatalog, session);
+        Table table = trinoTableHandle.tableWithDynamicOptions(catalog, session);
         return runWithContextClassLoader(
                 () ->
                         createPageSource(
@@ -166,7 +166,7 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                                                 new Path(indexFile.path()),
                                                 ((FileStoreTable) table).fileIO(),
                                                 rowType)) {
-                                    if (!fileIndexPredicate.testPredicate(paimonFilter.get())) {
+                                    if (!fileIndexPredicate.evaluate(paimonFilter.get()).remain()) {
                                         continue;
                                     }
                                 }

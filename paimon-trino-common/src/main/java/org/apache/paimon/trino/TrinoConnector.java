@@ -18,8 +18,11 @@
 
 package org.apache.paimon.trino;
 
+import org.apache.paimon.trino.catalog.TrinoCatalog;
+
 import io.trino.spi.connector.Connector;
 import io.trino.spi.connector.ConnectorMetadata;
+import io.trino.spi.connector.ConnectorPageSinkProvider;
 import io.trino.spi.connector.ConnectorPageSourceProvider;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplitManager;
@@ -40,19 +43,22 @@ public class TrinoConnector implements Connector {
     private final ConnectorPageSourceProvider trinoPageSourceProvider;
     private final List<PropertyMetadata<?>> tableProperties;
     private final List<PropertyMetadata<?>> sessionProperties;
+    private final ConnectorPageSinkProvider pageSinkProvider;
 
     public TrinoConnector(
             ConnectorMetadata trinoMetadata,
             ConnectorSplitManager trinoSplitManager,
             ConnectorPageSourceProvider trinoPageSourceProvider,
             TrinoTableOptions trinoTableOptions,
-            TrinoSessionProperties trinoSessionProperties) {
+            TrinoSessionProperties trinoSessionProperties,
+            TrinoCatalog catalog) {
         this.trinoMetadata = requireNonNull(trinoMetadata, "trinoMetadata is null");
         this.trinoSplitManager = requireNonNull(trinoSplitManager, "trinoSplitManager is null");
         this.trinoPageSourceProvider =
                 requireNonNull(trinoPageSourceProvider, "trinoRecordSetProvider is null");
         this.tableProperties = trinoTableOptions.getTableProperties();
         this.sessionProperties = trinoSessionProperties.getSessionProperties();
+        this.pageSinkProvider = new TrinoPageSinkProvider(catalog);
     }
 
     @Override
@@ -86,5 +92,10 @@ public class TrinoConnector implements Connector {
     @Override
     public List<PropertyMetadata<?>> getTableProperties() {
         return tableProperties;
+    }
+
+    @Override
+    public ConnectorPageSinkProvider getPageSinkProvider() {
+        return pageSinkProvider;
     }
 }

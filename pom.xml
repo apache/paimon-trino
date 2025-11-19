@@ -59,7 +59,7 @@ under the License.
     </scm>
 
     <properties>
-        <paimon.version>0.8.0</paimon.version>
+        <paimon.version>1.0.0</paimon.version>
         <target.java.version>11</target.java.version>
         <junit5.version>5.8.1</junit5.version>
         <slf4j.version>2.0.7</slf4j.version>
