@@ -44,18 +44,25 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
     private final int bucketCount;
     private final boolean isRowId;
     private final ThreadLocal<Projection> projectionContext;
+    private final TableSchema schema;
+    private final List<String> partitionKeys; // 🔧 新增：保存 partition keys
 
     public FixedBucketTableShuffleFunction(
             List<Type> partitionChannelTypes,
             TrinoPartitioningHandle partitioningHandle,
             int workerCount) {
 
-        TableSchema schema = partitioningHandle.getOriginalSchema();
+        this.schema = partitioningHandle.getOriginalSchema();
+        this.partitionKeys = schema.partitionKeys(); // 🔧 获取 partition keys
+
+        // 🔧 关键修改：使用 partition keys 而不是 primary keys
         this.projectionContext =
                 ThreadLocal.withInitial(
                         () ->
                                 CodeGenUtils.newProjection(
-                                        schema.logicalPrimaryKeysType(), schema.primaryKeys()));
+                                        schema.logicalPartitionType(), // ✅ 使用 partition type
+                                        partitionKeys)); // ✅ 使用 partition keys
+
         this.bucketCount = new CoreOptions(schema.options()).bucket();
         this.workerCount = workerCount;
         this.isRowId =
@@ -65,23 +72,59 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
 
     @Override
     public int getBucket(Page page, int position) {
+        Page processedPage = page;
+
+        // 处理 RowBlock 的情况
         if (isRowId) {
             RowBlock rowBlock = (RowBlock) page.getBlock(0);
             try {
                 Method method = RowBlock.class.getDeclaredMethod("getRawFieldBlocks");
                 method.setAccessible(true);
-                page = new Page(rowBlock.getPositionCount(), (Block[]) method.invoke(rowBlock));
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+                Block[] rawBlocks = (Block[]) method.invoke(rowBlock);
+                processedPage = new Page(rowBlock.getPositionCount(), rawBlocks);
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new RuntimeException("Failed to extract raw field blocks from RowBlock", e);
             }
         }
 
-        TrinoRow trinoRow = new TrinoRow(page.getSingleValuePage(position), RowKind.INSERT);
-        BinaryRow pk = projectionContext.get().apply(trinoRow);
+        // 🔧 修改验证逻辑：验证 partition keys 数量而不是所有字段
+        int expectedBlockCount = partitionKeys.size(); // ✅ 期望 partition keys 数量
+        int actualBlockCount = processedPage.getChannelCount();
+
+        if (actualBlockCount != expectedBlockCount) {
+            throw new IllegalStateException(
+                    String.format(
+                            "Page block count mismatch: expected %d (partition keys), but got %d. "
+                                    + "Partition keys: %s, Schema fields: %s, Primary keys: %s",
+                            expectedBlockCount,
+                            actualBlockCount,
+                            partitionKeys, // ✅ 显示 partition keys
+                            schema.fieldNames(),
+                            schema.primaryKeys()));
+        }
+
+        // 使用 processedPage 创建 TrinoRow
+        TrinoRow trinoRow =
+                new TrinoRow(processedPage.getSingleValuePage(position), RowKind.INSERT);
+
+        // 🔧 修改错误信息：显示 partition keys 相关信息
+        BinaryRow pk;
+        try {
+            pk = projectionContext.get().apply(trinoRow);
+        } catch (IndexOutOfBoundsException e) {
+            throw new RuntimeException(
+                    String.format(
+                            "Failed to extract partition keys from row. "
+                                    + "Row field count: %d, Partition keys: %s, " // ✅ 改为 partition
+                                    // keys
+                                    + "Page block count: %d, Position: %d",
+                            trinoRow.getFieldCount(),
+                            partitionKeys, // ✅ 显示 partition keys
+                            processedPage.getChannelCount(),
+                            position),
+                    e);
+        }
+
         int bucket =
                 KeyAndBucketExtractor.bucket(
                         KeyAndBucketExtractor.bucketKeyHashCode(pk), bucketCount);
