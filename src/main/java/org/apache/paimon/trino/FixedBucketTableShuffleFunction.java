@@ -45,7 +45,7 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
     private final boolean isRowId;
     private final ThreadLocal<Projection> projectionContext;
     private final TableSchema schema;
-    private final List<String> partitionKeys; // 🔧 新增：保存 partition keys
+    private final List<String> bucketKeys; // 🔧 改为通用的 bucketKeys
 
     public FixedBucketTableShuffleFunction(
             List<Type> partitionChannelTypes,
@@ -53,15 +53,24 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
             int workerCount) {
 
         this.schema = partitioningHandle.getOriginalSchema();
-        this.partitionKeys = schema.partitionKeys(); // 🔧 获取 partition keys
 
-        // 🔧 关键修改：使用 partition keys 而不是 primary keys
-        this.projectionContext =
-                ThreadLocal.withInitial(
-                        () ->
-                                CodeGenUtils.newProjection(
-                                        schema.logicalPartitionType(), // ✅ 使用 partition type
-                                        partitionKeys)); // ✅ 使用 partition keys
+        // 🔧 关键修改：根据是否分区表选择不同的 keys
+        List<String> partitionKeys = schema.partitionKeys();
+        if (!partitionKeys.isEmpty()) {
+            // 分区表：使用 partition keys
+            this.bucketKeys = partitionKeys;
+            this.projectionContext =
+                    ThreadLocal.withInitial(
+                            () ->
+                                    CodeGenUtils.newProjection(
+                                            schema.logicalPartitionType(), bucketKeys));
+        } else {
+            // 非分区表：使用 primary keys
+            this.bucketKeys = schema.primaryKeys();
+            this.projectionContext =
+                    ThreadLocal.withInitial(
+                            () -> CodeGenUtils.newProjection(schema.logicalRowType(), bucketKeys));
+        }
 
         this.bucketCount = new CoreOptions(schema.options()).bucket();
         this.workerCount = workerCount;
@@ -87,39 +96,39 @@ public class FixedBucketTableShuffleFunction implements BucketFunction {
             }
         }
 
-        // 🔧 修改验证逻辑：验证 partition keys 数量而不是所有字段
-        int expectedBlockCount = partitionKeys.size(); // ✅ 期望 partition keys 数量
+        // 🔧 修改验证逻辑：验证 bucketKeys 数量
+        int expectedBlockCount = bucketKeys.size();
         int actualBlockCount = processedPage.getChannelCount();
 
         if (actualBlockCount != expectedBlockCount) {
             throw new IllegalStateException(
                     String.format(
-                            "Page block count mismatch: expected %d (partition keys), but got %d. "
-                                    + "Partition keys: %s, Schema fields: %s, Primary keys: %s",
+                            "Page block count mismatch: expected %d (bucket keys), but got %d. "
+                                    + "Bucket keys: %s, Partition keys: %s, Primary keys: %s, Schema fields: %s",
                             expectedBlockCount,
                             actualBlockCount,
-                            partitionKeys, // ✅ 显示 partition keys
-                            schema.fieldNames(),
-                            schema.primaryKeys()));
+                            bucketKeys,
+                            schema.partitionKeys(),
+                            schema.primaryKeys(),
+                            schema.fieldNames()));
         }
 
         // 使用 processedPage 创建 TrinoRow
         TrinoRow trinoRow =
                 new TrinoRow(processedPage.getSingleValuePage(position), RowKind.INSERT);
 
-        // 🔧 修改错误信息：显示 partition keys 相关信息
+        // 🔧 修改错误信息：显示 bucketKeys 相关信息
         BinaryRow pk;
         try {
             pk = projectionContext.get().apply(trinoRow);
         } catch (IndexOutOfBoundsException e) {
             throw new RuntimeException(
                     String.format(
-                            "Failed to extract partition keys from row. "
-                                    + "Row field count: %d, Partition keys: %s, " // ✅ 改为 partition
-                                    // keys
+                            "Failed to extract bucket keys from row. "
+                                    + "Row field count: %d, Bucket keys: %s, "
                                     + "Page block count: %d, Position: %d",
                             trinoRow.getFieldCount(),
-                            partitionKeys, // ✅ 显示 partition keys
+                            bucketKeys,
                             processedPage.getChannelCount(),
                             position),
                     e);
