@@ -69,6 +69,7 @@ import static io.trino.spi.type.DateTimeEncoding.packDateTimeWithZone;
 import static io.trino.spi.type.DateType.DATE;
 import static io.trino.spi.type.Decimals.encodeShortScaledValue;
 import static io.trino.spi.type.IntegerType.INTEGER;
+import static io.trino.spi.type.LongTimestampWithTimeZone.fromEpochMillisAndFraction;
 import static io.trino.spi.type.RealType.REAL;
 import static io.trino.spi.type.SmallintType.SMALLINT;
 import static io.trino.spi.type.TimeType.TIME_MICROS;
@@ -78,6 +79,8 @@ import static io.trino.spi.type.TimestampType.TIMESTAMP_MILLIS;
 import static io.trino.spi.type.TimestampType.TIMESTAMP_SECONDS;
 import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MICROS;
 import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_MILLIS;
+import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_NANOS;
+import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_PICOS;
 import static io.trino.spi.type.TimestampWithTimeZoneType.TIMESTAMP_TZ_SECONDS;
 import static io.trino.spi.type.Timestamps.MICROSECONDS_PER_MILLISECOND;
 import static io.trino.spi.type.TinyintType.TINYINT;
@@ -243,12 +246,19 @@ public class TrinoPageSource implements ConnectorPageSource {
             writeSlice(output, type, value);
         } else if (javaType == LongTimestampWithTimeZone.class) {
             if (type.equals(TIMESTAMP_TZ_MILLIS) || type.equals(TIMESTAMP_TZ_SECONDS)) {
-                type.writeLong(
+                Timestamp timestamp = (org.apache.paimon.data.Timestamp) value;
+                type.writeObject(
+                        output, fromEpochMillisAndFraction(timestamp.getMillisecond(), 0, UTC_KEY));
+            } else if (type.equals(TIMESTAMP_TZ_MICROS)
+                    || type.equals(TIMESTAMP_TZ_NANOS)
+                    || type.equals(TIMESTAMP_TZ_PICOS)) {
+                Timestamp timestamp = (org.apache.paimon.data.Timestamp) value;
+                type.writeObject(
                         output,
-                        packDateTimeWithZone(((Timestamp) value).getMillisecond(), UTC_KEY));
-            } else if (type.equals(TIMESTAMP_TZ_MICROS)) {
-                type.writeLong(
-                        output, packDateTimeWithZone(((Timestamp) value).toMicros(), UTC_KEY));
+                        fromEpochMillisAndFraction(
+                                timestamp.getMillisecond(),
+                                timestamp.getNanoOfMillisecond() * 1000,
+                                UTC_KEY));
             } else {
                 throw new TrinoException(
                         GENERIC_INTERNAL_ERROR,
