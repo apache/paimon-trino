@@ -18,8 +18,6 @@
 
 package org.apache.paimon.trino;
 
-import org.apache.paimon.utils.StringUtils;
-
 import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -29,8 +27,6 @@ import io.airlift.json.JsonModule;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.trino.filesystem.manager.FileSystemModule;
-import io.trino.hdfs.HdfsModule;
-import io.trino.hdfs.authentication.HdfsAuthenticationModule;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorPageSinkProvider;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorPageSourceProvider;
@@ -44,6 +40,7 @@ import io.trino.spi.connector.ConnectorFactory;
 import io.trino.spi.function.FunctionProvider;
 import io.trino.spi.function.table.ConnectorTableFunction;
 import io.trino.spi.type.TypeManager;
+import org.apache.paimon.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -104,8 +101,6 @@ public class TrinoConnectorFactory implements ConnectorFactory {
                     new Bootstrap(
                             new JsonModule(),
                             new TrinoModule(config),
-                            new HdfsModule(),
-                            new HdfsAuthenticationModule(),
                             // bind the trino file system module
                             newFileSystemModule(catalogName, context),
                             binder -> {
@@ -198,11 +193,21 @@ public class TrinoConnectorFactory implements ConnectorFactory {
         try {
             if (constructor.getParameterCount() == 0) {
                 return (FileSystemModule) constructor.newInstance();
-            } else {
+            }
+            else if (constructor.getParameterCount() == 3) {
                 // for trino 440
                 return (FileSystemModule)
                         constructor.newInstance(
                                 catalogName, context.getNodeManager(), context.getOpenTelemetry());
+            }
+            else if (constructor.getParameterCount() == 4) {
+                // for trino 476
+                return (FileSystemModule)
+                        constructor.newInstance(
+                                catalogName, context.getNodeManager(), context.getOpenTelemetry(), false);
+            }
+            else {
+                throw new RuntimeException("Unsupported trino version");
             }
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new RuntimeException(e);
