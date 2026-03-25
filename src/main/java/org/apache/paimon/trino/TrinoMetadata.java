@@ -314,7 +314,7 @@ public class TrinoMetadata implements ConnectorMetadata {
 
         try {
             catalog.initSession(session);
-            catalog.createDatabase(schemaName, true);
+            catalog.createDatabase(schemaName, false);
         } catch (Catalog.DatabaseAlreadyExistException e) {
             throw new RuntimeException(format("database already existed: '%s'", schemaName));
         }
