@@ -33,8 +33,8 @@ import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorPageSinkProvider;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorPageSourceProvider;
 import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorSplitManager;
-import io.trino.plugin.hive.NodeVersion;
 import io.trino.plugin.hive.orc.OrcReaderConfig;
+import io.trino.spi.NodeVersion;
 import io.trino.spi.classloader.ThreadContextClassLoader;
 import io.trino.spi.connector.Connector;
 import io.trino.spi.connector.ConnectorContext;
@@ -189,7 +189,6 @@ public class TrinoConnectorFactory implements ConnectorFactory {
 
     private static FileSystemModule newFileSystemModule(
             String catalogName, ConnectorContext context) {
-        return new FileSystemModule(
-                catalogName, context.getNodeManager(), context.getOpenTelemetry(), false);
+        return new FileSystemModule(catalogName, context, false);
     }
 }
