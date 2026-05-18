@@ -43,6 +43,7 @@ import io.trino.spi.block.RowBlockBuilder;
 import io.trino.spi.block.RowValueBuilder;
 import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ConnectorPageSource;
+import io.trino.spi.connector.SourcePage;
 import io.trino.spi.type.ArrayType;
 import io.trino.spi.type.DecimalType;
 import io.trino.spi.type.Decimals;
@@ -132,7 +133,6 @@ public class TrinoPageSource implements ConnectorPageSource {
         return isFinished;
     }
 
-    @Override
     public Page getNextPage() {
         return ClassLoaderUtils.runWithContextClassLoader(
                 () -> {
@@ -143,6 +143,12 @@ public class TrinoPageSource implements ConnectorPageSource {
                     }
                 },
                 TrinoPageSource.class.getClassLoader());
+    }
+
+    @Override
+    public SourcePage getNextSourcePage() {
+        Page page = getNextPage();
+        return page == null ? null : SourcePage.create(page);
     }
 
     @Override
