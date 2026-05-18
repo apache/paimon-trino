@@ -28,6 +28,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -97,7 +98,7 @@ public class TrinoTableOptionUtils {
         String regex = "[.\\-]";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(key);
-        return matcher.replaceAll("_");
+        return matcher.replaceAll("_").toLowerCase(Locale.ROOT);
     }
 
     private static List<OptionWithMetaInfo> extractConfigOptions(Class<?> clazz) {
