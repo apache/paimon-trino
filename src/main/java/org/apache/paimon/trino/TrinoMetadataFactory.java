@@ -23,6 +23,7 @@ import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import com.google.inject.Inject;
 import io.trino.filesystem.TrinoFileSystemFactory;
+import io.trino.spi.type.TypeManager;
 import org.apache.hadoop.conf.Configuration;
 
 import java.util.Map;
@@ -32,15 +33,18 @@ public class TrinoMetadataFactory {
     private static final String HADOOP_CONF_PREFIX = "hadoop.";
 
     private final TrinoCatalog catalog;
+    private final TypeManager typeManager;
 
     @Inject
-    public TrinoMetadataFactory(Options options, TrinoFileSystemFactory fileSystemFactory) {
+    public TrinoMetadataFactory(
+            Options options, TrinoFileSystemFactory fileSystemFactory, TypeManager typeManager) {
         this.catalog =
                 new TrinoCatalog(options, createHadoopConfiguration(options), fileSystemFactory);
+        this.typeManager = typeManager;
     }
 
     public TrinoMetadata create() {
-        return new TrinoMetadata(catalog);
+        return new TrinoMetadata(catalog, typeManager);
     }
 
     // HDFS should not be on the plugin classpath

@@ -43,6 +43,8 @@ import org.apache.paimon.table.TableSnapshot;
 import org.apache.paimon.trino.ClassLoaderUtils;
 import org.apache.paimon.trino.fileio.TrinoFileIOLoader;
 import org.apache.paimon.utils.SnapshotNotExistException;
+import org.apache.paimon.view.View;
+import org.apache.paimon.view.ViewChange;
 
 import io.trino.filesystem.TrinoFileSystem;
 import io.trino.filesystem.TrinoFileSystemFactory;
@@ -211,6 +213,40 @@ public class TrinoCatalog implements Catalog {
     public void alterTable(Identifier identifier, List<SchemaChange> list, boolean ignoreIfExists)
             throws TableNotExistException, ColumnAlreadyExistException, ColumnNotExistException {
         current.alterTable(identifier, list, ignoreIfExists);
+    }
+
+    @Override
+    public void createView(Identifier identifier, View view, boolean ignoreIfExists)
+            throws ViewAlreadyExistException, DatabaseNotExistException {
+        current.createView(identifier, view, ignoreIfExists);
+    }
+
+    @Override
+    public void dropView(Identifier identifier, boolean ignoreIfNotExists)
+            throws ViewNotExistException {
+        current.dropView(identifier, ignoreIfNotExists);
+    }
+
+    @Override
+    public View getView(Identifier identifier) throws ViewNotExistException {
+        return current.getView(identifier);
+    }
+
+    @Override
+    public List<String> listViews(String databaseName) throws DatabaseNotExistException {
+        return current.listViews(databaseName);
+    }
+
+    @Override
+    public void renameView(Identifier fromView, Identifier toView, boolean ignoreIfNotExists)
+            throws ViewNotExistException, ViewAlreadyExistException {
+        current.renameView(fromView, toView, ignoreIfNotExists);
+    }
+
+    @Override
+    public void alterView(Identifier view, List<ViewChange> viewChanges, boolean ignoreIfNotExists)
+            throws ViewNotExistException, DialectAlreadyExistException, DialectNotExistException {
+        current.alterView(view, viewChanges, ignoreIfNotExists);
     }
 
     @Override

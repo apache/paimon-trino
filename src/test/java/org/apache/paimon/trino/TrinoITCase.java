@@ -732,6 +732,31 @@ public class TrinoITCase extends AbstractTestQueryFramework {
     }
 
     @Test
+    public void testCreateViewAndSelect() {
+        sql("DROP VIEW IF EXISTS paimon.default.v_select");
+        sql("CREATE VIEW paimon.default.v_select AS SELECT a, b FROM paimon.default.t1");
+        assertThat(sql("SELECT * FROM paimon.default.v_select ORDER BY a"))
+                .isEqualTo("[[1, 2], [5, 6]]");
+        sql("DROP VIEW IF EXISTS paimon.default.v_select");
+    }
+
+    @Test
+    public void testListViews() {
+        sql("DROP VIEW IF EXISTS paimon.default.v_list");
+        sql("CREATE VIEW paimon.default.v_list AS SELECT a FROM paimon.default.t1");
+        assertThat(sql("SHOW TABLES FROM paimon.default")).contains("v_list");
+        sql("DROP VIEW IF EXISTS paimon.default.v_list");
+    }
+
+    @Test
+    public void testDropView() {
+        sql("DROP VIEW IF EXISTS paimon.default.v_drop");
+        sql("CREATE VIEW paimon.default.v_drop AS SELECT a FROM paimon.default.t1");
+        sql("DROP VIEW paimon.default.v_drop");
+        assertThat(sql("SHOW TABLES FROM paimon.default")).doesNotContain("v_drop");
+    }
+
+    @Test
     public void testAddColumn() {
         sql(
                 "CREATE TABLE t5 ("
