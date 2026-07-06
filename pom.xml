@@ -384,6 +384,13 @@ under the License.
                                     <type>jar</type>
                                     <outputDirectory>${project.build.directory}/hive-compat</outputDirectory>
                                 </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.hive</groupId>
+                                    <artifactId>hive-exec</artifactId>
+                                    <version>${hive.metastore.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/hive-compat</outputDirectory>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
