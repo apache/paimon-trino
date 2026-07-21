@@ -26,11 +26,15 @@ import io.trino.filesystem.TrinoOutputFile;
 import io.trino.memory.context.AggregatedMemoryContext;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,6 +62,42 @@ public class TrinoFileIOTest {
         assertThat(outputFile.content()).isEqualTo("schema-v0");
         assertThat(fileIO.tryToWriteAtomic(schemaPath, "other")).isFalse();
         assertThat(outputFile.content()).isEqualTo("schema-v0");
+    }
+
+    @Test
+    void testAtomicWriteFallsBackWhenExclusiveCreateIsUnsupported() throws Exception {
+        AtomicBoolean exclusiveCreateAttempted = new AtomicBoolean();
+        AtomicBoolean renamed = new AtomicBoolean();
+        AtomicReference<byte[]> content = new AtomicReference<>();
+        TrinoFileSystem fileSystem =
+                (TrinoFileSystem)
+                        Proxy.newProxyInstance(
+                                TrinoFileSystem.class.getClassLoader(),
+                                new Class<?>[] {TrinoFileSystem.class},
+                                (proxy, method, args) -> {
+                                    switch (method.getName()) {
+                                        case "newOutputFile":
+                                            return new UnsupportedExclusiveOutputFile(
+                                                    (Location) args[0],
+                                                    exclusiveCreateAttempted,
+                                                    content);
+                                        case "directoryExists":
+                                            return Optional.empty();
+                                        case "renameFile":
+                                            renamed.set(true);
+                                            return null;
+                                        default:
+                                            throw new UnsupportedOperationException(
+                                                    method.getName());
+                                    }
+                                });
+        TrinoFileIO fileIO = new TrinoFileIO(fileSystem, new Path("oss://bucket/warehouse"));
+        Path schemaPath = new Path("oss://bucket/warehouse/test.db/table/schema/schema-0");
+
+        assertThat(fileIO.tryToWriteAtomic(schemaPath, "schema-v0")).isTrue();
+        assertThat(exclusiveCreateAttempted).isTrue();
+        assertThat(renamed).isTrue();
+        assertThat(new String(content.get(), StandardCharsets.UTF_8)).isEqualTo("schema-v0");
     }
 
     private static class TestingOutputFile implements TrinoOutputFile {
@@ -89,6 +129,48 @@ public class TrinoFileIOTest {
 
         private String content() {
             return new String(content, StandardCharsets.UTF_8);
+        }
+    }
+
+    private static class UnsupportedExclusiveOutputFile implements TrinoOutputFile {
+
+        private final Location location;
+        private final AtomicBoolean exclusiveCreateAttempted;
+        private final AtomicReference<byte[]> content;
+
+        private UnsupportedExclusiveOutputFile(
+                Location location,
+                AtomicBoolean exclusiveCreateAttempted,
+                AtomicReference<byte[]> content) {
+            this.location = location;
+            this.exclusiveCreateAttempted = exclusiveCreateAttempted;
+            this.content = content;
+        }
+
+        @Override
+        public void createOrOverwrite(byte[] data) {
+            content.set(data.clone());
+        }
+
+        @Override
+        public void createExclusive(byte[] data) {
+            exclusiveCreateAttempted.set(true);
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public OutputStream create(AggregatedMemoryContext memoryContext) {
+            return new ByteArrayOutputStream() {
+                @Override
+                public void close() {
+                    content.set(toByteArray());
+                }
+            };
+        }
+
+        @Override
+        public Location location() {
+            return location;
         }
     }
 }

@@ -181,6 +181,8 @@ public class TrinoFileIO implements FileIO {
             return true;
         } catch (FileAlreadyExistsException ignored) {
             return false;
+        } catch (UnsupportedOperationException ignored) {
+            return FileIO.super.tryToWriteAtomic(path, content);
         }
     }
 
