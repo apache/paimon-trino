@@ -35,6 +35,7 @@ import io.trino.filesystem.TrinoOutputFile;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.List;
@@ -165,6 +166,22 @@ public class TrinoFileIO implements FileIO {
     public boolean mkdirs(Path path) throws IOException {
         trinoFileSystem.createDirectory(Location.of(path.toString()));
         return true;
+    }
+
+    @Override
+    public boolean tryToWriteAtomic(Path path, String content) throws IOException {
+        if (!objectStore) {
+            return FileIO.super.tryToWriteAtomic(path, content);
+        }
+
+        try {
+            trinoFileSystem
+                    .newOutputFile(Location.of(path.toString()))
+                    .createExclusive(content.getBytes(StandardCharsets.UTF_8));
+            return true;
+        } catch (FileAlreadyExistsException ignored) {
+            return false;
+        }
     }
 
     @Override
