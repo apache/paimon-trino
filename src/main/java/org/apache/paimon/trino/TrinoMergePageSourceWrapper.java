@@ -26,7 +26,6 @@ import io.trino.spi.connector.SourcePage;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Optional;
 
 /** Trino {@link ConnectorPageSource}. */
 public class TrinoMergePageSourceWrapper implements ConnectorPageSource {
@@ -78,9 +77,7 @@ public class TrinoMergePageSourceWrapper implements ConnectorPageSource {
                 idx++;
             }
         }
-        newBlocks[nextPage.getChannelCount()] =
-                RowBlock.fromNotNullSuppressedFieldBlocks(
-                        rowCount, Optional.of(new boolean[fieldToIndex.size()]), rowIdBlocks);
+        newBlocks[nextPage.getChannelCount()] = RowBlock.fromFieldBlocks(rowCount, rowIdBlocks);
 
         return new Page(rowCount, newBlocks);
     }

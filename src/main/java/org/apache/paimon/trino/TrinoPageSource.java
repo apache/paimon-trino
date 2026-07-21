@@ -288,7 +288,8 @@ public class TrinoPageSource implements ConnectorPageSource {
             type.writeSlice(output, wrappedBuffer((byte[]) value));
         } else {
             throw new TrinoException(
-                    GENERIC_INTERNAL_ERROR, "Unhandled type for Slice: " + type.getTypeSignature());
+                    GENERIC_INTERNAL_ERROR,
+                    "Unhandled type for Slice: " + type.getTypeDescriptor());
         }
     }
 
@@ -300,7 +301,7 @@ public class TrinoPageSource implements ConnectorPageSource {
         } else {
             throw new TrinoException(
                     GENERIC_INTERNAL_ERROR,
-                    "Unhandled type for Object: " + type.getTypeSignature());
+                    "Unhandled type for Object: " + type.getTypeDescriptor());
         }
     }
 
@@ -384,6 +385,6 @@ public class TrinoPageSource implements ConnectorPageSource {
             return;
         }
         throw new TrinoException(
-                GENERIC_INTERNAL_ERROR, "Unhandled type for Block: " + type.getTypeSignature());
+                GENERIC_INTERNAL_ERROR, "Unhandled type for Block: " + type.getTypeDescriptor());
     }
 }

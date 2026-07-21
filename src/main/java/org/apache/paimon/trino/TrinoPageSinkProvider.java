@@ -35,7 +35,10 @@ import io.trino.spi.connector.ConnectorPageSink;
 import io.trino.spi.connector.ConnectorPageSinkId;
 import io.trino.spi.connector.ConnectorPageSinkProvider;
 import io.trino.spi.connector.ConnectorSession;
+import io.trino.spi.connector.ConnectorTableCredentials;
 import io.trino.spi.connector.ConnectorTransactionHandle;
+
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.paimon.trino.ClassLoaderUtils.runWithContextClassLoader;
@@ -58,6 +61,7 @@ public class TrinoPageSinkProvider implements ConnectorPageSinkProvider {
             ConnectorTransactionHandle transactionHandle,
             ConnectorSession session,
             ConnectorOutputTableHandle outputTableHandle,
+            Optional<ConnectorTableCredentials> tableCredentials,
             ConnectorPageSinkId pageSinkId) {
         return createPageSink((TrinoTableHandle) outputTableHandle, session);
     }
@@ -67,6 +71,7 @@ public class TrinoPageSinkProvider implements ConnectorPageSinkProvider {
             ConnectorTransactionHandle transactionHandle,
             ConnectorSession session,
             ConnectorInsertTableHandle insertTableHandle,
+            Optional<ConnectorTableCredentials> tableCredentials,
             ConnectorPageSinkId pageSinkId) {
         return createPageSink((TrinoTableHandle) insertTableHandle, session);
     }
@@ -109,6 +114,7 @@ public class TrinoPageSinkProvider implements ConnectorPageSinkProvider {
             ConnectorTransactionHandle transactionHandle,
             ConnectorSession session,
             ConnectorMergeTableHandle mergeHandle,
+            Optional<ConnectorTableCredentials> tableCredentials,
             ConnectorPageSinkId pageSinkId) {
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) mergeHandle.getTableHandle();
         Table table = trinoTableHandle.tableWithDynamicOptions(trinoCatalog, session);

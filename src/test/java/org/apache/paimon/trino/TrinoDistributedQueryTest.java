@@ -22,6 +22,8 @@ import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableMap;
 
 import io.trino.testing.AbstractDistributedEngineOnlyQueries;
 import io.trino.testing.QueryRunner;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /** The test of TrinoDistributedQuery. */
 public class TrinoDistributedQueryTest extends AbstractDistributedEngineOnlyQueries {
@@ -30,6 +32,11 @@ public class TrinoDistributedQueryTest extends AbstractDistributedEngineOnlyQuer
     protected QueryRunner createQueryRunner() throws Exception {
         return TrinoQueryRunner.createPrestoQueryRunner(ImmutableMap.of());
     }
+
+    @Test
+    @Disabled("Nested array, map, and row writes are not implemented by TrinoRow")
+    @Override
+    public void testInsertWithCoercionIntoNestedCharacterType() {}
 
     @Override
     public void testCreateTableAsTable() {

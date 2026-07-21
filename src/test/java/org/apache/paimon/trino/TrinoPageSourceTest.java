@@ -23,10 +23,16 @@ import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.reader.RecordReader;
 import org.apache.paimon.utils.CloseableIterator;
 
+import io.trino.spi.Page;
+import io.trino.spi.block.Block;
+import io.trino.spi.block.BlockBuilder;
+import io.trino.spi.block.RowBlock;
+import io.trino.spi.connector.FixedPageSource;
 import io.trino.spi.connector.SourcePage;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.OptionalLong;
 
@@ -51,6 +57,28 @@ public class TrinoPageSourceTest {
         assertThat(page).isNotNull();
         assertThat(page.getPositionCount()).isEqualTo(1);
         assertThat(BIGINT.getLong(page.getBlock(0), 0)).isEqualTo(42L);
+    }
+
+    @Test
+    void testMergeRowIdBlockHasNoNulls() {
+        BlockBuilder builder = BIGINT.createFixedSizeBlockBuilder(2);
+        BIGINT.writeLong(builder, 11);
+        BIGINT.writeLong(builder, 22);
+        Block values = builder.build();
+        HashMap<String, Integer> rowIdFields = new HashMap<>();
+        rowIdFields.put("id", 0);
+        TrinoMergePageSourceWrapper pageSource =
+                TrinoMergePageSourceWrapper.wrap(
+                        new FixedPageSource(List.of(new Page(values))), rowIdFields);
+
+        Page page = pageSource.getNextPage();
+
+        assertThat(page).isNotNull();
+        RowBlock rowIds = (RowBlock) page.getBlock(1);
+        assertThat(rowIds.getPositionCount()).isEqualTo(2);
+        assertThat(rowIds.mayHaveNull()).isFalse();
+        assertThat(BIGINT.getLong(rowIds.getFieldBlock(0), 0)).isEqualTo(11);
+        assertThat(BIGINT.getLong(rowIds.getFieldBlock(0), 1)).isEqualTo(22);
     }
 
     private static class InMemoryRecordReader implements RecordReader<InternalRow> {

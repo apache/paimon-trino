@@ -24,16 +24,17 @@ import org.apache.paimon.table.source.Split;
 import org.apache.paimon.trino.catalog.TrinoCatalog;
 
 import com.google.inject.Inject;
+import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplitManager;
 import io.trino.spi.connector.ConnectorSplitSource;
 import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.connector.Constraint;
-import io.trino.spi.connector.DynamicFilter;
 import io.trino.spi.function.table.ConnectorTableFunctionHandle;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -56,8 +57,12 @@ public class TrinoSplitManager implements ConnectorSplitManager {
             ConnectorTransactionHandle transaction,
             ConnectorSession session,
             ConnectorTableHandle table,
-            DynamicFilter dynamicFilter,
+            Set<ColumnHandle> dynamicFilterColumns,
             Constraint constraint) {
+        // Paimon splits are planned eagerly below, before Trino supplies a
+        // DynamicFilterSnapshot. Applying a later snapshot here would require
+        // replanning and could duplicate splits, so retain correctness and let
+        // the page-source DynamicFilter perform row-level filtering.
         return getSplits((TrinoTableHandle) table, session);
     }
 
@@ -74,9 +79,6 @@ public class TrinoSplitManager implements ConnectorSplitManager {
 
     protected ConnectorSplitSource getSplits(
             TrinoTableHandle tableHandle, ConnectorSession session) {
-        // TODO dynamicFilter?
-        // TODO what is constraint?
-
         Table table = tableHandle.tableWithDynamicOptions(trinoCatalog, session);
         ReadBuilder readBuilder = table.newReadBuilder();
         new TrinoFilterConverter(table.rowType())

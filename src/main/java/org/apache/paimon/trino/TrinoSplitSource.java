@@ -20,6 +20,7 @@ package org.apache.paimon.trino;
 
 import io.trino.spi.connector.ConnectorSplit;
 import io.trino.spi.connector.ConnectorSplitSource;
+import io.trino.spi.connector.DynamicFilterSnapshot;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -40,7 +41,7 @@ public class TrinoSplitSource implements ConnectorSplitSource {
         this.limit = limit;
     }
 
-    protected CompletableFuture<ConnectorSplitBatch> innerGetNextBatch(int maxSize) {
+    protected CompletableFuture<List<ConnectorSplit>> innerGetNextBatch(int maxSize) {
         List<ConnectorSplit> batch = new ArrayList<>();
         for (int i = 0; i < maxSize; i++) {
             TrinoSplit split = splits.poll();
@@ -50,11 +51,15 @@ public class TrinoSplitSource implements ConnectorSplitSource {
             count += split.decodeSplit().rowCount();
             batch.add(split);
         }
-        return CompletableFuture.completedFuture(new ConnectorSplitBatch(batch, isFinished()));
+        return CompletableFuture.completedFuture(batch);
     }
 
     @Override
-    public CompletableFuture<ConnectorSplitBatch> getNextBatch(int maxSize) {
+    public CompletableFuture<List<ConnectorSplit>> getNextBatch(
+            int maxSize, DynamicFilterSnapshot dynamicFilterSnapshot) {
+        // Splits were planned before the snapshot became available. Replanning
+        // here could return duplicates across batches, so the snapshot is not
+        // applied at split enumeration time.
         return innerGetNextBatch(maxSize);
     }
 
