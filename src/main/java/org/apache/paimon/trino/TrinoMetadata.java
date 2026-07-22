@@ -527,7 +527,7 @@ public class TrinoMetadata implements ConnectorMetadata {
             builder.column(
                     column.getName(),
                     TrinoTypeUtils.toPaimonType(column.getType()),
-                    column.getComment());
+                    column.getComment().orElse(null));
         }
 
         TrinoTableOptionUtils.buildOptions(builder, properties);

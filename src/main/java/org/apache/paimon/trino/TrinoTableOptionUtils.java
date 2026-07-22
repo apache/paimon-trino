@@ -28,6 +28,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,13 +58,15 @@ public class TrinoTableOptionUtils {
                 continue;
             }
 
+            Class<?> optionClass = null;
             Type genericType = optionWithMetaInfo.field.getGenericType();
             if (genericType instanceof ParameterizedType) {
                 ParameterizedType parameterizedType = (ParameterizedType) genericType;
                 Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
                 for (Type actualTypeArgument : actualTypeArguments) {
                     if (actualTypeArgument instanceof Class<?>) {
-                        className = ((Class<?>) actualTypeArgument).getSimpleName();
+                        optionClass = (Class<?>) actualTypeArgument;
+                        className = optionClass.getSimpleName();
                     }
                 }
             }
@@ -72,8 +75,8 @@ public class TrinoTableOptionUtils {
                     new OptionInfo(
                             convertOptionKey(optionWithMetaInfo.option.key()),
                             optionWithMetaInfo.option.key(),
-                            buildClass(className),
-                            isEnum(className),
+                            optionClass,
+                            optionClass != null && optionClass.isEnum(),
                             className));
         }
         return optionInfos;
@@ -91,44 +94,11 @@ public class TrinoTableOptionUtils {
         }
     }
 
-    private static boolean isEnum(String className) {
-        switch (className) {
-            case "StartupMode":
-            case "MergeEngine":
-            case "ChangelogProducer":
-            case "LogConsistency":
-            case "LogChangelogMode":
-            case "StreamingReadMode":
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private static Class<?> buildClass(String className) {
-        switch (className) {
-            case "MergeEngine":
-                return CoreOptions.MergeEngine.class;
-            case "ChangelogProducer":
-                return CoreOptions.ChangelogProducer.class;
-            case "StartupMode":
-                return CoreOptions.StartupMode.class;
-            case "LogConsistency":
-                return CoreOptions.LogConsistency.class;
-            case "LogChangelogMode":
-                return CoreOptions.LogChangelogMode.class;
-            case "StreamingReadMode":
-                return CoreOptions.StreamingReadMode.class;
-            default:
-                return null;
-        }
-    }
-
     public static String convertOptionKey(String key) {
         String regex = "[.\\-]";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(key);
-        return matcher.replaceAll("_");
+        return matcher.replaceAll("_").toLowerCase(Locale.ROOT);
     }
 
     private static List<OptionWithMetaInfo> extractConfigOptions(Class<?> clazz) {

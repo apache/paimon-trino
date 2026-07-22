@@ -27,11 +27,13 @@ import org.apache.paimon.catalog.CatalogLoader;
 import org.apache.paimon.catalog.Database;
 import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.catalog.PropertyChange;
+import org.apache.paimon.catalog.TableQueryAuthResult;
 import org.apache.paimon.function.Function;
 import org.apache.paimon.function.FunctionChange;
 import org.apache.paimon.options.Options;
 import org.apache.paimon.partition.Partition;
 import org.apache.paimon.partition.PartitionStatistics;
+import org.apache.paimon.rest.responses.GetTagResponse;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.schema.SchemaChange;
 import org.apache.paimon.security.SecurityContext;
@@ -40,6 +42,7 @@ import org.apache.paimon.table.Table;
 import org.apache.paimon.table.TableSnapshot;
 import org.apache.paimon.trino.ClassLoaderUtils;
 import org.apache.paimon.trino.fileio.TrinoFileIOLoader;
+import org.apache.paimon.utils.SnapshotNotExistException;
 
 import io.trino.filesystem.TrinoFileSystem;
 import io.trino.filesystem.TrinoFileSystemFactory;
@@ -149,8 +152,18 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
+    public Table getTableById(String tableId) throws TableIdNotExistException {
+        return current.getTableById(tableId);
+    }
+
+    @Override
     public List<String> listTables(String s) throws DatabaseNotExistException {
         return current.listTables(s);
+    }
+
+    @Override
+    public List<Table> listTableDetails(String databaseName) throws DatabaseNotExistException {
+        return current.listTableDetails(databaseName);
     }
 
     @Override
@@ -215,6 +228,13 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
+    public List<Partition> listPartitionsByNames(
+            Identifier identifier, List<Map<String, String>> partitionNames)
+            throws TableNotExistException {
+        return current.listPartitionsByNames(identifier, partitionNames);
+    }
+
+    @Override
     public boolean supportsListObjectsPaged() {
         return current.supportsListObjectsPaged();
     }
@@ -222,6 +242,11 @@ public class TrinoCatalog implements Catalog {
     @Override
     public boolean supportsVersionManagement() {
         return current.supportsVersionManagement();
+    }
+
+    @Override
+    public boolean supportsPartitionModification() {
+        return current.supportsPartitionModification();
     }
 
     @Override
@@ -259,6 +284,12 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
+    public void rollbackTo(Identifier identifier, Instant instant, @Nullable Long snapshotId)
+            throws TableNotExistException {
+        current.rollbackTo(identifier, instant, snapshotId);
+    }
+
+    @Override
     public void createBranch(Identifier identifier, String branch, @Nullable String fromTag)
             throws TableNotExistException, BranchAlreadyExistException, TagNotExistException {
         current.createBranch(identifier, branch, fromTag);
@@ -270,6 +301,12 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
+    public void renameBranch(Identifier identifier, String branch, String newBranch)
+            throws BranchNotExistException, BranchAlreadyExistException {
+        current.renameBranch(identifier, branch, newBranch);
+    }
+
+    @Override
     public void fastForward(Identifier identifier, String branch) throws BranchNotExistException {
         current.fastForward(identifier, branch);
     }
@@ -277,6 +314,39 @@ public class TrinoCatalog implements Catalog {
     @Override
     public List<String> listBranches(Identifier identifier) throws TableNotExistException {
         return current.listBranches(identifier);
+    }
+
+    @Override
+    public GetTagResponse getTag(Identifier identifier, String tag)
+            throws TableNotExistException, TagNotExistException {
+        return current.getTag(identifier, tag);
+    }
+
+    @Override
+    public void createTag(
+            Identifier identifier,
+            String tag,
+            @Nullable Long snapshotId,
+            @Nullable String timeRetained,
+            boolean waitTag)
+            throws TableNotExistException, SnapshotNotExistException, TagAlreadyExistException {
+        current.createTag(identifier, tag, snapshotId, timeRetained, waitTag);
+    }
+
+    @Override
+    public PagedList<String> listTagsPaged(
+            Identifier identifier,
+            @Nullable Integer maxResults,
+            @Nullable String pageToken,
+            @Nullable String tagNamePattern)
+            throws TableNotExistException {
+        return current.listTagsPaged(identifier, maxResults, pageToken, tagNamePattern);
+    }
+
+    @Override
+    public void deleteTag(Identifier identifier, String tag)
+            throws TableNotExistException, TagNotExistException {
+        current.deleteTag(identifier, tag);
     }
 
     @Override
@@ -329,7 +399,7 @@ public class TrinoCatalog implements Catalog {
     }
 
     @Override
-    public List<String> authTableQuery(Identifier identifier, @Nullable List<String> select)
+    public TableQueryAuthResult authTableQuery(Identifier identifier, @Nullable List<String> select)
             throws TableNotExistException {
         return current.authTableQuery(identifier, select);
     }

@@ -131,4 +131,7 @@ public class TrinoConnector implements Connector {
     public Optional<FunctionProvider> getFunctionProvider() {
         return Optional.of(functionProvider);
     }
+
+    @Override
+    public void shutdown() {}
 }
