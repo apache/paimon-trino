@@ -49,7 +49,6 @@ import io.trino.orc.OrcReaderOptions;
 import io.trino.orc.OrcRecordReader;
 import io.trino.orc.TupleDomainOrcPredicate;
 import io.trino.plugin.base.metrics.FileFormatDataSourceStats;
-import io.trino.plugin.hive.orc.OrcPageSource;
 import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ConnectorPageSource;
 import io.trino.spi.connector.ConnectorPageSourceProvider;
@@ -440,11 +439,9 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
                             INITIAL_BATCH_SIZE,
                             RuntimeException::new);
 
-            return new OrcPageSource(
+            return new TrinoOrcPageSource(
                     recordReader,
                     orcDataSource,
-                    Optional.empty(),
-                    Optional.empty(),
                     memoryUsage,
                     new FileFormatDataSourceStats(),
                     reader.getCompressionKind());
