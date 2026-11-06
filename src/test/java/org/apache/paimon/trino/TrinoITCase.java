@@ -76,6 +76,7 @@ public class TrinoITCase extends AbstractTestQueryFramework {
 
     private static final String CATALOG = "paimon";
     private static final String DB = "default";
+    private static final int ORC_DV_TABLE_ROWS = 50_000;
 
     protected long t2FirstCommitTimestamp;
 
@@ -486,6 +487,55 @@ public class TrinoITCase extends AbstractTestQueryFramework {
         }
 
         {
+            // Primary-key ORC table with deletion vectors. The first commit produces one data file
+            // with several ORC row groups (row index stride 10000), sorted by id. The second commit
+            // deletes and updates rows spread over that file. Its compaction writes the changes to
+            // a new file on a lower level and a deletion vector that marks positions in every row
+            // group of the first file. The values are scrambled so that the first file is larger
+            // than the changes and is not simply rewritten by the compaction.
+            Path tablePath = new Path(warehouse, "default.db/orc_dv_table");
+            RowType rowType =
+                    new RowType(
+                            Arrays.asList(
+                                    new DataField(0, "id", DataTypes.INT()),
+                                    new DataField(1, "v", DataTypes.INT())));
+            new SchemaManager(LocalFileIO.create(), tablePath)
+                    .createTable(
+                            new Schema(
+                                    rowType.getFields(),
+                                    Collections.emptyList(),
+                                    List.of("id"),
+                                    new HashMap<>() {
+                                        {
+                                            put(CoreOptions.BUCKET.key(), "1");
+                                            put(CoreOptions.DELETION_VECTORS_ENABLED.key(), "true");
+                                            put(CoreOptions.FILE_FORMAT.key(), "orc");
+                                            put("orc.row.index.stride", "10000");
+                                        }
+                                    },
+                                    ""));
+            FileStoreTable table = FileStoreTableFactory.create(LocalFileIO.create(), tablePath);
+            InnerTableWrite writer = table.newWrite("user");
+            writer.withIOManager(new IOManagerImpl("/tmp"));
+            InnerTableCommit commit = table.newCommit("user");
+            for (int i = 0; i < ORC_DV_TABLE_ROWS; i++) {
+                writer.write(GenericRow.of(i, orcDvValue(i)));
+            }
+            commit.commit(0, writer.prepareCommit(true, 0));
+
+            for (int i = 0; i < ORC_DV_TABLE_ROWS; i++) {
+                if (i % 7 == 0) {
+                    writer.write(GenericRow.ofKind(RowKind.DELETE, i, orcDvValue(i)));
+                } else if (i % 11 == 0) {
+                    writer.write(GenericRow.of(i, -orcDvValue(i)));
+                }
+            }
+            commit.commit(1, writer.prepareCommit(true, 1));
+            writer.close();
+            commit.close();
+        }
+
+        {
             Path tablePath = new Path(warehouse, "default.db/fixed_bucket_table_wi_pk");
             RowType rowType =
                     new RowType(
@@ -592,6 +642,11 @@ public class TrinoITCase extends AbstractTestQueryFramework {
             closeAllSuppress(e, queryRunner);
             throw e;
         }
+    }
+
+    /** Deterministic, poorly compressible value for row {@code i} of the ORC DV table. */
+    private static int orcDvValue(int i) {
+        return i * 0x9E3779B1;
     }
 
     private static SimpleTableTestHelper createTestHelper(Path tablePath) throws Exception {
@@ -937,6 +992,45 @@ public class TrinoITCase extends AbstractTestQueryFramework {
         assertThat(sql("SELECT * FROM paimon.default.t101"))
                 .isEqualTo(
                         "[[a1, 1, 1], [a2, 2, 2], [a3, 3, 3], [a4, 4, 4], [a5, 5, 5], [a6, 6, 6], [a7, 7, 7], [a8, 8, 8], [a9, 9, 9]]");
+    }
+
+    @Test
+    public void testDeletionVectorWithOrcFilterPushdown() {
+        // "id > 25000" is pushed down to the ORC reader, which skips the first two row groups.
+        // The deletion vector must still be applied by file position, so the result has to match
+        // the same filter evaluated by Trino ("id + 0 > 25000" is not pushed down).
+        int lowerBound = 25_000;
+        long expectedCount = 0;
+        long expectedIdSum = 0;
+        long expectedValueSum = 0;
+        for (int i = lowerBound + 1; i < ORC_DV_TABLE_ROWS; i++) {
+            if (i % 7 == 0) {
+                continue;
+            }
+            expectedCount++;
+            expectedIdSum += i;
+            expectedValueSum += i % 11 == 0 ? -orcDvValue(i) : orcDvValue(i);
+        }
+        String expected =
+                String.format(
+                        "[[%d, %d, %d, %d]]",
+                        expectedCount, expectedCount, expectedIdSum, expectedValueSum);
+
+        // The first file (top level) keeps all rows and has a deletion vector; the changes are
+        // in a second file. Without this layout the test would not exercise deletion vectors.
+        assertThat(
+                        sql(
+                                "SELECT level, record_count FROM paimon.default.\"orc_dv_table$files\" ORDER BY level DESC"))
+                .startsWith("[[5, " + ORC_DV_TABLE_ROWS + "], [4, ");
+        assertThat(sql("SELECT index_type FROM paimon.default.\"orc_dv_table$table_indexes\""))
+                .isEqualTo("[[DELETION_VECTORS]]");
+
+        String query =
+                "SELECT count(*), count(DISTINCT id), sum(id), sum(v) "
+                        + "FROM paimon.default.orc_dv_table WHERE %s > "
+                        + lowerBound;
+        assertThat(sql(String.format(query, "id + 0"))).isEqualTo(expected);
+        assertThat(sql(String.format(query, "id"))).isEqualTo(expected);
     }
 
     @Test
