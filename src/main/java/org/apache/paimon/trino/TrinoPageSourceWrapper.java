@@ -66,13 +66,20 @@ public class TrinoPageSourceWrapper implements ConnectorPageSource {
 
     @Override
     public Page getNextPage() {
-        int startPosition = (int) source.getCompletedPositions().orElseThrow();
+        long completedPositions = source.getCompletedPositions().orElseThrow();
         SourcePage sourcePage = source.getNextSourcePage();
         Page next = sourcePage == null ? null : sourcePage.getPage();
         if (next == null) {
             return next;
         }
 
+        // The deletion vector is indexed by row position in the data file. The number of rows
+        // returned so far equals that position only when the reader skipped nothing; with filter
+        // pushdown the ORC reader skips stripes and row groups, so ask it for the real position.
+        long startPosition =
+                source instanceof TrinoOrcPageSource
+                        ? ((TrinoOrcPageSource) source).getFilePosition()
+                        : completedPositions;
         int pageCount = next.getPositionCount();
 
         return deletionVector
@@ -84,7 +91,7 @@ public class TrinoPageSourceWrapper implements ConnectorPageSource {
 
     @VisibleForTesting
     Page convertToRetained(
-            Page page, DeletionVector deletionVector, int startPosition, int pageCount) {
+            Page page, DeletionVector deletionVector, long startPosition, int pageCount) {
         int[] retained = new int[pageCount];
         int retainedLength = 0;
         for (int pagePosition = 0; pagePosition < pageCount; pagePosition++) {
