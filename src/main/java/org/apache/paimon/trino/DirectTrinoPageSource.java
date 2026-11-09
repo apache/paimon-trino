@@ -55,20 +55,24 @@ public class DirectTrinoPageSource implements ConnectorPageSource {
         return current == null || (current.isFinished() && pageSourceQueue.isEmpty());
     }
 
-    @Override
     public Page getNextPage() {
+        SourcePage sourcePage = getNextSourcePage();
+        return sourcePage == null ? null : sourcePage.getPage();
+    }
+
+    @Override
+    public SourcePage getNextSourcePage() {
         try {
             if (current == null) {
                 return null;
             }
             SourcePage sourcePage = current.getNextSourcePage();
-            Page dataPage = sourcePage == null ? null : sourcePage.getPage();
-            if (dataPage == null) {
+            if (sourcePage == null) {
                 advance();
-                return getNextPage();
+                return getNextSourcePage();
             }
 
-            return dataPage;
+            return sourcePage;
         } catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
