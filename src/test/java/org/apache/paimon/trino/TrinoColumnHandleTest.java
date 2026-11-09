@@ -21,9 +21,10 @@ package org.apache.paimon.trino;
 import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableMap;
 import org.apache.paimon.types.DataTypes;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
-import io.airlift.json.ObjectMapperProvider;
+import io.airlift.json.JsonMapperProvider;
 import io.trino.spi.type.Type;
 import io.trino.type.TypeDeserializer;
 import org.junit.jupiter.api.Test;
@@ -41,11 +42,14 @@ public class TrinoColumnHandleTest {
     }
 
     private void testRoundTrip(TrinoColumnHandle expected) {
-        ObjectMapperProvider objectMapperProvider = new ObjectMapperProvider();
-        objectMapperProvider.setJsonDeserializers(
-                ImmutableMap.of(Type.class, new TypeDeserializer(TESTING_TYPE_MANAGER)));
+        JsonMapper jsonMapper =
+                new JsonMapperProvider()
+                        .withJsonDeserializers(
+                                ImmutableMap.of(
+                                        Type.class, new TypeDeserializer(TESTING_TYPE_MANAGER)))
+                        .get();
         JsonCodec<TrinoColumnHandle> codec =
-                new JsonCodecFactory(objectMapperProvider).jsonCodec(TrinoColumnHandle.class);
+                new JsonCodecFactory(jsonMapper).jsonCodec(TrinoColumnHandle.class);
 
         String json = codec.toJson(expected);
         TrinoColumnHandle actual = codec.fromJson(json);

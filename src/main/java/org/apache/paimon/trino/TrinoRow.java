@@ -19,10 +19,12 @@
 package org.apache.paimon.trino;
 
 import org.apache.paimon.data.BinaryString;
+import org.apache.paimon.data.Blob;
 import org.apache.paimon.data.Decimal;
 import org.apache.paimon.data.InternalArray;
 import org.apache.paimon.data.InternalMap;
 import org.apache.paimon.data.InternalRow;
+import org.apache.paimon.data.InternalVector;
 import org.apache.paimon.data.Timestamp;
 import org.apache.paimon.data.variant.Variant;
 import org.apache.paimon.types.RowKind;
@@ -180,6 +182,12 @@ public class TrinoRow implements InternalRow, Serializable {
     }
 
     @Override
+    public InternalVector getVector(int i) {
+        // todo
+        return null;
+    }
+
+    @Override
     public InternalMap getMap(int i) {
         // todo
         return null;
@@ -193,6 +201,12 @@ public class TrinoRow implements InternalRow, Serializable {
 
     @Override
     public Variant getVariant(int pos) {
+        // todo
+        return null;
+    }
+
+    @Override
+    public Blob getBlob(int i) {
         // todo
         return null;
     }

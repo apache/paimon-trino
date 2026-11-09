@@ -55,9 +55,12 @@ import io.trino.spi.connector.ConnectorPageSource;
 import io.trino.spi.connector.ConnectorPageSourceProvider;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplit;
+import io.trino.spi.connector.ConnectorTableCredentials;
 import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.connector.DynamicFilter;
+import io.trino.spi.connector.MemoryContext;
+import io.trino.spi.connector.MemoryUsageReportingPageSource;
 import io.trino.spi.predicate.Domain;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.type.Type;
@@ -101,59 +104,72 @@ public class TrinoPageSourceProvider implements ConnectorPageSourceProvider {
             ConnectorSession session,
             ConnectorSplit split,
             ConnectorTableHandle tableHandle,
+            Optional<ConnectorTableCredentials> tableCredentials,
             List<ColumnHandle> columns,
-            DynamicFilter dynamicFilter) {
+            DynamicFilter dynamicFilter,
+            MemoryContext memoryContext) {
         trinoCatalog.initSession(session);
         TrinoTableHandle trinoTableHandle = (TrinoTableHandle) tableHandle;
         Table table = trinoTableHandle.tableWithDynamicOptions(trinoCatalog, session);
-        return runWithContextClassLoader(
-                () -> {
-                    Optional<TrinoColumnHandle> rowId =
-                            columns.stream()
-                                    .map(TrinoColumnHandle.class::cast)
-                                    .filter(column -> column.isRowId())
-                                    .findFirst();
-                    if (rowId.isPresent()) {
-                        List<ColumnHandle> dataColumns =
-                                columns.stream()
-                                        .map(TrinoColumnHandle.class::cast)
-                                        .filter(column -> !column.isRowId())
-                                        .collect(Collectors.toList());
-                        Set<String> rowIdFileds =
-                                ((io.trino.spi.type.RowType) rowId.get().getTrinoType())
-                                        .getFields().stream()
-                                                .map(io.trino.spi.type.RowType.Field::getName)
-                                                .map(Optional::get)
-                                                .collect(Collectors.toSet());
+        TupleDomain<TrinoColumnHandle> effectiveFilter =
+                trinoTableHandle
+                        .getFilter()
+                        .intersect(
+                                dynamicFilter
+                                        .getCurrentPredicate()
+                                        .transformKeys(TrinoColumnHandle.class::cast));
+        return new MemoryUsageReportingPageSource(
+                runWithContextClassLoader(
+                        () -> {
+                            Optional<TrinoColumnHandle> rowId =
+                                    columns.stream()
+                                            .map(TrinoColumnHandle.class::cast)
+                                            .filter(column -> column.isRowId())
+                                            .findFirst();
+                            if (rowId.isPresent()) {
+                                List<ColumnHandle> dataColumns =
+                                        columns.stream()
+                                                .map(TrinoColumnHandle.class::cast)
+                                                .filter(column -> !column.isRowId())
+                                                .collect(Collectors.toList());
+                                Set<String> rowIdFileds =
+                                        ((io.trino.spi.type.RowType) rowId.get().getTrinoType())
+                                                .getFields().stream()
+                                                        .map(
+                                                                io.trino.spi.type.RowType.Field
+                                                                        ::getName)
+                                                        .map(Optional::get)
+                                                        .collect(Collectors.toSet());
 
-                        HashMap<String, Integer> fieldToIndex = new HashMap<>();
-                        for (int i = 0; i < dataColumns.size(); i++) {
-                            TrinoColumnHandle trinoColumnHandle =
-                                    (TrinoColumnHandle) dataColumns.get(i);
-                            if (rowIdFileds.contains(trinoColumnHandle.getColumnName())) {
-                                fieldToIndex.put(trinoColumnHandle.getColumnName(), i);
-                            }
-                        }
-                        return TrinoMergePageSourceWrapper.wrap(
-                                createPageSource(
+                                HashMap<String, Integer> fieldToIndex = new HashMap<>();
+                                for (int i = 0; i < dataColumns.size(); i++) {
+                                    TrinoColumnHandle trinoColumnHandle =
+                                            (TrinoColumnHandle) dataColumns.get(i);
+                                    if (rowIdFileds.contains(trinoColumnHandle.getColumnName())) {
+                                        fieldToIndex.put(trinoColumnHandle.getColumnName(), i);
+                                    }
+                                }
+                                return TrinoMergePageSourceWrapper.wrap(
+                                        createPageSource(
+                                                session,
+                                                table,
+                                                effectiveFilter,
+                                                (TrinoSplit) split,
+                                                dataColumns,
+                                                trinoTableHandle.getLimit()),
+                                        fieldToIndex);
+                            } else {
+                                return createPageSource(
                                         session,
                                         table,
-                                        trinoTableHandle.getFilter(),
+                                        effectiveFilter,
                                         (TrinoSplit) split,
-                                        dataColumns,
-                                        trinoTableHandle.getLimit()),
-                                fieldToIndex);
-                    } else {
-                        return createPageSource(
-                                session,
-                                table,
-                                trinoTableHandle.getFilter(),
-                                (TrinoSplit) split,
-                                columns,
-                                trinoTableHandle.getLimit());
-                    }
-                },
-                TrinoPageSourceProvider.class.getClassLoader());
+                                        columns,
+                                        trinoTableHandle.getLimit());
+                            }
+                        },
+                        TrinoPageSourceProvider.class.getClassLoader()),
+                memoryContext);
     }
 
     private ConnectorPageSource createPageSource(

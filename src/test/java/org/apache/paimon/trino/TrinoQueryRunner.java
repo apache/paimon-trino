@@ -22,6 +22,7 @@ import org.apache.paimon.shade.guava30.com.google.common.collect.ImmutableMap;
 
 import io.airlift.log.Logger;
 import io.trino.Session;
+import io.trino.plugin.memory.MemoryPlugin;
 import io.trino.plugin.tpch.TpchPlugin;
 import io.trino.testing.DistributedQueryRunner;
 
@@ -29,7 +30,9 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static io.trino.testing.QueryAssertions.copyTpchTables;
 import static io.trino.testing.TestingSession.testSessionBuilder;
+import static io.trino.tpch.TpchTable.getTables;
 
 /** The query runner of trino. */
 public class TrinoQueryRunner {
@@ -42,7 +45,7 @@ public class TrinoQueryRunner {
 
     public static DistributedQueryRunner createPrestoQueryRunner(
             Map<String, String> extraProperties) throws Exception {
-        return createPrestoQueryRunner(extraProperties, ImmutableMap.of(), false);
+        return createPrestoQueryRunner(extraProperties, ImmutableMap.of(), true);
     }
 
     public static DistributedQueryRunner createPrestoQueryRunner(
@@ -58,6 +61,8 @@ public class TrinoQueryRunner {
 
         queryRunner.installPlugin(new TpchPlugin());
         queryRunner.createCatalog("tpch", "tpch");
+        queryRunner.installPlugin(new MemoryPlugin());
+        queryRunner.createCatalog("memory", "memory");
 
         Path dataDir = queryRunner.getCoordinator().getBaseDataDir().resolve("paimon_data");
         Path catalogDir = dataDir.getParent().resolve("catalog");
@@ -76,10 +81,9 @@ public class TrinoQueryRunner {
 
         queryRunner.execute("CREATE SCHEMA tpch");
 
-        // TODO
-        /*if (createTpchTables) {
-            copyTpchTables(queryRunner, "tpch", TINY_SCHEMA_NAME, session, TpchTable.getTables());
-        }*/
+        if (createTpchTables) {
+            copyTpchTables(queryRunner, "tpch", "tiny", session, getTables());
+        }
 
         return queryRunner;
     }

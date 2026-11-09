@@ -46,10 +46,10 @@ public class TrinoMergeSink implements ConnectorMergeSink {
     @Override
     public void storeMergedRows(Page page) {
         int inputChannelCount = page.getChannelCount();
-        if (inputChannelCount != dataColumnCount + 2) {
+        if (inputChannelCount != dataColumnCount + 3) {
             throw new IllegalArgumentException(
                     String.format(
-                            "inputPage channelCount (%s) == dataColumns size (%s) + 2",
+                            "inputPage channelCount (%s) == dataColumns size (%s) + 3",
                             inputChannelCount, dataColumnCount));
         } else {
             int positionCount = page.getPositionCount();
@@ -57,7 +57,7 @@ public class TrinoMergeSink implements ConnectorMergeSink {
                 throw new IllegalArgumentException(
                         "positionCount should be > 0, but is " + positionCount);
             } else {
-                Block operationBlock = page.getBlock(inputChannelCount - 2);
+                Block operationBlock = page.getBlock(dataColumnCount);
                 int[] deletePositions = new int[positionCount];
                 int[] insertPositions = new int[positionCount];
                 int deletePositionCount = 0;

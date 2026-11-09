@@ -26,30 +26,36 @@ import com.google.inject.Inject;
 import io.trino.plugin.base.classloader.ClassLoaderSafeTableFunctionSplitProcessor;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplit;
+import io.trino.spi.connector.ConnectorTableCredentials;
 import io.trino.spi.function.table.ConnectorTableFunctionHandle;
 import io.trino.spi.function.table.TableFunctionProcessorProvider;
 import io.trino.spi.function.table.TableFunctionSplitProcessor;
 
+import java.util.Optional;
+
 /** TableChangesFunctionProcessorProvider. */
 public class TableChangesFunctionProcessorProvider implements TableFunctionProcessorProvider {
 
-    private final TrinoPageSourceProvider icebergPageSourceProvider;
+    private final TrinoPageSourceProvider pageSourceProvider;
 
     @Inject
-    public TableChangesFunctionProcessorProvider(
-            TrinoPageSourceProvider icebergPageSourceProvider) {
-        this.icebergPageSourceProvider = icebergPageSourceProvider;
+    public TableChangesFunctionProcessorProvider(TrinoPageSourceProvider pageSourceProvider) {
+        this.pageSourceProvider = pageSourceProvider;
     }
 
     @Override
     public TableFunctionSplitProcessor getSplitProcessor(
-            ConnectorSession session, ConnectorTableFunctionHandle handle, ConnectorSplit split) {
+            ConnectorSession session,
+            ConnectorTableFunctionHandle handle,
+            Optional<ConnectorTableCredentials> tableCredentials,
+            ConnectorSplit split) {
         return new ClassLoaderSafeTableFunctionSplitProcessor(
                 new TableChangesFunctionProcessor(
                         session,
                         (TrinoTableHandle) handle,
                         (TrinoSplit) split,
-                        icebergPageSourceProvider),
+                        pageSourceProvider,
+                        tableCredentials),
                 getClass().getClassLoader());
     }
 }

@@ -25,10 +25,16 @@ import org.apache.paimon.trino.TrinoTableHandle;
 import io.trino.spi.Page;
 import io.trino.spi.connector.ConnectorPageSource;
 import io.trino.spi.connector.ConnectorSession;
+import io.trino.spi.connector.ConnectorTableCredentials;
 import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.DynamicFilter;
+import io.trino.spi.connector.MemoryContext;
+import io.trino.spi.connector.SourcePage;
 import io.trino.spi.function.table.TableFunctionProcessorState;
 import io.trino.spi.function.table.TableFunctionSplitProcessor;
+
+import java.io.IOException;
+import java.util.Optional;
 
 import static io.trino.spi.function.table.TableFunctionProcessorState.Finished.FINISHED;
 
@@ -43,15 +49,18 @@ public class TableChangesFunctionProcessor implements TableFunctionSplitProcesso
             ConnectorSession session,
             TrinoTableHandle handle,
             TrinoSplit split,
-            TrinoPageSourceProvider pageSourceProvider) {
+            TrinoPageSourceProvider pageSourceProvider,
+            Optional<ConnectorTableCredentials> tableCredentials) {
         this.pageSource =
                 pageSourceProvider.createPageSource(
                         null,
                         session,
                         split,
                         (ConnectorTableHandle) handle,
+                        tableCredentials,
                         handle.getProjectedColumns().get(),
-                        DynamicFilter.EMPTY);
+                        DynamicFilter.EMPTY,
+                        MemoryContext.NO_LIMIT);
     }
 
     @Override
@@ -59,11 +68,17 @@ public class TableChangesFunctionProcessor implements TableFunctionSplitProcesso
         if (pageSource.isFinished()) {
             return FINISHED;
         }
-        Page dataPage = pageSource.getNextPage();
+        SourcePage sourcePage = pageSource.getNextSourcePage();
+        Page dataPage = sourcePage == null ? null : sourcePage.getPage();
         if (dataPage == null) {
             return TableFunctionProcessorState.Processed.produced(EMPTY_PAGE);
         } else {
             return TableFunctionProcessorState.Processed.produced(dataPage);
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        pageSource.close();
     }
 }
