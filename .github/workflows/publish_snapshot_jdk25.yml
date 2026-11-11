@@ -16,7 +16,7 @@
 # limitations under the License.
 ################################################################################
 
-name: Publish Snapshot JDK24
+name: Publish Snapshot JDK25
 
 on:
   schedule:
@@ -25,7 +25,7 @@ on:
   workflow_dispatch:
 
 env:
-  JDK_VERSION: 24
+  JDK_VERSION: 25
 
 concurrency:
   group: ps-${{ github.event.pull_request.number || github.ref }}
@@ -61,7 +61,7 @@ jobs:
           <toolchain>
            <type>jdk</type>
              <provides>
-               <version>24</version>
+               <version>25</version>
                <vendor>adopt</vendor>
              </provides>
              <configuration>

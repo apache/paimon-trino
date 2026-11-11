@@ -22,6 +22,7 @@ import io.trino.spi.Page;
 import io.trino.spi.block.Block;
 import io.trino.spi.block.RowBlock;
 import io.trino.spi.connector.ConnectorPageSource;
+import io.trino.spi.connector.SourcePage;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -60,11 +61,12 @@ public class TrinoMergePageSourceWrapper implements ConnectorPageSource {
     }
 
     @Override
-    public Page getNextPage() {
-        Page nextPage = pageSource.getNextPage();
-        if (nextPage == null) {
+    public SourcePage getNextSourcePage() {
+        SourcePage sourcePage = pageSource.getNextSourcePage();
+        if (sourcePage == null) {
             return null;
         }
+        Page nextPage = sourcePage.getPage();
         int rowCount = nextPage.getPositionCount();
 
         Block[] newBlocks = new Block[nextPage.getChannelCount() + 1];
@@ -81,7 +83,7 @@ public class TrinoMergePageSourceWrapper implements ConnectorPageSource {
                 RowBlock.fromNotNullSuppressedFieldBlocks(
                         rowCount, Optional.of(new boolean[fieldToIndex.size()]), rowIdBlocks);
 
-        return new Page(rowCount, newBlocks);
+        return SourcePage.create(new Page(rowCount, newBlocks));
     }
 
     @Override

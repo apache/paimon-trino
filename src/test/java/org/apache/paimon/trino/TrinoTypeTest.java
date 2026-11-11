@@ -136,7 +136,7 @@ public class TrinoTypeTest {
                                 new DataField(0, "id", new IntType()),
                                 new DataField(1, "name", new VarCharType(Integer.MAX_VALUE))));
         assertThat(Objects.requireNonNull(row).getDisplayName())
-                .isEqualTo("row(id integer, name varchar)");
+                .isEqualTo("row(\"id\" integer, \"name\" varchar)");
     }
 
     @Test

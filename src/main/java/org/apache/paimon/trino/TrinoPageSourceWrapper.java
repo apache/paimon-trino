@@ -65,21 +65,24 @@ public class TrinoPageSourceWrapper implements ConnectorPageSource {
     }
 
     @Override
-    public Page getNextPage() {
+    public SourcePage getNextSourcePage() {
         int startPosition = (int) source.getCompletedPositions().orElseThrow();
         SourcePage sourcePage = source.getNextSourcePage();
-        Page next = sourcePage == null ? null : sourcePage.getPage();
-        if (next == null) {
-            return next;
+        if (sourcePage == null) {
+            return null;
         }
 
+        Page next = sourcePage.getPage();
         int pageCount = next.getPositionCount();
 
-        return deletionVector
-                .map(
-                        deletionVector ->
-                                convertToRetained(next, deletionVector, startPosition, pageCount))
-                .orElse(next);
+        Page result =
+                deletionVector
+                        .map(
+                                deletionVector ->
+                                        convertToRetained(
+                                                next, deletionVector, startPosition, pageCount))
+                        .orElse(next);
+        return SourcePage.create(result);
     }
 
     @VisibleForTesting

@@ -302,6 +302,11 @@ public class TrinoDistributedQueryTest extends AbstractDistributedEngineOnlyQuer
     }
 
     @Override
+    public void testDefaultExplainJsonFormat() {
+        throw new RuntimeException("TODO: test not implemented yet");
+    }
+
+    @Override
     public void testDefaultExplainTextFormat() {
         throw new RuntimeException("TODO: test not implemented yet");
     }
@@ -558,6 +563,11 @@ public class TrinoDistributedQueryTest extends AbstractDistributedEngineOnlyQuer
 
     @Override
     public void testLogicalExplain() {
+        throw new RuntimeException("TODO: test not implemented yet");
+    }
+
+    @Override
+    public void testLogicalExplainJsonFormat() {
         throw new RuntimeException("TODO: test not implemented yet");
     }
 
